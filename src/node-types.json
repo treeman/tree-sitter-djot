@@ -1,6 +1,34 @@
 [
   {
+    "type": "block_attribute",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "class",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "key_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "blockquote",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "class",
     "named": true,
     "fields": {}
   },
@@ -46,6 +74,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "block_attribute",
+          "named": true
+        },
         {
           "type": "blockquote",
           "named": true
@@ -124,6 +156,30 @@
     "fields": {}
   },
   {
+    "type": "key",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "key_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "key",
+          "named": true
+        },
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "language",
     "named": true,
     "fields": {}
@@ -135,11 +191,6 @@
   },
   {
     "type": "link_destination",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "link_label",
     "named": true,
     "fields": {}
   },
@@ -173,6 +224,11 @@
     "fields": {}
   },
   {
+    "type": "value",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "\u0000",
     "named": false
   },
@@ -186,6 +242,10 @@
   },
   {
     "type": "\n\n",
+    "named": false
+  },
+  {
+    "type": "\"",
     "named": false
   },
   {
@@ -217,11 +277,15 @@
     "named": false
   },
   {
-    "type": ">",
+    "type": ".",
     "named": false
   },
   {
-    "type": "[",
+    "type": "=",
+    "named": false
+  },
+  {
+    "type": ">",
     "named": false
   },
   {
@@ -230,6 +294,22 @@
   },
   {
     "type": "```",
+    "named": false
+  },
+  {
+    "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "link_label",
+    "named": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
     "named": false
   }
 ]
