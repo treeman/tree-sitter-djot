@@ -49,9 +49,5 @@
   {
     "type": "\\",
     "named": false
-  },
-  {
-    "type": "soft_line_break",
-    "named": true
   }
 ]

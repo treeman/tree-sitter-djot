@@ -47,15 +47,11 @@
         }
       ]
     },
-    "eof": {
-      "type": "STRING",
-      "value": "\u0000"
-    },
-    "soft_line_break": {
+    "_soft_line_break": {
       "type": "STRING",
       "value": "\n"
     },
-    "hard_line_break": {
+    "_hard_line_break": {
       "type": "SEQ",
       "members": [
         {
@@ -64,7 +60,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "soft_line_break"
+          "name": "_soft_line_break"
         }
       ]
     },
@@ -79,10 +75,6 @@
             {
               "type": "SYMBOL",
               "name": "_text"
-            },
-            {
-              "type": "PATTERN",
-              "value": "\\s"
             }
           ]
         }

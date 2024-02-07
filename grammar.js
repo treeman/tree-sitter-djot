@@ -43,18 +43,12 @@ module.exports = grammar({
     //   heading1: ($) =>
     //     prec.left(seq("#", repeat1($._inline), $._eof_or_blankline)),
 
-    // paragraph: ($) => seq($._inline_lines, $._eof_or_blankline),
-    //
-    ///// Yet another approach:
-    // Eat
-    // paragraph: ($) => seq($.inline, $.soft_line_break, $._eof_or_blankline),
     paragraph: ($) => seq($.inline, $._eof_or_blankline),
 
     _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
 
-    eof: (_) => `\0`,
-    soft_line_break: (_) => "\n",
-    hard_line_break: ($) => seq("\\", $.soft_line_break),
+    _soft_line_break: (_) => "\n",
+    _hard_line_break: ($) => seq("\\", $._soft_line_break),
 
     inline: ($) =>
       prec.left(
@@ -79,8 +73,7 @@ module.exports = grammar({
             //       // $.raw_inline,
             //       // $.span,
             //       // // $.inline_attribute,
-            $._text,
-            /\s/
+            $._text
           )
         )
       ),
