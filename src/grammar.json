@@ -1,0 +1,112 @@
+{
+  "name": "Djot",
+  "rules": {
+    "document": {
+      "type": "REPEAT",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_block"
+      }
+    },
+    "_block": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "paragraph"
+        }
+      ]
+    },
+    "paragraph": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "inline"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_eof_or_blankline"
+        }
+      ]
+    },
+    "_eof_or_blankline": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\u0000"
+        },
+        {
+          "type": "STRING",
+          "value": "\n\n"
+        },
+        {
+          "type": "STRING",
+          "value": "\n\u0000"
+        }
+      ]
+    },
+    "eof": {
+      "type": "STRING",
+      "value": "\u0000"
+    },
+    "soft_line_break": {
+      "type": "STRING",
+      "value": "\n"
+    },
+    "hard_line_break": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\\"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "soft_line_break"
+        }
+      ]
+    },
+    "inline": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_text"
+            },
+            {
+              "type": "PATTERN",
+              "value": "\\s"
+            }
+          ]
+        }
+      }
+    },
+    "_text": {
+      "type": "PATTERN",
+      "value": "\\S+"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "\\s"
+    },
+    {
+      "type": "STRING",
+      "value": "\r"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": []
+}
+
