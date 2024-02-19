@@ -42,6 +42,7 @@ static void push_block(Scanner *s, uint8_t level, BlockType type) {
 
 static void pop_block(Scanner *s) {
   if (s->open_blocks.size > 0) {
+    printf("POP\n");
     free(s->open_blocks.items[--s->open_blocks.size]);
   }
 }
@@ -53,14 +54,35 @@ static Block *peek_block(Scanner *s) {
   return s->open_blocks.items[s->open_blocks.size - 1];
 }
 
-static Block *find_block(Scanner *s, BlockType type, uint8_t level) {
+// static Block *find_block(Scanner *s, BlockType type, uint8_t level) {
+//   for (size_t i = 0; i < s->open_blocks.size; ++i) {
+//     Block *b = s->open_blocks.items[i];
+//     if (b->type == type && b->level == level) {
+//       return b;
+//     }
+//   }
+//   return NULL;
+// }
+
+// How many blocks from the top of the stack can we find a matching block?
+// If it's directly on the top, returns 1.
+// If it cannot be found, returns 0.
+static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
+                                        uint8_t level) {
   for (size_t i = 0; i < s->open_blocks.size; ++i) {
     Block *b = s->open_blocks.items[i];
     if (b->type == type && b->level == level) {
-      return b;
+      return s->open_blocks.size - i;
     }
   }
-  return NULL;
+  return 0;
+}
+
+// Remove 'count' blocks from the stack, freeing them.
+static void remove_blocks(Scanner *s, size_t count) {
+  while (count-- > 0) {
+    pop_block(s);
+  }
 }
 
 static void dump(Scanner *s) {
@@ -78,47 +100,55 @@ static void dump(Scanner *s) {
 
 // Remove blocks until 'b' is reached.
 // Is inclusive, so will free 'b'!
-static uint8_t remove_blocks_until(Scanner *s, Block *b) {
-  uint8_t removed = 0;
-  for (;;) {
-    Block *top = peek_block(s);
-    bool found = top == b;
-    // printf("-> removing block %d\n", top->level);
-    // TODO should issue a $._block_close token
-    // instead of just removing it here...
-    // So we need to set some kind of state here instead
-    // and pop the topmost block until we reach
-    // our target block.
-    pop_block(s);
-    ++removed;
-    // dump_stack(s);
+// static uint8_t remove_blocks_until(Scanner *s, Block *b) {
+//   uint8_t removed = 0;
+//   for (;;) {
+//     Block *top = peek_block(s);
+//     bool found = top == b;
+//     // printf("-> removing block %d\n", top->level);
+//     // TODO should issue a $._block_close token
+//     // instead of just removing it here...
+//     // So we need to set some kind of state here instead
+//     // and pop the topmost block until we reach
+//     // our target block.
+//     pop_block(s);
+//     ++removed;
+//     // dump_stack(s);
 
-    // Should always work, size check is just a safeguard.
-    if (found || s->open_blocks.size == 0) {
-      return removed;
-    }
-  }
-}
+//     // Should always work, size check is just a safeguard.
+//     if (found || s->open_blocks.size == 0) {
+//       return removed;
+//     }
+//   }
+// }
 
-static void close_blocks(Scanner *s, TSLexer *lexer, Block *last_to_remove,
+static void close_blocks(Scanner *s, TSLexer *lexer, size_t count,
                          TokenType final, uint8_t final_token_width) {
-  uint8_t removal_count = remove_blocks_until(s, last_to_remove);
-  if (removal_count <= 1) {
-    // We're closing the current block, so we can output the
-    // final token immediately.
-    printf("Closing current block\n");
-    lexer->mark_end(lexer);
-    lexer->result_symbol = final;
-  } else {
-    // We need to close some blocks.
-    // The way we do this is we first issue BLOCK_CLOSE tokens
-    // until the very last one, which is supposed to be the `final` token.
-    printf("CLOSE %d blocks\n", removal_count);
-    s->block_close_final_token = final;
-    s->blocks_to_close = removal_count - 1;
-    s->final_token_width = final_token_width;
-    lexer->result_symbol = BLOCK_CLOSE;
-  }
+  // remove_blocks(s, count);
+
+  printf("CLOSE %zu blocks\n", count);
+  s->block_close_final_token = final;
+  s->blocks_to_close = count - 1;
+  s->final_token_width = final_token_width;
+  lexer->result_symbol = BLOCK_CLOSE;
+  pop_block(s);
+
+  // if (removal_count <= 1) {
+  //   // We're closing the current block, so we can output the
+  //   // final token immediately.
+  //   printf("Closing current block\n");
+  //   lexer->mark_end(lexer);
+  //   lexer->result_symbol = final;
+  // } else {
+  //   // We need to close some blocks.
+  //   // The way we do this is we first issue BLOCK_CLOSE tokens
+  //   // until the very last one, which is supposed to be the `final` token.
+  //   printf("CLOSE %d blocks\n", removal_count);
+  //   s->block_close_final_token = final;
+  //   s->blocks_to_close = removal_count - 1;
+  //   s->final_token_width = final_token_width;
+  //   lexer->result_symbol = BLOCK_CLOSE;
+  // }
 }
 
 // static bool close_block(Scanner *s, TSLexer *lexer, const bool
@@ -151,13 +181,17 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   // with the same number of colons.
   // If there is, we should close that one, otherwise
   // we start a new div.
-  Block *existing = find_block(s, DIV, colons);
-  if (existing) {
+  // Block *existing = find_block(s, DIV, colons);
+  // if (existing) {
+  size_t from_top = number_of_blocks_from_top(s, DIV, colons);
+  printf("from top: %d\n", from_top);
+  if (from_top > 0) {
+
     // s->blocks_to_close = remove_blocks_until(s, existing) - 1;
     // s->block_close_final_symbol = DIV_END;
     // lexer->result_symbol = DIV_END;
 
-    close_blocks(s, lexer, existing, DIV_END, 3);
+    close_blocks(s, lexer, from_top, DIV_END, 3);
     dump(s);
     return true;
   } else {
@@ -185,21 +219,26 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   Scanner *s = (Scanner *)payload;
 
-  // If we reach oef with open blocks, we should close them all.
-  // if (lexer->eof(lexer)) {
-  // }
+  printf("SCAN\n");
+  dump(s);
+  printf("? BLOCK_CLOSE %b\n", valid_symbols[BLOCK_CLOSE]);
+  printf("? DIV_START %b\n", valid_symbols[DIV_START]);
+  printf("? DIV_END %b\n", valid_symbols[DIV_END]);
+  printf("current '%c'\n", lexer->lookahead);
 
-  // printf("SCAN\n");
-  // dump(s);
-  // printf("? BLOCK_CLOSE %b\n", valid_symbols[BLOCK_CLOSE]);
-  // printf("? DIV_START %b\n", valid_symbols[DIV_START]);
-  // printf("? DIV_END %b\n", valid_symbols[DIV_END]);
-  // printf("current '%c'\n", lexer->lookahead);
+  // If we reach oef with open blocks, we should close them all.
+  if (lexer->eof(lexer) && s->open_blocks.size > 0) {
+    printf("BLOCK_CLOSE eof\n");
+    lexer->result_symbol = BLOCK_CLOSE;
+    pop_block(s);
+    return true;
+  }
 
   if (valid_symbols[BLOCK_CLOSE] && s->blocks_to_close > 0) {
     printf("BLOCK_CLOSE extra\n");
     lexer->result_symbol = BLOCK_CLOSE;
     --s->blocks_to_close;
+    pop_block(s);
     return true;
   }
   if (s->blocks_to_close > 0) {
