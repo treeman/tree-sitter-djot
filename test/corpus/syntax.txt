@@ -569,7 +569,9 @@ Inside
 
 (document
   (div
-    (paragraph)))
+    (div_marker_start)
+    (paragraph)
+    (div_marker_end)))
 
 ===============================================================================
 Div class
@@ -583,8 +585,10 @@ Inside
 
 (document
   (div
-    (class_name)
-    (paragraph)))
+    (div_marker_start
+      (class_name))
+    (paragraph)
+    (div_marker_end)))
 
 ===============================================================================
 Div end paragraph inside
@@ -597,5 +601,7 @@ Inside
 
 (document
   (div
-    (paragraph)))
+    (div_marker_start)
+    (paragraph)
+    (div_marker_end)))
 

@@ -41,6 +41,11 @@ module.exports = grammar({
 
   extras: (_) => ["\r"],
 
+  // conflicts: ($) => [
+  //   [$.paragraph, $.div],
+  //   [$._inline_with_newlines, $._close_paragraph],
+  // ],
+
   rules: {
     document: ($) => repeat($._block),
 
@@ -94,20 +99,14 @@ module.exports = grammar({
     // class_name: (_) => /\w+/,
     div: ($) =>
       seq(
-        alias($._div_start, $.div_marker_start),
+        $.div_marker_start,
         optional($.class_name),
         "\n",
         repeat($._block),
-        alias($._block_close, $.block_close),
+        $._block_close,
         optional(alias($._div_end, $.div_marker_end))
-        // choice(
-        //   seq(
-        //     alias($._div_end, $.div_marker_end),
-        //     alias($._block_close, $.block_close_with_div)
-        //   ),
-        //   alias($._block_close, $.block_close_no_div)
-        // )
-      ),
+    div_marker_start: ($) =>
+      seq($._div_start, optional(seq(/[ ]+/, $.class_name))),
     class_name: (_) => /\w+/,
 
     // It's fine to let inline gobble up leading `>` for lazy
@@ -126,7 +125,11 @@ module.exports = grammar({
       token(seq("[", token.immediate(/\w+/), token.immediate("]"))),
     link_destination: (_) => /\S+/,
 
-    paragraph: ($) => seq($._inline_with_newlines, $._eof_or_blankline),
+    paragraph: ($) =>
+      seq(
+        $._inline_with_newlines,
+        choice($._eof_or_blankline, $._close_paragraph)
+      ),
 
     _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
     _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
@@ -180,6 +183,7 @@ module.exports = grammar({
     $._block_close,
     $._div_start,
     $._div_end,
+    $._close_paragraph,
 
     // Never valid and is used to kill parse branches.
     $._error,

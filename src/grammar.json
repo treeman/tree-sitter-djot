@@ -161,13 +161,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_div_start"
-          },
-          "named": true,
-          "value": "div_marker_start"
+          "type": "SYMBOL",
+          "name": "div_marker_start"
         },
         {
           "type": "CHOICE",
@@ -193,13 +188,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_block_close"
-          },
-          "named": true,
-          "value": "block_close"
+          "type": "SYMBOL",
+          "name": "_block_close"
         },
         {
           "type": "CHOICE",
@@ -212,6 +202,36 @@
               },
               "named": true,
               "value": "div_marker_end"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "div_marker_start": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_div_start"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "PATTERN",
+                  "value": "[ ]+"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "class_name"
+                }
+              ]
             },
             {
               "type": "BLANK"
@@ -312,8 +332,17 @@
           "name": "_inline_with_newlines"
         },
         {
-          "type": "SYMBOL",
-          "name": "_eof_or_blankline"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_eof_or_blankline"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_close_paragraph"
+            }
+          ]
         }
       ]
     },
@@ -529,6 +558,10 @@
     {
       "type": "SYMBOL",
       "name": "_div_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_close_paragraph"
     },
     {
       "type": "SYMBOL",
