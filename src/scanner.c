@@ -24,9 +24,15 @@ typedef struct {
     size_t size;
     Block *items[STACK_SIZE];
   } open_blocks;
+
+  // How many $._close_block we should output right now?
+  uint8_t blocks_to_close;
 } Scanner;
 
-static void push_block(Scanner *s, Block *b) {
+static void push_block(Scanner *s, uint8_t level, BlockType type) {
+  Block *b = malloc(sizeof(Block));
+  b->level = level;
+  b->type = type;
   s->open_blocks.items[s->open_blocks.size++] = b;
 }
 
@@ -53,7 +59,7 @@ static Block *find_block(Scanner *s, BlockType type, uint8_t level) {
   return NULL;
 }
 
-static void dump_stach(Scanner *s) {
+static void dump_stack(Scanner *s) {
   printf("=== Stack size: %zu\n", s->open_blocks.size);
   for (size_t i = 0; i < s->open_blocks.size; ++i) {
     Block *b = s->open_blocks.items[i];
@@ -64,7 +70,8 @@ static void dump_stach(Scanner *s) {
 
 // Remove blocks until 'b' is reached.
 // Is inclusive, so will free 'b'!
-static void remove_blocks_until(Scanner *s, Block *b) {
+static uint8_t remove_blocks_until(Scanner *s, Block *b) {
+  uint8_t removed = 0;
   for (;;) {
     Block *top = peek_block(s);
     bool found = top == b;
@@ -75,11 +82,12 @@ static void remove_blocks_until(Scanner *s, Block *b) {
     // and pop the topmost block until we reach
     // our target block.
     pop_block(s);
-    dump_stach(s);
+    ++removed;
+    // dump_stack(s);
 
     // Should always work, size check is just a safeguard.
     if (found || s->open_blocks.size == 0) {
-      return;
+      return removed;
     }
   }
 }
@@ -104,15 +112,11 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   Block *existing = find_block(s, DIV, colons);
   if (existing) {
     lexer->result_symbol = DIV_END;
-    remove_blocks_until(s, existing);
+    s->blocks_to_close = remove_blocks_until(s, existing);
 
     return true;
   } else {
-    Block *b = malloc(sizeof(Block));
-    b->level = colons;
-    b->type = DIV;
-
-    push_block(s, b);
+    push_block(s, colons, DIV);
     lexer->result_symbol = DIV_START;
 
     return true;
@@ -129,6 +133,16 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   // }
 }
 
+static bool close_block(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  if (s->blocks_to_close > 0) {
+    lexer->result_symbol = BLOCK_CLOSE;
+    --s->blocks_to_close;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -140,6 +154,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
     return parse_div(s, lexer, valid_symbols);
+  } else if (valid_symbols[BLOCK_CLOSE]) {
+    return close_block(s, lexer, valid_symbols);
   }
 
   return false;

@@ -1,0 +1,205 @@
+module.exports = grammar({
+  name: "djot",
+
+  // TODO need to escape special characters everywhere
+  // maybe we can do this early and automatically skip them in our token logic?
+
+  // TODO should actually use this list, and replace standalone numbers in the source
+  precedences: (_) => [["heading", "link_reference_definition", "paragraph"]],
+
+  // FIXME with /\s/ paragraph detection mostly works...
+  // But with this lots and lots of things errors out.
+  // Crap.
+  // How should we detect paragraphs? Use external scanner...?
+  extras: (_) => [" ", "\r", "\t", "\f"],
+
+  rules: {
+    document: ($) => repeat($._block),
+
+    // Every block contains a newline.
+    _block: ($) =>
+      choice(
+        $._heading,
+        $.blockquote,
+        // $.list, // Needs external scanner to match indentation!
+        $.codeblock, // Should be external to match number of `
+        $.thematicbreak,
+        // $.raw_block,
+        // $.div, // External to match number of `:`
+        // $.pipe_table, // External. Has a caption too that needs to match indent
+        $.link_reference_definition,
+        // $.footnote, // External, needs to consider indentation level
+        $.block_attribute,
+        $.paragraph
+        // ... Or we just add rules manually for different numbered start/end
+        // symbols?
+        // /\n/ // FIXME should this be here?
+      ),
+
+    _heading: ($) =>
+      choice(
+        $.heading1,
+        $.heading2,
+        $.heading3,
+        $.heading4,
+        $.heading5,
+        $.heading6
+      ),
+    heading1: ($) => seq("#", $._gobble_header),
+    heading2: ($) => seq(/#{2}/, $._gobble_header),
+    heading3: ($) => seq(/#{3}/, $._gobble_header),
+    heading4: ($) => seq(/#{4}/, $._gobble_header),
+    heading5: ($) => seq(/#{5}/, $._gobble_header),
+    heading6: ($) => seq(/#{6}/, $._gobble_header),
+    // NOTE because we don't tag the `#` character individually,
+    // there's no need to match the beginning `#` of each consecutive line.
+    _gobble_header: ($) => seq($._inline, $._eof_or_blankline),
+
+    // It's fine to let inline gobble up leading `>` for lazy
+    // quotes lines.
+    blockquote: ($) => seq(">", $._inline, $._eof_or_blankline),
+
+    // TODO move this to an external scanner so we can match the number of
+    // opening/ending `, so we can embed ``` inside.
+    // Also we need to implicitly close this when its parent container is closed...
+    codeblock: ($) =>
+      prec.right(
+        seq("```", seq(optional($.language), "\n"), $.code, "```", "\n")
+      ),
+    language: (_) => prec(100, /\S+/),
+    code: ($) => prec.left(repeat1($.line)),
+    line: (_) => seq(repeat(/\S+/), "\n"),
+
+    // This is quite ugly, maybe would've been simpler to use an external scanner?
+    thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
+    _star_thematicbreak: ($) =>
+      prec.left(
+        choice(
+          seq("*", "*", "*", $._end_star_thematicbreak),
+          seq("**", "*", $._end_star_thematicbreak),
+          seq("*", "**", $._end_star_thematicbreak),
+          seq("***", $._end_star_thematicbreak)
+        )
+      ),
+    _end_star_thematicbreak: (_) => seq(repeat(/\*+/), "\n"),
+    _minus_thematicbreak: ($) =>
+      prec.left(
+        choice(
+          seq("-", "-", "-", $._end_minus_thematicbreak),
+          seq("--", "-", $._end_minus_thematicbreak),
+          seq("-", "--", $._end_minus_thematicbreak),
+          seq("---", $._end_minus_thematicbreak)
+        )
+      ),
+    _end_minus_thematicbreak: (_) => seq(repeat(/-+/), "\n"),
+
+    link_reference_definition: ($) =>
+      seq(
+        alias($._reference_link_label, $.link_label),
+        $.link_destination,
+        "\n"
+      ),
+    // I would like to match : outside, but then the parser always prefers
+    // paragraph over this (because it's longer, and only uses a one token lookahead).
+    // At least that's what I think is happening, but then why can't we override it?
+    // I would like to do seq($.link_label, token.immediate(":")) or similar.
+    _reference_link_label: ($) =>
+      token(
+        prec(1000, seq("[", token.immediate(/\w+/), token.immediate("]:")))
+        // prec(1000, "[ref]:")
+      ),
+    link_destination: (_) => /\S+/,
+
+    block_attribute: ($) =>
+      seq(
+        token(prec(1000, "{")),
+        repeat(choice($.class, $.identifier, $.key_value)),
+        "}",
+        "\n"
+      ),
+
+    class: ($) => seq(".", token.immediate(/[^}]+/)),
+    identifier: ($) => token(prec(100, seq("#", token.immediate(/[^}]+/)))),
+    key_value: ($) => seq($.key, "=", $.value),
+    key: ($) => /\w+/,
+    value: ($) => choice(seq('"', /[^"]+/, '"'), /\w+/),
+
+    paragraph: ($) => seq($._inline, $._eof_or_blankline),
+
+    _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
+
+    _soft_line_break: (_) => "\n",
+    _hard_line_break: ($) => seq("\\", $._soft_line_break),
+
+    _inline: ($) =>
+      // prec.left(
+      repeat1(
+        choice(
+          // $.image,
+          $.autolink,
+          // $.verbatim, // Should match ` count
+          $.emphasis,
+          // $.strong,
+          $.highlighted,
+          // $.superscript,
+          // $.subscript,
+          $.insert,
+          $.delete,
+          // // Smart punctuation
+          // $.math,
+          // $.footnote_reference,
+          // $.line_break,
+          // $.comment,
+          $.symbol,
+          // $.raw_inline,
+          // $.span,
+          // // $.inline_attribute,
+          $._link,
+          $._text
+          // alias($._text, $.txt)
+        )
+      ),
+    // ),
+
+    autolink: (_) => token(prec(100, seq("<", /[^>\s]+/, ">"))),
+    // TODO bunch of extra rules for these
+    emphasis: (_) => token(prec(100, seq("_", /\w+/, "_"))),
+    // Clashes with thematic break. Should require other characters aside from *
+    // strong: (_) => token(prec(100, seq("*", /\w+/, "*"))),
+
+    highlighted: (_) => token(prec(100, seq("{=", /\S+/, "=}"))),
+    insert: (_) => token(prec(100, seq("{+", /\S+/, "+}"))),
+    delete: (_) => token(prec(100, seq("{-", /\S+/, "-}"))),
+    symbol: (_) => token(prec(100, seq(":", /\S+/, ":"))),
+
+    _link: ($) =>
+      choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
+
+    full_reference_link: ($) => seq($.link_text, $.link_label),
+    collapsed_reference_link: ($) =>
+      seq($.link_text, token.immediate(prec(100, "[]"))),
+    inline_link: ($) => seq($.link_text, $.inline_link_destination),
+
+    link_text: ($) =>
+      seq(token(prec(100, "[")), $._inline, token.immediate(prec(100, "]"))),
+
+    link_label: ($) =>
+      token(prec(100, seq("[", token.immediate(/\S+/), token.immediate("]")))),
+    inline_link_destination: ($) => seq("(", /\S+/, ")"),
+    // link_destination:
+
+    // Smart puncuation things:
+    // " and ' (or just skip)
+    // {" }" {' }'
+    // \' \"
+    // ... ellipsis
+    // remove thematic break parsing for these?
+    // --- em-dash
+    // -- en-dash
+
+    // _text: (_) => token(prec(-1, /\S+/)),
+    // FIXME needs to capture all other symbols
+    _text: (_) => /\w/,
+    // _text: (_) => /\S/,
+  },
+});

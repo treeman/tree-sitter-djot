@@ -193,13 +193,41 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_div_end"
-          },
-          "named": true,
-          "value": "div_marker_end"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_div_end"
+                  },
+                  "named": true,
+                  "value": "div_marker_end"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_block_close"
+                  },
+                  "named": true,
+                  "value": "block_close_with_div"
+                }
+              ]
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_block_close"
+              },
+              "named": true,
+              "value": "block_close_no_div"
+            }
+          ]
         }
       ]
     },

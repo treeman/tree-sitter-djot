@@ -46,6 +46,14 @@
       "required": true,
       "types": [
         {
+          "type": "block_close_no_div",
+          "named": true
+        },
+        {
+          "type": "block_close_with_div",
+          "named": true
+        },
+        {
           "type": "blockquote",
           "named": true
         },
@@ -471,6 +479,14 @@
   {
     "type": "]",
     "named": false
+  },
+  {
+    "type": "block_close_no_div",
+    "named": true
+  },
+  {
+    "type": "block_close_with_div",
+    "named": true
   },
   {
     "type": "class_name",
