@@ -113,7 +113,7 @@ static void close_blocks(Scanner *s, TSLexer *lexer, Block *last_to_remove,
     // We need to close some blocks.
     // The way we do this is we first issue BLOCK_CLOSE tokens
     // until the very last one, which is supposed to be the `final` token.
-    printf("Close %d blocks\n", removal_count);
+    printf("CLOSE %d blocks\n", removal_count);
     s->block_close_final_token = final;
     s->blocks_to_close = removal_count - 1;
     s->final_token_width = final_token_width;
@@ -121,15 +121,17 @@ static void close_blocks(Scanner *s, TSLexer *lexer, Block *last_to_remove,
   }
 }
 
-static bool close_block(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  if (s->blocks_to_close > 0) {
-    lexer->result_symbol = BLOCK_CLOSE;
-    --s->blocks_to_close;
-    return true;
-  } else {
-    return false;
-  }
-}
+// static bool close_block(Scanner *s, TSLexer *lexer, const bool
+// *valid_symbols) {
+//   if (s->blocks_to_close > 0) {
+//     printf("BLOCK_CLOSE in close_block\n");
+//     lexer->result_symbol = BLOCK_CLOSE;
+//     --s->blocks_to_close;
+//     return true;
+//   } else {
+//     return false;
+//   }
+// }
 
 static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   uint8_t colons = 0;
@@ -187,15 +189,15 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // if (lexer->eof(lexer)) {
   // }
 
-  printf("SCAN\n");
-  dump(s);
-  printf("? BLOCK_CLOSE %b\n", valid_symbols[BLOCK_CLOSE]);
-  printf("? DIV_START %b\n", valid_symbols[DIV_START]);
-  printf("? DIV_END %b\n", valid_symbols[DIV_END]);
-  printf("current '%c'\n", lexer->lookahead);
+  // printf("SCAN\n");
+  // dump(s);
+  // printf("? BLOCK_CLOSE %b\n", valid_symbols[BLOCK_CLOSE]);
+  // printf("? DIV_START %b\n", valid_symbols[DIV_START]);
+  // printf("? DIV_END %b\n", valid_symbols[DIV_END]);
+  // printf("current '%c'\n", lexer->lookahead);
 
   if (valid_symbols[BLOCK_CLOSE] && s->blocks_to_close > 0) {
-    printf("! Closing extra block\n");
+    printf("BLOCK_CLOSE extra\n");
     lexer->result_symbol = BLOCK_CLOSE;
     --s->blocks_to_close;
     return true;
@@ -206,8 +208,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return false;
   }
 
-  // FIXME multiple rules can match a zero-width BLOCK_CLOSE token...
-  // No need to emit more than one
   if (s->blocks_to_close == 0 && valid_symbols[s->block_close_final_token]) {
     lexer->result_symbol = s->block_close_final_token;
     s->block_close_final_token = UNUSED;
@@ -221,8 +221,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
     return parse_div(s, lexer, valid_symbols);
-  } else if (valid_symbols[BLOCK_CLOSE]) {
-    return close_block(s, lexer, valid_symbols);
+    // } else if (valid_symbols[BLOCK_CLOSE]) {
+    //   return close_block(s, lexer, valid_symbols);
   }
 
   return false;
