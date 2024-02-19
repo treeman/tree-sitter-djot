@@ -98,13 +98,15 @@ module.exports = grammar({
         optional($.class_name),
         "\n",
         repeat($._block),
-        choice(
-          seq(
-            alias($._div_end, $.div_marker_end),
-            alias($._block_close, $.block_close_with_div)
-          ),
-          alias($._block_close, $.block_close_no_div)
-        )
+        alias($._block_close, $.block_close),
+        optional(alias($._div_end, $.div_marker_end))
+        // choice(
+        //   seq(
+        //     alias($._div_end, $.div_marker_end),
+        //     alias($._block_close, $.block_close_with_div)
+        //   ),
+        //   alias($._block_close, $.block_close_no_div)
+        // )
       ),
     class_name: (_) => /\w+/,
 
@@ -180,6 +182,8 @@ module.exports = grammar({
     $._div_end,
 
     // Never valid and is used to kill parse branches.
-    $._error_sentinel,
+    $._error,
+    // Should never be used.
+    $._unusued,
   ],
 });

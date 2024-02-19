@@ -46,11 +46,7 @@
       "required": true,
       "types": [
         {
-          "type": "block_close_no_div",
-          "named": true
-        },
-        {
-          "type": "block_close_with_div",
+          "type": "block_close",
           "named": true
         },
         {
@@ -481,11 +477,7 @@
     "named": false
   },
   {
-    "type": "block_close_no_div",
-    "named": true
-  },
-  {
-    "type": "block_close_with_div",
+    "type": "block_close",
     "named": true
   },
   {
