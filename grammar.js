@@ -20,8 +20,6 @@ module.exports = grammar({
   // - Div
 
   // Container blocks that can close:
-  // - Code block
-  // - Raw block
   // - Block quote
   // - Div
 
@@ -56,11 +54,11 @@ module.exports = grammar({
         // $.list, // Needs external scanner to match indentation!
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
-        $.div,
-        // $.codeblock,
-        // $.raw_block,
+        $.div, // External, can close others and be closed
+        // $.codeblock, // External, match start/end, can be closed
+        // $.raw_block, // External, match start/end, can be closed
         // $.thematicbreak,
-        $.blockquote,
+        $.blockquote, // External, can close other blocks
         $.link_reference_definition,
         // $.block_attribute,
         $.paragraph,
@@ -86,17 +84,6 @@ module.exports = grammar({
     // there's no need to match the beginning `#` of each consecutive line.
     _gobble_header: ($) => seq($._inline_with_newlines, $._eof_or_blankline),
 
-    // I guess we could use an external scanner to allow arbitrary symbols,
-    // but this was easier :)
-    // div: ($) => choice($._div3, $._div4, $._div5, $._div6, $._div7, $._div8),
-    // _div3: ($) => seq(/:{3}/, $._inside_div, /:{3}/),
-    // _div4: ($) => seq(/:{4}/, $._inside_div, /:{4}/),
-    // _div5: ($) => seq(/:{5}/, $._inside_div, /:{5}/), _div6: ($) => seq(/:{6}/, $._inside_div, /:{6}/),
-    // _div7: ($) => seq(/:{7}/, $._inside_div, /:{7}/),
-    // _div8: ($) => seq(/:{8}/, $._inside_div, /:{8}/),
-    // _inside_div: ($) =>
-    //   prec.left(seq(/[ ]*/, optional($.class_name), "\n", repeat($._block))),
-    // class_name: (_) => /\w+/,
     div: ($) =>
       seq(
         $.div_marker_start,
