@@ -231,21 +231,25 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
     return false;
   }
 
-  size_t from_top = number_of_blocks_from_top(s, CODE_BLOCK, ticks);
-
-  if (from_top == 0) {
+  if (s->open_blocks.size > 0) {
+    // Code blocks can't contain other blocks, so we onlyook at the top.
+    Block *top = peek_block(s);
+    if (top->type == CODE_BLOCK && top->level == ticks) {
+      // Found a matching block that we should close.
+      lexer->mark_end(lexer);
+      pop_block(s);
+      lexer->result_symbol = CODE_BLOCK_END;
+      return true;
+    } else {
+      // We're in a code block with a different number of `, ignore these.
+      return false;
+    }
+  } else {
+    // Not in a code block, let's start a new one.
     lexer->mark_end(lexer);
     push_block(s, ticks, CODE_BLOCK);
     lexer->result_symbol = CODE_BLOCK_START;
     return true;
-  } else if (from_top == 1) {
-    lexer->mark_end(lexer);
-    pop_block(s);
-    lexer->result_symbol = CODE_BLOCK_END;
-    return true;
-  } else {
-    // We can't nest code blocks, these should just be interpreted verbatim.
-    return false;
   }
 }
 
