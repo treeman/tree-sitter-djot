@@ -1414,8 +1414,8 @@
           "value": "verbatim_marker_start"
         },
         {
-          "type": "PATTERN",
-          "value": "[ \\w]+"
+          "type": "SYMBOL",
+          "name": "_verbatim_content"
         },
         {
           "type": "ALIAS",
@@ -1465,6 +1465,10 @@
     {
       "type": "SYMBOL",
       "name": "_verbatim_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_verbatim_content"
     },
     {
       "type": "SYMBOL",

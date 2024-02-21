@@ -257,7 +257,7 @@ module.exports = grammar({
     verbatim: ($) =>
       seq(
         alias($._verbatim_start, $.verbatim_marker_start),
-        /[ \w]+/,
+        $._verbatim_content,
         alias($._verbatim_end, $.verbatim_marker_end)
       ),
 
@@ -274,6 +274,7 @@ module.exports = grammar({
     // Inline
     $._verbatim_start,
     $._verbatim_end,
+    $._verbatim_content,
 
     // Never valid and is used to kill parse branches.
     $._error,

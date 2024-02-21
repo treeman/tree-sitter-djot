@@ -1064,7 +1064,10 @@ Simple `verbatim` here
 
 (document
   (paragraph
-    (verbatim)))
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))))
+
 ===============================================================================
 Verbatim double with single inside
 ===============================================================================
@@ -1074,8 +1077,9 @@ Verbatim double with single inside
 
 (document
   (paragraph
-    (verbatim)))
-
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))))
 
 ===============================================================================
 Verbatim with triple inside
@@ -1086,5 +1090,37 @@ Verbatim with triple inside
 
 (document
   (paragraph
-    (verbatim)))
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim newline closes
+===============================================================================
+`verbatim
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))))
+
+
+===============================================================================
+Verbatim multiple
+===============================================================================
+`x` `y`
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))
+    (verbatim
+      (verbatim_marker_start)
+      (verbatim_marker_end))))
 
