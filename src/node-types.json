@@ -219,6 +219,11 @@
     "fields": {}
   },
   {
+    "type": "content",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "delete",
     "named": true,
     "fields": {},
@@ -398,6 +403,10 @@
           "named": true
         },
         {
+          "type": "raw_block",
+          "named": true
+        },
+        {
           "type": "thematicbreak",
           "named": true
         }
@@ -473,6 +482,10 @@
         },
         {
           "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "raw_block",
           "named": true
         },
         {
@@ -2167,6 +2180,52 @@
     }
   },
   {
+    "type": "raw_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "content",
+          "named": true
+        },
+        {
+          "type": "raw_block_info",
+          "named": true
+        },
+        {
+          "type": "raw_block_marker_end",
+          "named": true
+        },
+        {
+          "type": "raw_block_marker_start",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "raw_block_info",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "language",
+          "named": true
+        },
+        {
+          "type": "language_marker",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "raw_inline",
     "named": true,
     "fields": {},
@@ -2839,6 +2898,10 @@
     "named": true
   },
   {
+    "type": "language_marker",
+    "named": true
+  },
+  {
     "type": "link_destination",
     "named": true
   },
@@ -2852,6 +2915,14 @@
   },
   {
     "type": "math_marker_start",
+    "named": true
+  },
+  {
+    "type": "raw_block_marker_end",
+    "named": true
+  },
+  {
+    "type": "raw_block_marker_start",
     "named": true
   },
   {

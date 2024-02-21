@@ -21,6 +21,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "raw_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "code_block"
         },
         {
@@ -244,6 +248,72 @@
       "type": "PATTERN",
       "value": "\\w+"
     },
+    "raw_block": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_code_block_start"
+          },
+          "named": true,
+          "value": "raw_block_marker_start"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_whitespace"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "raw_block_info"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[ ]*\\n"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "code"
+          },
+          "named": true,
+          "value": "content"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_code_block_end"
+          },
+          "named": true,
+          "value": "raw_block_marker_end"
+        },
+        {
+          "type": "STRING",
+          "value": "\n"
+        }
+      ]
+    },
+    "raw_block_info": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "="
+          },
+          "named": true,
+          "value": "language_marker"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "language"
+        }
+      ]
+    },
     "code_block": {
       "type": "SEQ",
       "members": [
@@ -297,7 +367,7 @@
     },
     "language": {
       "type": "PATTERN",
-      "value": "[^\\n\\t \\{\\}]+"
+      "value": "[^\\n\\t \\{\\}=]+"
     },
     "code": {
       "type": "PREC_LEFT",

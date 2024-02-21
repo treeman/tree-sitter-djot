@@ -41,8 +41,8 @@ module.exports = grammar({
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
         $.div,
+        $.raw_block,
         $.code_block,
-        // $.raw_block, // External, match start/end, can be closed
         $.thematicbreak,
         $.blockquote, // External, can close other blocks end should capture marker + continuation
         $.link_reference_definition,
@@ -83,6 +83,18 @@ module.exports = grammar({
       seq($._div_start, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
 
+    raw_block: ($) =>
+      seq(
+        alias($._code_block_start, $.raw_block_marker_start),
+        $._whitespace,
+        $.raw_block_info,
+        /[ ]*\n/,
+        alias($.code, $.content),
+        alias($._code_block_end, $.raw_block_marker_end),
+        "\n"
+      ),
+    raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
+
     code_block: ($) =>
       seq(
         alias($._code_block_start, $.code_block_marker_start),
@@ -93,7 +105,7 @@ module.exports = grammar({
         alias($._code_block_end, $.code_block_marker_end),
         "\n"
       ),
-    language: (_) => /[^\n\t \{\}]+/,
+    language: (_) => /[^\n\t \{\}=]+/,
     code: ($) => prec.left(repeat1($._line)),
     _line: (_) => seq(repeat(/[^\n]+/), "\n"),
 
