@@ -40,7 +40,7 @@ module.exports = grammar({
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
         $.div,
-        // $.codeblock, // External, match start/end, can be closed
+        $.codeblock, // External, match start/end, can be closed
         // $.raw_block, // External, match start/end, can be closed
         $.thematicbreak,
         $.blockquote, // External, can close other blocks end should capture marker + continuation
@@ -81,6 +81,21 @@ module.exports = grammar({
     div_marker_start: ($) =>
       seq($._div_start, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
+
+    codeblock: ($) =>
+      seq(
+        alias($._codeblock_start, $.codeblock_marker_start),
+        $._whitespace,
+        optional($.language),
+        $._whitespace,
+        "\n",
+        $.code,
+        alias($._codeblock_end, $.codeblock_marker_end),
+        "\n"
+      ),
+    language: (_) => /\S+/,
+    code: ($) => prec.left(repeat1($.line)),
+    line: (_) => seq(repeat(/\S+/), "\n"),
 
     thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
     // Very pretty!
@@ -269,6 +284,8 @@ module.exports = grammar({
     $._block_close,
     $._div_start,
     $._div_end,
+    $._codeblock_start,
+    $._codeblock_end,
     $._close_paragraph,
 
     // Inline
@@ -278,7 +295,7 @@ module.exports = grammar({
 
     // Never valid and is used to kill parse branches.
     $._error,
-    // Should never be used.
-    $._unusued,
+    // Used as default value in scanner, should never be referenced.
+    $._ignored,
   ],
 });

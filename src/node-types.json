@@ -144,6 +144,48 @@
     "fields": {}
   },
   {
+    "type": "code",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "codeblock",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "code",
+          "named": true
+        },
+        {
+          "type": "codeblock_marker_end",
+          "named": true
+        },
+        {
+          "type": "codeblock_marker_start",
+          "named": true
+        },
+        {
+          "type": "language",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "collapsed_reference_image",
     "named": true,
     "fields": {},
@@ -302,6 +344,10 @@
           "named": true
         },
         {
+          "type": "codeblock",
+          "named": true
+        },
+        {
           "type": "div",
           "named": true
         },
@@ -381,6 +427,10 @@
         },
         {
           "type": "blockquote",
+          "named": true
+        },
+        {
+          "type": "codeblock",
           "named": true
         },
         {
@@ -1644,6 +1694,21 @@
     }
   },
   {
+    "type": "language",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "line",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "link_destination",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "link_label",
     "named": true,
     "fields": {},
@@ -2546,6 +2611,14 @@
     "named": true
   },
   {
+    "type": "codeblock_marker_end",
+    "named": true
+  },
+  {
+    "type": "codeblock_marker_start",
+    "named": true
+  },
+  {
     "type": "div_marker_end",
     "named": true
   },
@@ -2571,10 +2644,6 @@
   },
   {
     "type": "identifier",
-    "named": true
-  },
-  {
-    "type": "link_destination",
     "named": true
   },
   {

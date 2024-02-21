@@ -11,12 +11,14 @@ typedef enum {
   BLOCK_CLOSE,
   DIV_START,
   DIV_END,
+  CODEBLOCK_START,
+  CODEBLOCK_END,
   CLOSE_PARAGRAPH,
   VERBATIM_START,
   VERBATIM_END,
   VERBATIM_CONTENT,
   ERROR,
-  UNUSED
+  IGNORED
 } TokenType;
 
 typedef enum {
@@ -45,6 +47,30 @@ typedef struct {
   // The number of ` we are currently matching, or 0 when not inside.
   uint8_t verbatim_tick_count;
 } Scanner;
+
+static void dump(Scanner *s, TSLexer *lexer) {
+  printf("=== Lookahead: `%c`\n", lexer->lookahead);
+  printf("--- Stack size: %zu\n", s->open_blocks.size);
+  for (size_t i = 0; i < s->open_blocks.size; ++i) {
+    Block *b = s->open_blocks.items[i];
+    printf("  %d\n", b->level);
+  }
+  printf("---\n");
+  printf("  blocks_to_close: %d\n", s->blocks_to_close);
+  printf("  final_token_width: %d\n", s->final_token_width);
+  printf("  block_close_final_token: %u\n", s->block_close_final_token);
+  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
+  printf("===\n");
+}
+
+static uint8_t consume_chars(Scanner *s, TSLexer *lexer, char c) {
+  uint8_t count = 0;
+  while (lexer->lookahead == c) {
+    lexer->advance(lexer, false);
+    ++count;
+  }
+  return count;
+}
 
 static void push_block(Scanner *s, uint8_t level, BlockType type) {
   Block *b = malloc(sizeof(Block));
@@ -87,24 +113,15 @@ static void remove_blocks(Scanner *s, size_t count) {
   }
 }
 
-static void dump(Scanner *s, TSLexer *lexer) {
-  printf("=== Lookahead: `%c`\n", lexer->lookahead);
-  printf("--- Stack size: %zu\n", s->open_blocks.size);
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
-    Block *b = s->open_blocks.items[i];
-    printf("  %d\n", b->level);
-  }
-  printf("---\n");
-  printf("  blocks_to_close: %d\n", s->blocks_to_close);
-  printf("  final_token_width: %d\n", s->final_token_width);
-  printf("  block_close_final_token: %u\n", s->block_close_final_token);
-  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
-  printf("===\n");
-}
-
+// Mark that we should close `count` blocks.
+// This call will only emit a single BLOCK_CLOSE token,
+// the other are emitted in `parse_block_close`.
+//
+// The final block type (such as a `DIV_END` token)
+// is emitted from `handle_final_block_close` when all BLOCK_CLOSE
+// tokens are handled.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count,
                          TokenType final, uint8_t final_token_width) {
-  // printf("CLOSE %zu blocks\n", count);
   s->block_close_final_token = final;
   s->blocks_to_close = count - 1;
   s->final_token_width = final_token_width;
@@ -112,13 +129,43 @@ static void close_blocks(Scanner *s, TSLexer *lexer, size_t count,
   pop_block(s);
 }
 
-static uint8_t consume_chars(Scanner *s, TSLexer *lexer, char c) {
-  uint8_t count = 0;
-  while (lexer->lookahead == c) {
-    lexer->advance(lexer, false);
-    ++count;
+static bool parse_block_close(Scanner *s, TSLexer *lexer) {
+  // If we reach eof with open blocks, we should close them all.
+  if (lexer->eof(lexer) && s->open_blocks.size > 0) {
+    lexer->result_symbol = BLOCK_CLOSE;
+    pop_block(s);
+    return true;
   }
-  return count;
+  if (s->blocks_to_close > 0) {
+    lexer->result_symbol = BLOCK_CLOSE;
+    --s->blocks_to_close;
+    pop_block(s);
+    return true;
+  }
+  return false;
+}
+
+static bool handle_final_block_close(Scanner *s, TSLexer *lexer,
+                                     const bool *valid_symbols) {
+  if (s->blocks_to_close > 0) {
+    // We haven't closed all the blocks.
+    // This should happen by handling BLOCK_CLOSE tokens in `parse_block_close`.
+    // an assert may even be appropriate here as I think this signifies an
+    // implementation error, but try to be nice to users.
+    lexer->result_symbol = ERROR;
+    return true;
+  }
+  // This handles the final block close token, such as a `DIV_END`
+  // that triggered the block close cascade.
+  if (s->blocks_to_close == 0 && valid_symbols[s->block_close_final_token]) {
+    lexer->result_symbol = s->block_close_final_token;
+    s->block_close_final_token = IGNORED;
+    while (s->final_token_width--) {
+      lexer->advance(lexer, false);
+    }
+    return true;
+  }
+  return false;
 }
 
 static bool can_close_div(Scanner *s, TSLexer *lexer, uint8_t *colons,
@@ -137,12 +184,19 @@ static bool can_close_div(Scanner *s, TSLexer *lexer, uint8_t *colons,
   return true;
 }
 
-static bool should_close_paragraph(Scanner *s, TSLexer *lexer,
-                                   const bool *valid_symbols) {
+static bool should_close_paragraph(Scanner *s, TSLexer *lexer) {
   uint8_t colons;
   size_t from_top;
-  // FIXME maybe we can setup div end result here directly?
   return can_close_div(s, lexer, &colons, &from_top);
+}
+
+static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
+  if (should_close_paragraph(s, lexer)) {
+    lexer->result_symbol = CLOSE_PARAGRAPH;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
@@ -198,8 +252,8 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
         // We found a matching number of `, abort but -don't- consume them.
         // Leave that for VERBATIM_END.
         // Yes, this is inefficient, but we need to let VERBATIM_END capture the
-        // end token properly. Maybe there is a way to make this more efficient,
-        // but it's really not that expensive.
+        // end token properly. We could do use `final_token_width`
+        // but I haven't bothered and it's not that expensive to parse it again.
         break;
       } else {
         // Found a number of ` that doesn't match the start,
@@ -251,43 +305,17 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // printf("? VERBATIM_CONTENT %b\n", valid_symbols[VERBATIM_CONTENT]);
   // printf("current '%c'\n", lexer->lookahead);
 
-  if (valid_symbols[CLOSE_PARAGRAPH] &&
-      should_close_paragraph(s, lexer, valid_symbols)) {
-    lexer->result_symbol = CLOSE_PARAGRAPH;
+  // It's important to try to close blocks before other things.
+  if (valid_symbols[BLOCK_CLOSE] && parse_block_close(s, lexer)) {
+    return true;
+  }
+  if (handle_final_block_close(s, lexer, valid_symbols)) {
     return true;
   }
 
-  // If we reach oef with open blocks, we should close them all.
-  if (lexer->eof(lexer) && s->open_blocks.size > 0) {
-    // printf("BLOCK_CLOSE eof\n");
-    lexer->result_symbol = BLOCK_CLOSE;
-    pop_block(s);
+  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
-
-  if (valid_symbols[BLOCK_CLOSE] && s->blocks_to_close > 0) {
-    // printf("BLOCK_CLOSE extra\n");
-    lexer->result_symbol = BLOCK_CLOSE;
-    --s->blocks_to_close;
-    pop_block(s);
-    return true;
-  }
-  if (s->blocks_to_close > 0) {
-    // printf("REJECTED, MUST CLOSE BLOCKS\n");
-    // Must close them blocks!
-    return false;
-  }
-
-  if (s->blocks_to_close == 0 && valid_symbols[s->block_close_final_token]) {
-    lexer->result_symbol = s->block_close_final_token;
-    s->block_close_final_token = UNUSED;
-    while (s->final_token_width--) {
-      lexer->advance(lexer, false);
-    }
-    // printf("FINAL TOKEN\n");
-    return true;
-  }
-
   if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
     if (parse_div(s, lexer, valid_symbols)) {
       return true;
@@ -311,7 +339,7 @@ void init(Scanner *s) {
   s->final_token_width = 0;
   s->blocks_to_close = 0;
   s->verbatim_tick_count = 0;
-  s->block_close_final_token = UNUSED;
+  s->block_close_final_token = IGNORED;
 }
 
 void *tree_sitter_djot_external_scanner_create() {
