@@ -11,8 +11,8 @@ typedef enum {
   BLOCK_CLOSE,
   DIV_START,
   DIV_END,
-  CODEBLOCK_START,
-  CODEBLOCK_END,
+  CODE_BLOCK_START,
+  CODE_BLOCK_END,
   CLOSE_PARAGRAPH,
   VERBATIM_START,
   VERBATIM_END,
@@ -23,6 +23,7 @@ typedef enum {
 
 typedef enum {
   DIV,
+  CODE_BLOCK,
 } BlockType;
 
 typedef struct {
@@ -168,18 +169,17 @@ static bool handle_final_block_close(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static bool can_close_div(Scanner *s, TSLexer *lexer, uint8_t *colons,
-                          size_t *from_top) {
+static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
+                            size_t *from_top) {
   // Because we want to emit a BLOCK_CLOSE token before
-  // consuming the `:::` token, we mark the end before advancing
-  // to allow us to peek forward.
+  // consuming the tokens (such as `:::` for DIV), we mark the end before
+  // advancing to allow us to peek forward.
   lexer->mark_end(lexer);
-  *colons = consume_chars(s, lexer, ':');
 
+  *colons = consume_chars(s, lexer, ':');
   if (*colons < 3) {
     return false;
   }
-
   *from_top = number_of_blocks_from_top(s, DIV, *colons);
   return true;
 }
@@ -187,7 +187,7 @@ static bool can_close_div(Scanner *s, TSLexer *lexer, uint8_t *colons,
 static bool should_close_paragraph(Scanner *s, TSLexer *lexer) {
   uint8_t colons;
   size_t from_top;
-  return can_close_div(s, lexer, &colons, &from_top);
+  return scan_div_marker(s, lexer, &colons, &from_top);
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
@@ -199,7 +199,7 @@ static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
   }
 }
 
-static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+static bool parse_div(Scanner *s, TSLexer *lexer) {
   // The context could either be a start or an end token.
   // To figure out which we should do, we search through the entire
   // block stack to find if there's an open block somewhere
@@ -208,11 +208,13 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   // otherwise we start a new div.
   uint8_t colons;
   size_t from_top;
-  if (!can_close_div(s, lexer, &colons, &from_top)) {
+  if (!scan_div_marker(s, lexer, &colons, &from_top)) {
     return false;
   }
 
   if (from_top > 0) {
+    // The div we want to close is not the top, close the open blocks until this
+    // div.
     close_blocks(s, lexer, from_top, DIV_END, 3);
     return true;
   } else {
@@ -224,15 +226,55 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 }
 
-static bool parse_verbatim_start(Scanner *s, TSLexer *lexer) {
-  uint8_t ticks = consume_chars(s, lexer, '`');
-  if (ticks == 0) {
+static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+  if (ticks < 3) {
     return false;
   }
+
+  size_t from_top = number_of_blocks_from_top(s, CODE_BLOCK, ticks);
+
+  if (from_top == 0) {
+    lexer->mark_end(lexer);
+    push_block(s, ticks, CODE_BLOCK);
+    lexer->result_symbol = CODE_BLOCK_START;
+    return true;
+  } else if (from_top == 1) {
+    lexer->mark_end(lexer);
+    pop_block(s);
+    lexer->result_symbol = CODE_BLOCK_END;
+    return true;
+  } else {
+    // We can't nest code blocks, these should just be interpreted verbatim.
+    return false;
+  }
+}
+
+static bool parse_verbatim_start(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   lexer->mark_end(lexer);
   s->verbatim_tick_count = ticks;
   lexer->result_symbol = VERBATIM_START;
   return true;
+}
+
+static bool parse_verbatim_end(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+  if (s->verbatim_tick_count == 0) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  s->verbatim_tick_count = 0;
+  lexer->result_symbol = VERBATIM_END;
+  return true;
+}
+
+static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
+  if (s->verbatim_tick_count > 0) {
+    s->verbatim_tick_count = 0;
+    lexer->result_symbol = VERBATIM_END;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
@@ -272,21 +314,25 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
-static bool parse_verbatim_end(Scanner *s, TSLexer *lexer) {
-  if (s->verbatim_tick_count == 0) {
-    return false;
-  }
-  bool at_end = lexer->lookahead == '\n' || lexer->eof(lexer);
-
+static bool parse_backtick(Scanner *s, TSLexer *lexer,
+                           const bool *valid_symbols) {
   uint8_t ticks = consume_chars(s, lexer, '`');
-  if (!at_end && ticks != s->verbatim_tick_count) {
+  if (ticks == 0) {
     return false;
   }
 
-  lexer->mark_end(lexer);
-  s->verbatim_tick_count = 0;
-  lexer->result_symbol = VERBATIM_END;
-  return true;
+  if (valid_symbols[CODE_BLOCK_END] || valid_symbols[CODE_BLOCK_START]) {
+    if (parse_code_block(s, lexer, ticks)) {
+      return true;
+    }
+  }
+  if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer, ticks)) {
+    return true;
+  }
+  if (valid_symbols[VERBATIM_START] && parse_verbatim_start(s, lexer, ticks)) {
+    return true;
+  }
+  return false;
 }
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
@@ -302,8 +348,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // printf("? CLOSE_PARAGRAPH %b\n", valid_symbols[CLOSE_PARAGRAPH]);
   // printf("? VERBATIM_START %b\n", valid_symbols[VERBATIM_START]);
   // printf("? VERBATIM_END %b\n", valid_symbols[VERBATIM_END]);
-  // printf("? VERBATIM_CONTENT %b\n", valid_symbols[VERBATIM_CONTENT]);
-  // printf("current '%c'\n", lexer->lookahead);
+  // printf("? CODE_BLOCK_START %b\n", valid_symbols[CODE_BLOCK_START]);
+  // printf("? CODE_BLOCK_END %b\n", valid_symbols[CODE_BLOCK_END]);
 
   // It's important to try to close blocks before other things.
   if (valid_symbols[BLOCK_CLOSE] && parse_block_close(s, lexer)) {
@@ -312,23 +358,25 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (handle_final_block_close(s, lexer, valid_symbols)) {
     return true;
   }
+  // TODO If lexer-eof, close open blocks and close open verbatim
 
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
   if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
-    if (parse_div(s, lexer, valid_symbols)) {
+    if (parse_div(s, lexer)) {
       return true;
     }
   }
   if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
     return true;
   }
-  if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
+  if (lexer->lookahead == '`' && parse_backtick(s, lexer, valid_symbols)) {
     return true;
-  }
-  if (valid_symbols[VERBATIM_START] && parse_verbatim_start(s, lexer)) {
-    return true;
+  } else if (lexer->eof || lexer->lookahead == '\n') {
+    if (try_close_verbatim(s, lexer)) {
+      return true;
+    }
   }
 
   return false;

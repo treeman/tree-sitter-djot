@@ -9,25 +9,26 @@ module.exports = grammar({
   // - Paragraph
   // - Header
   // - Changing list style closes adjacent list of other type
-  // - Code block
+  // - Code block (from blockquote or list)
   // - Raw block
   // - Div
 
   // Container blocks that can close:
   // - Block quote
   // - Div
+  // - List
 
   extras: (_) => ["\r"],
 
-  conflicts: ($) => [
-    // NOTE I don't know how/when these take into effect?
-    // [$._inline],
-    // [$._inline_no_spaces],
-    // [$.emphasis, $._text],
-    // [$._inline_no_surrounding_spaces],
-    //   [$.paragraph, $.div],
-    //   [$._inline_with_newlines, $._close_paragraph],
-  ],
+  // conflicts: ($) => [
+  // NOTE I don't know how/when these take into effect?
+  // [$._inline],
+  // [$._inline_no_spaces],
+  // [$.emphasis, $._text],
+  // [$._inline_no_surrounding_spaces],
+  //   [$.paragraph, $.div],
+  //   [$._inline_with_newlines, $._close_paragraph],
+  // ],
 
   rules: {
     document: ($) => repeat($._block),
@@ -40,7 +41,7 @@ module.exports = grammar({
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
         $.div,
-        $.codeblock, // External, match start/end, can be closed
+        $.code_block,
         // $.raw_block, // External, match start/end, can be closed
         $.thematicbreak,
         $.blockquote, // External, can close other blocks end should capture marker + continuation
@@ -82,25 +83,31 @@ module.exports = grammar({
       seq($._div_start, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
 
-    codeblock: ($) =>
+    code_block: ($) =>
       seq(
-        alias($._codeblock_start, $.codeblock_marker_start),
+        alias($._code_block_start, $.code_block_marker_start),
         $._whitespace,
         optional($.language),
-        $._whitespace,
-        "\n",
+        /[ ]*\n/,
         $.code,
-        alias($._codeblock_end, $.codeblock_marker_end),
+        alias($._code_block_end, $.code_block_marker_end),
         "\n"
       ),
     language: (_) => /[^\n\t \{\}]+/,
-    code: ($) => prec.left(repeat1($.line)),
-    line: (_) => seq(repeat(/\S+/), "\n"),
+    code: ($) => prec.left(repeat1($._line)),
+    _line: (_) => seq(repeat(/[^\n]+/), "\n"),
+
+    // No clue how to get recursive highlighting, this is how some other project did it:
+    // (code_block
+    //   (language)
+    //   (code
+    //     (line)
+    //     (line))))
 
     thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
     // Very pretty!
-    _star_thematicbreak: ($) => /[ ]*\*[ ]*\*[ ]*\*[ \*]*\n/,
-    _minus_thematicbreak: ($) => /[ ]*-[ ]*-[ ]*-[ \-]*\n/,
+    _star_thematicbreak: (_) => /[ ]*\*[ ]*\*[ ]*\*[ \*]*\n/,
+    _minus_thematicbreak: (_) => /[ ]*-[ ]*-[ ]*-[ \-]*\n/,
 
     // It's fine to let inline gobble up leading `>` for lazy
     // quotes lines.
@@ -134,10 +141,10 @@ module.exports = grammar({
         "}"
       ),
     class: ($) => seq(".", alias($.class_name, "class")),
-    identifier: ($) => token(seq("#", token.immediate(/\w+/))),
+    identifier: (_) => token(seq("#", token.immediate(/\w+/))),
     key_value: ($) => seq($.key, "=", $.value),
-    key: ($) => /\w+/,
-    value: ($) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
+    key: (_) => /\w+/,
+    value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
 
     paragraph: ($) =>
       seq(
@@ -148,8 +155,8 @@ module.exports = grammar({
     _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
     _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
 
-    _whitespace: (_) => /[ \t]*/,
-    _whitespace1: (_) => /[ \t]+/,
+    _whitespace: (_) => token.immediate(/[ \t]*/),
+    _whitespace1: (_) => token.immediate(/[ \t]+/),
 
     _inline: ($) => repeat1(choice($._inline_no_spaces, " ")),
     _inline_no_spaces: ($) =>
@@ -193,18 +200,18 @@ module.exports = grammar({
     // need to somehow tell it to explore all possibilities?
     emphasis: ($) =>
       seq($._emphasis_start, $._inline_no_surrounding_spaces, $._emphasis_end),
-    _emphasis_start: ($) => token(choice(seq("{_", /[ ]*/), "_")),
-    _emphasis_end: ($) => token.immediate(choice(seq(/[ ]*/, "_}"), "_")),
+    _emphasis_start: (_) => token(choice(seq("{_", /[ ]*/), "_")),
+    _emphasis_end: (_) => token.immediate(choice(seq(/[ ]*/, "_}"), "_")),
 
     strong: ($) =>
       seq($._strong_start, $._inline_no_surrounding_spaces, $._strong_end),
-    _strong_start: ($) => token(choice(seq("{*", /[ ]*/), "*")),
-    _strong_end: ($) => token.immediate(choice(seq(/[ ]*/, "*}"), "*")),
+    _strong_start: (_) => token(choice(seq("{*", /[ ]*/), "*")),
+    _strong_end: (_) => token.immediate(choice(seq(/[ ]*/, "*}"), "*")),
 
     highlighted: ($) => prec.left(seq("{=", $._inline, "=}")),
     insert: ($) => prec.left(seq("{+", $._inline, "+}")),
     delete: ($) => prec.left(seq("{-", $._inline, "-}")),
-    symbol: (_) => token(seq(":", /\S+/, ":")),
+    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
 
     // The syntax description isn't clear about this.
     // Can the non-bracketed versions include spaces?
@@ -299,8 +306,8 @@ module.exports = grammar({
     $._block_close,
     $._div_start,
     $._div_end,
-    $._codeblock_start,
-    $._codeblock_end,
+    $._code_block_start,
+    $._code_block_end,
     $._close_paragraph,
 
     // Inline
