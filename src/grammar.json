@@ -301,7 +301,7 @@
     },
     "language": {
       "type": "PATTERN",
-      "value": "\\S+"
+      "value": "[^\\n\\t \\{\\}]+"
     },
     "code": {
       "type": "PREC_LEFT",
@@ -689,6 +689,14 @@
                 {
                   "type": "SYMBOL",
                   "name": "verbatim"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "math"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "raw_inline"
                 },
                 {
                   "type": "SYMBOL",
@@ -1488,6 +1496,93 @@
         {
           "type": "STRING",
           "value": "%"
+        }
+      ]
+    },
+    "raw_inline": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_start"
+          },
+          "named": true,
+          "value": "raw_inline_marker_start"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_verbatim_content"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_end"
+          },
+          "named": true,
+          "value": "raw_inline_marker_end"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "raw_inline_attribute"
+        }
+      ]
+    },
+    "raw_inline_attribute": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "STRING",
+            "value": "{="
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "language"
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "math": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "$"
+          },
+          "named": true,
+          "value": "math_marker"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_start"
+          },
+          "named": true,
+          "value": "math_marker_start"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_verbatim_content"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_end"
+          },
+          "named": true,
+          "value": "math_marker_end"
         }
       ]
     },

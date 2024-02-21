@@ -93,7 +93,7 @@ module.exports = grammar({
         alias($._codeblock_end, $.codeblock_marker_end),
         "\n"
       ),
-    language: (_) => /\S+/,
+    language: (_) => /[^\n\t \{\}]+/,
     code: ($) => prec.left(repeat1($.line)),
     line: (_) => seq(repeat(/\S+/), "\n"),
 
@@ -166,8 +166,8 @@ module.exports = grammar({
             $.delete,
             $._smart_punctuation,
             $.verbatim,
-            // $.math, // Uses verbatim
-            // $.raw_inline, // Uses verbatim
+            $.math,
+            $.raw_inline,
             $.footnote_reference,
             $.hard_line_break,
             $.symbol,
@@ -266,9 +266,24 @@ module.exports = grammar({
 
     span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
-    _comment_with_newline: ($) => seq("%", /[^%]+/, "%"),
-    _comment_no_newline: ($) => seq("%", /[^%\n]+/, "%"),
+    _comment_with_newline: (_) => seq("%", /[^%]+/, "%"),
+    _comment_no_newline: (_) => seq("%", /[^%\n]+/, "%"),
 
+    raw_inline: ($) =>
+      seq(
+        alias($._verbatim_start, $.raw_inline_marker_start),
+        $._verbatim_content,
+        alias($._verbatim_end, $.raw_inline_marker_end),
+        $.raw_inline_attribute
+      ),
+    raw_inline_attribute: ($) => seq(token.immediate("{="), $.language, "}"),
+    math: ($) =>
+      seq(
+        alias("$", $.math_marker),
+        alias($._verbatim_start, $.math_marker_start),
+        $._verbatim_content,
+        alias($._verbatim_end, $.math_marker_end)
+      ),
     verbatim: ($) =>
       seq(
         alias($._verbatim_start, $.verbatim_marker_start),

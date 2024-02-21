@@ -107,6 +107,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -298,6 +306,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -557,6 +573,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -717,6 +741,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -821,6 +853,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -931,6 +971,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -1035,6 +1083,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -1145,6 +1201,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -1249,6 +1313,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -1359,6 +1431,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -1463,6 +1543,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -1643,6 +1731,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -1692,11 +1788,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "language",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "line",
@@ -1786,6 +1877,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -1915,6 +2014,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -1936,6 +2043,29 @@
         },
         {
           "type": "verbatim",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "math",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "math_marker",
+          "named": true
+        },
+        {
+          "type": "math_marker_end",
+          "named": true
+        },
+        {
+          "type": "math_marker_start",
           "named": true
         }
       ]
@@ -2022,6 +2152,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -2043,6 +2181,44 @@
         },
         {
           "type": "verbatim",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "raw_inline",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "raw_inline_attribute",
+          "named": true
+        },
+        {
+          "type": "raw_inline_marker_end",
+          "named": true
+        },
+        {
+          "type": "raw_inline_marker_start",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "raw_inline_attribute",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "language",
           "named": true
         }
       ]
@@ -2131,6 +2307,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -2241,6 +2425,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -2348,6 +2540,14 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
           "type": "span",
           "named": true
         },
@@ -2452,6 +2652,14 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
           "named": true
         },
         {
@@ -2644,6 +2852,30 @@
   },
   {
     "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "language",
+    "named": true
+  },
+  {
+    "type": "math_marker",
+    "named": true
+  },
+  {
+    "type": "math_marker_end",
+    "named": true
+  },
+  {
+    "type": "math_marker_start",
+    "named": true
+  },
+  {
+    "type": "raw_inline_marker_end",
+    "named": true
+  },
+  {
+    "type": "raw_inline_marker_start",
     "named": true
   },
   {
