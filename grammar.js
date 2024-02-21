@@ -3,13 +3,7 @@ module.exports = grammar({
 
   // TODO need to escape special characters everywhere
   // maybe we can do this early and automatically skip them in our token logic?
-
-  // Can be directly followed:
-  // - Thematic break or fenced block can be followed by paragraph
-  // But maybe we already have this?
-
-  // Paragraph can never be interrupted by the start of another block level element
-  // Paragraph end: blankline, eof, end of containing block
+  // But we shouldn't mark things inside verbatim or code blocks
 
   // Containing block should automatically close:
   // - Paragraph
@@ -23,26 +17,17 @@ module.exports = grammar({
   // - Block quote
   // - Div
 
-  // Link def url can be split into multiple lines
-
-  // Strategy with external scanner:
-  // Identify start and end of all blocks.
-  //
-  // Keep a stack of block level elements to close inside
-  // (meaning we need to track all blocks).
-  //
-  // When something is closed, we should issue a "$._close_block" token
-  // that we always match to close all blocks.
-  //
-  // Need to track paragraphs as well, and paragraphs should close
-  // either via $._close_block or blankline or eof.
-
   extras: (_) => ["\r"],
 
-  // conflicts: ($) => [
-  //   [$.paragraph, $.div],
-  //   [$._inline_with_newlines, $._close_paragraph],
-  // ],
+  conflicts: ($) => [
+    // NOTE I don't know how/when these take into effect?
+    // [$._inline],
+    // [$._inline_no_spaces],
+    // [$.emphasis, $._text],
+    // [$._inline_no_surrounding_spaces],
+    //   [$.paragraph, $.div],
+    //   [$._inline_with_newlines, $._close_paragraph],
+  ],
 
   rules: {
     document: ($) => repeat($._block),
@@ -54,13 +39,13 @@ module.exports = grammar({
         // $.list, // Needs external scanner to match indentation!
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
-        $.div, // External, can close others and be closed
+        $.div,
         // $.codeblock, // External, match start/end, can be closed
         // $.raw_block, // External, match start/end, can be closed
-        // $.thematicbreak,
-        $.blockquote, // External, can close other blocks
+        $.thematicbreak,
+        $.blockquote, // External, can close other blocks end should capture marker + continuation
         $.link_reference_definition,
-        // $.block_attribute,
+        $.block_attribute,
         $.paragraph,
         "\n"
       ),
@@ -74,6 +59,7 @@ module.exports = grammar({
         $.heading5,
         $.heading6
       ),
+    // TODO mark '#' with marker
     heading1: ($) => seq("#", $._gobble_header),
     heading2: ($) => seq(/#{2}/, $._gobble_header),
     heading3: ($) => seq(/#{3}/, $._gobble_header),
@@ -87,17 +73,23 @@ module.exports = grammar({
     div: ($) =>
       seq(
         $.div_marker_start,
-        optional($.class_name),
         "\n",
         repeat($._block),
         $._block_close,
         optional(alias($._div_end, $.div_marker_end))
+      ),
     div_marker_start: ($) =>
-      seq($._div_start, optional(seq(/[ ]+/, $.class_name))),
+      seq($._div_start, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
+
+    thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
+    // Very pretty!
+    _star_thematicbreak: ($) => /[ ]*\*[ ]*\*[ ]*\*[ \*]*\n/,
+    _minus_thematicbreak: ($) => /[ ]*-[ ]*-[ ]*-[ \-]*\n/,
 
     // It's fine to let inline gobble up leading `>` for lazy
     // quotes lines.
+    // ... But is it really?? Shouldn't we mark them as something as well?
     blockquote: ($) => seq(">", $._inline_with_newlines, $._eof_or_blankline),
 
     link_reference_definition: ($) =>
@@ -112,6 +104,26 @@ module.exports = grammar({
       token(seq("[", token.immediate(/\w+/), token.immediate("]"))),
     link_destination: (_) => /\S+/,
 
+    block_attribute: ($) =>
+      seq(
+        "{",
+        repeat(
+          choice(
+            $.class,
+            $.identifier,
+            $.key_value,
+            alias($._comment_no_newline, $.comment),
+            $._whitespace1
+          )
+        ),
+        "}"
+      ),
+    class: ($) => seq(".", alias($.class_name, "class")),
+    identifier: ($) => token(seq("#", token.immediate(/\w+/))),
+    key_value: ($) => seq($.key, "=", $.value),
+    key: ($) => /\w+/,
+    value: ($) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
+
     paragraph: ($) =>
       seq(
         $._inline_with_newlines,
@@ -121,56 +133,147 @@ module.exports = grammar({
     _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
     _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
 
-    _inline: ($) =>
-      repeat1(
-        choice(
-          // $.image,
-          // $.autolink,
-          // $.verbatim, // Should match ` count
-          // $.emphasis,
-          // $.strong,
-          // $.highlighted,
-          // $.superscript,
-          // $.subscript,
-          // $.insert,
-          // $.delete,
-          // // Smart punctuation
-          // $.math,
-          // $.footnote_reference,
-          // $.line_break,
-          // $.comment,
-          // $.symbol,
-          // $.raw_inline,
-          // $.span,
-          // // $.inline_attribute,
-          $._link,
-          $._text,
-          // alias($._text, $.txt)
-          " "
-        )
+    _whitespace: (_) => /[ \t]*/,
+    _whitespace1: (_) => /[ \t]+/,
+
+    _inline: ($) => repeat1(choice($._inline_no_spaces, " ")),
+    _inline_no_spaces: ($) =>
+      choice(
+        seq(
+          choice(
+            $.autolink,
+            $.emphasis,
+            $.strong,
+            $.highlighted,
+            $.superscript,
+            $.subscript,
+            $.insert,
+            $.delete,
+            $._smart_punctuation,
+            $.verbatim,
+            // $.math, // Uses verbatim
+            // $.raw_inline, // Uses verbatim
+            $.footnote_reference,
+            $.hard_line_break,
+            $.symbol,
+            $.span,
+            $._image,
+            $._link,
+            $._text
+          ),
+          optional($.inline_attribute)
+        ),
+        $.span
+      ),
+    _inline_no_surrounding_spaces: ($) =>
+      choice(
+        repeat1(prec.left($._inline_no_spaces)),
+        seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
       ),
     _inline_with_newlines: ($) => repeat1(prec.left(choice($._inline, /\s/))),
 
+    autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
+
+    // FIXME errors out if there's spaces instead of parsing other inline options
+    // need to somehow tell it to explore all possibilities?
+    emphasis: ($) =>
+      seq($._emphasis_start, $._inline_no_surrounding_spaces, $._emphasis_end),
+    _emphasis_start: ($) => token(choice(seq("{_", /[ ]*/), "_")),
+    _emphasis_end: ($) => token.immediate(choice(seq(/[ ]*/, "_}"), "_")),
+
+    strong: ($) =>
+      seq($._strong_start, $._inline_no_surrounding_spaces, $._strong_end),
+    _strong_start: ($) => token(choice(seq("{*", /[ ]*/), "*")),
+    _strong_end: ($) => token.immediate(choice(seq(/[ ]*/, "*}"), "*")),
+
+    highlighted: ($) => prec.left(seq("{=", $._inline, "=}")),
+    insert: ($) => prec.left(seq("{+", $._inline, "+}")),
+    delete: ($) => prec.left(seq("{-", $._inline, "-}")),
+    symbol: (_) => token(seq(":", /\S+/, ":")),
+
+    // The syntax description isn't clear about this.
+    // Can the non-bracketed versions include spaces?
+    superscript: ($) =>
+      prec.left(seq(choice("{^", "^"), $._inline, choice("^}", "^"))),
+    subscript: ($) =>
+      prec.left(seq(choice("{~", "~"), $._inline, choice("~}", "~"))),
+
+    _smart_punctuation: ($) =>
+      choice($.escaped_quote, $.ellipsis, $.em_dash, $.en_dash),
+    escaped_quote: (_) => token(choice('{"', '}"', "{'", "}'", '\\"', "\\'")),
+    ellipsis: (_) => "...",
+    em_dash: (_) => "---",
+    en_dash: (_) => "--",
+
+    footnote_reference: ($) => seq("[^", $.reference_label, "]"),
+    reference_label: (_) => /\w+/,
+
+    hard_line_break: (_) => "\\\n",
+
+    _image: ($) =>
+      choice(
+        $.full_reference_image,
+        $.collapsed_reference_image,
+        $.inline_image
+      ),
+    full_reference_image: ($) => seq($.image_description, $.link_label),
+    collapsed_reference_image: ($) =>
+      seq($.image_description, token.immediate("[]")),
+    inline_image: ($) => seq($.image_description, $.inline_link_destination),
+
+    image_description: ($) => seq("![", $._inline, "]"),
+
     _link: ($) =>
       choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
-
     full_reference_link: ($) => seq($.link_text, $.link_label),
     collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
     inline_link: ($) => seq($.link_text, $.inline_link_destination),
 
-    link_text: ($) => seq("[", $._inline, "]"),
+    link_text: ($) => seq(`[`, $._inline, "]"),
 
     link_label: ($) => seq("[", $._inline, token.immediate("]")),
     inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
+
+    inline_attribute: ($) =>
+      seq(
+        token.immediate("{"),
+        repeat(
+          choice(
+            $.class,
+            $.identifier,
+            $.key_value,
+            alias($._comment_with_newline, $.comment),
+            /\s+/
+          )
+        ),
+        "}"
+      ),
+
+    span: ($) => seq("[", $._inline, "]", $.inline_attribute),
+
+    _comment_with_newline: ($) => seq("%", /[^%]+/, "%"),
+    _comment_no_newline: ($) => seq("%", /[^%\n]+/, "%"),
+
+    verbatim: ($) =>
+      seq(
+        alias($._verbatim_start, $.verbatim_marker_start),
+        /[ \w]+/,
+        alias($._verbatim_end, $.verbatim_marker_end)
+      ),
 
     _text: (_) => /\S/,
   },
 
   externals: ($) => [
+    // Blocks
     $._block_close,
     $._div_start,
     $._div_end,
     $._close_paragraph,
+
+    // Inline
+    $._verbatim_start,
+    $._verbatim_end,
 
     // Never valid and is used to kill parse branches.
     $._error,

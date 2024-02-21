@@ -12,6 +12,8 @@ typedef enum {
   DIV_START,
   DIV_END,
   CLOSE_PARAGRAPH,
+  VERBATIM_START,
+  VERBATIM_END,
   ERROR,
   UNUSED
 } TokenType;
@@ -49,7 +51,6 @@ static void push_block(Scanner *s, uint8_t level, BlockType type) {
 
 static void pop_block(Scanner *s) {
   if (s->open_blocks.size > 0) {
-    // printf("POP\n");
     free(s->open_blocks.items[--s->open_blocks.size]);
   }
 }
@@ -167,6 +168,15 @@ static bool parse_div(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 }
 
+static bool parse_verbatim_start(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+  return false;
+}
+static bool parse_verbatim_end(Scanner *s, TSLexer *lexer,
+                               const bool *valid_symbols) {
+  return false;
+}
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -178,6 +188,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // printf("? DIV_START %b\n", valid_symbols[DIV_START]);
   // printf("? DIV_END %b\n", valid_symbols[DIV_END]);
   // printf("? CLOSE_PARAGRAPH %b\n", valid_symbols[CLOSE_PARAGRAPH]);
+  // printf("? EMPHASIS_START %b\n", valid_symbols[EMPHASIS_START]);
+  // printf("? EMPHASIS_END %b\n", valid_symbols[EMPHASIS_END]);
   // printf("current '%c'\n", lexer->lookahead);
 
   if (valid_symbols[CLOSE_PARAGRAPH] &&
@@ -219,6 +231,14 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
     return parse_div(s, lexer, valid_symbols);
+  }
+  if (valid_symbols[VERBATIM_END] &&
+      parse_verbatim_end(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (valid_symbols[VERBATIM_START] &&
+      parse_verbatim_start(s, lexer, valid_symbols)) {
+    return true;
   }
 
   return false;
