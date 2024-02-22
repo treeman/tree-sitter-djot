@@ -37,12 +37,13 @@ module.exports = grammar({
     _block: ($) =>
       choice(
         $._heading,
-        // $.list, // Needs external scanner to match indentation!
+        // $.list,
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
         $.div,
         $.raw_block,
         $.code_block,
+        // FIXME maybe need to make this external, to not clash with lists?
         $.thematicbreak,
         $.blockquote, // External, can close other blocks end should capture marker + continuation
         $.link_reference_definition,
@@ -70,6 +71,42 @@ module.exports = grammar({
     // NOTE because we don't tag the `#` character individually,
     // there's no need to match the beginning `#` of each consecutive line.
     _gobble_header: ($) => seq($._inline_with_newlines, $._eof_or_blankline),
+
+    list: ($) =>
+      // Djot has a crazy number of different list types,
+      // that we need to keep separate from each other.
+      prec.left(
+        choice(
+          $._list_dash
+          // $._list_plus,
+          // $._list_star,
+          // $._list_decimal_period,
+          // $._list_decimal_paren,
+          // $._list_decimal_parens,
+          // $._list_lower_alpha_period,
+          // $._list_lower_alpha_paren,
+          // $._list_lower_alpha_parens,
+          // $._list_upper_alpha_period,
+          // $._list_upper_alpha_paren,
+          // $._list_upper_alpha_parens,
+          // $._list_lower_roman_period,
+          // $._list_lower_roman_paren,
+          // $._list_lower_roman_parens,
+          // $._list_upper_roman_period,
+          // $._list_upper_roman_paren,
+          // $._list_upper_roman_parens,
+          // $._list_definition,
+          // $._list_task
+        )
+      ),
+    _list_dash: ($) => repeat1(alias($._list_item_dash, $.list_item)),
+    _list_item_dash: ($) => seq($.list_marker_dash, $._list_item_content),
+
+    _list_item_content: ($) =>
+      seq(
+        repeat1($._block),
+        choice($._eof_or_blankline, $._block_close, $._list_item_end)
+      ),
 
     div: ($) =>
       seq(
@@ -320,6 +357,8 @@ module.exports = grammar({
     $._div_end,
     $._code_block_start,
     $._code_block_end,
+    $.list_marker_dash,
+    $._list_item_end,
     $._close_paragraph,
 
     // Inline

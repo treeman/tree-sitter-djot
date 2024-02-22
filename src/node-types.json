@@ -2042,6 +2042,77 @@
     }
   },
   {
+    "type": "list_item",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_attribute",
+          "named": true
+        },
+        {
+          "type": "blockquote",
+          "named": true
+        },
+        {
+          "type": "code_block",
+          "named": true
+        },
+        {
+          "type": "div",
+          "named": true
+        },
+        {
+          "type": "heading1",
+          "named": true
+        },
+        {
+          "type": "heading2",
+          "named": true
+        },
+        {
+          "type": "heading3",
+          "named": true
+        },
+        {
+          "type": "heading4",
+          "named": true
+        },
+        {
+          "type": "heading5",
+          "named": true
+        },
+        {
+          "type": "heading6",
+          "named": true
+        },
+        {
+          "type": "link_reference_definition",
+          "named": true
+        },
+        {
+          "type": "list_marker_dash",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "thematicbreak",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "math",
     "named": true,
     "fields": {},
@@ -2903,6 +2974,10 @@
   },
   {
     "type": "link_destination",
+    "named": true
+  },
+  {
+    "type": "list_marker_dash",
     "named": true
   },
   {

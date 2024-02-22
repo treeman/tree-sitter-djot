@@ -13,6 +13,8 @@ typedef enum {
   DIV_END,
   CODE_BLOCK_START,
   CODE_BLOCK_END,
+  LIST_MARKER_DASH,
+  LIST_ITEM_END,
   CLOSE_PARAGRAPH,
   VERBATIM_START,
   VERBATIM_END,
@@ -41,9 +43,11 @@ typedef struct {
 
   // How many $._close_block we should output right now?
   uint8_t blocks_to_close;
-  // After we have closed all blocks, what symbol should we output?
-  TokenType block_close_final_token;
-  uint8_t final_token_width;
+
+  // Delayed output of a token, used to first output closing token(s)
+  // before this token.
+  TokenType delayed_token;
+  uint8_t delayed_token_width;
 
   // The number of ` we are currently matching, or 0 when not inside.
   uint8_t verbatim_tick_count;
@@ -58,8 +62,10 @@ static void dump(Scanner *s, TSLexer *lexer) {
   }
   printf("---\n");
   printf("  blocks_to_close: %d\n", s->blocks_to_close);
-  printf("  final_token_width: %d\n", s->final_token_width);
-  printf("  block_close_final_token: %u\n", s->block_close_final_token);
+  if (s->delayed_token != IGNORED) {
+    printf("  delayed_token: %u\n", s->delayed_token);
+    printf("  delayed_token_width: %d\n", s->delayed_token_width);
+  }
   printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
   printf("===\n");
 }
@@ -93,6 +99,11 @@ static Block *peek_block(Scanner *s) {
   return s->open_blocks.items[s->open_blocks.size - 1];
 }
 
+void set_delayed_token(Scanner *s, TokenType token, uint8_t token_width) {
+  s->delayed_token = token;
+  s->delayed_token_width = token_width;
+}
+
 // How many blocks from the top of the stack can we find a matching block?
 // If it's directly on the top, returns 1.
 // If it cannot be found, returns 0.
@@ -119,13 +130,12 @@ static void remove_blocks(Scanner *s, size_t count) {
 // the other are emitted in `parse_block_close`.
 //
 // The final block type (such as a `DIV_END` token)
-// is emitted from `handle_final_block_close` when all BLOCK_CLOSE
+// is emitted from `output_delayed_token` when all BLOCK_CLOSE
 // tokens are handled.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count,
                          TokenType final, uint8_t final_token_width) {
-  s->block_close_final_token = final;
+  set_delayed_token(s, final, final_token_width);
   s->blocks_to_close = count - 1;
-  s->final_token_width = final_token_width;
   lexer->result_symbol = BLOCK_CLOSE;
   pop_block(s);
 }
@@ -146,8 +156,8 @@ static bool parse_block_close(Scanner *s, TSLexer *lexer) {
   return false;
 }
 
-static bool handle_final_block_close(Scanner *s, TSLexer *lexer,
-                                     const bool *valid_symbols) {
+static bool check_open_blocks(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
   if (s->blocks_to_close > 0) {
     // We haven't closed all the blocks.
     // This should happen by handling BLOCK_CLOSE tokens in `parse_block_close`.
@@ -156,17 +166,21 @@ static bool handle_final_block_close(Scanner *s, TSLexer *lexer,
     lexer->result_symbol = ERROR;
     return true;
   }
-  // This handles the final block close token, such as a `DIV_END`
-  // that triggered the block close cascade.
-  if (s->blocks_to_close == 0 && valid_symbols[s->block_close_final_token]) {
-    lexer->result_symbol = s->block_close_final_token;
-    s->block_close_final_token = IGNORED;
-    while (s->final_token_width--) {
+  return false;
+}
+
+static bool output_delayed_token(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+  if (s->delayed_token != IGNORED) {
+    lexer->result_symbol = s->delayed_token;
+    s->delayed_token = IGNORED;
+    while (s->delayed_token_width--) {
       lexer->advance(lexer, false);
     }
     return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
@@ -339,6 +353,18 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
   return false;
 }
 
+static bool parse_list_marker(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (lexer->lookahead == '-') {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = LIST_MARKER_DASH;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -359,10 +385,13 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (valid_symbols[BLOCK_CLOSE] && parse_block_close(s, lexer)) {
     return true;
   }
-  if (handle_final_block_close(s, lexer, valid_symbols)) {
+  if (check_open_blocks(s, lexer, valid_symbols)) {
     return true;
   }
-  // TODO If lexer-eof, close open blocks and close open verbatim
+
+  if (output_delayed_token(s, lexer, valid_symbols)) {
+    return true;
+  }
 
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
@@ -382,16 +411,20 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
   }
+  if (valid_symbols[LIST_MARKER_DASH] &&
+      parse_list_marker(s, lexer, valid_symbols)) {
+    return true;
+  }
 
   return false;
 }
 
 void init(Scanner *s) {
   s->open_blocks.size = 0;
-  s->final_token_width = 0;
   s->blocks_to_close = 0;
+  s->delayed_token = IGNORED;
+  s->delayed_token_width = 0;
   s->verbatim_tick_count = 0;
-  s->block_close_final_token = IGNORED;
 }
 
 void *tree_sitter_djot_external_scanner_create() {
@@ -413,8 +446,8 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   Scanner *s = (Scanner *)payload;
   unsigned size = 0;
   buffer[size++] = (char)s->blocks_to_close;
-  buffer[size++] = (char)s->block_close_final_token;
-  buffer[size++] = (char)s->final_token_width;
+  buffer[size++] = (char)s->delayed_token;
+  buffer[size++] = (char)s->delayed_token_width;
   buffer[size++] = (char)s->verbatim_tick_count;
   size_t blocks = s->open_blocks.size;
   if (blocks > 0) {
@@ -433,8 +466,8 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
   if (length > 0) {
     size_t size = 0;
     s->blocks_to_close = (uint8_t)buffer[size++];
-    s->block_close_final_token = (TokenType)buffer[size++];
-    s->final_token_width = (uint8_t)buffer[size++];
+    s->delayed_token = (TokenType)buffer[size++];
+    s->delayed_token_width = (uint8_t)buffer[size++];
     s->verbatim_tick_count = (uint8_t)buffer[size++];
 
     size_t blocks_size = length - size;
