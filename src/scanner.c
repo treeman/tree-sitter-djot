@@ -104,6 +104,22 @@ void set_delayed_token(Scanner *s, TokenType token, uint8_t token_width) {
   s->delayed_token_width = token_width;
 }
 
+static bool output_delayed_token(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+  if (s->delayed_token != IGNORED) {
+    printf("OUTPUTTING delayed_token: %d, %d\n", s->delayed_token,
+           s->delayed_token_width);
+    lexer->result_symbol = s->delayed_token;
+    s->delayed_token = IGNORED;
+    while (s->delayed_token_width--) {
+      lexer->advance(lexer, false);
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // How many blocks from the top of the stack can we find a matching block?
 // If it's directly on the top, returns 1.
 // If it cannot be found, returns 0.
@@ -167,20 +183,6 @@ static bool check_open_blocks(Scanner *s, TSLexer *lexer,
     return true;
   }
   return false;
-}
-
-static bool output_delayed_token(Scanner *s, TSLexer *lexer,
-                                 const bool *valid_symbols) {
-  if (s->delayed_token != IGNORED) {
-    lexer->result_symbol = s->delayed_token;
-    s->delayed_token = IGNORED;
-    while (s->delayed_token_width--) {
-      lexer->advance(lexer, false);
-    }
-    return true;
-  } else {
-    return false;
-  }
 }
 
 static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
@@ -309,11 +311,11 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(s, lexer, '`');
       if (current == s->verbatim_tick_count) {
-        // We found a matching number of `, abort but -don't- consume them.
-        // Leave that for VERBATIM_END.
-        // Yes, this is inefficient, but we need to let VERBATIM_END capture the
-        // end token properly. We could do use `final_token_width`
-        // but I haven't bothered and it's not that expensive to parse it again.
+        // We found a matching number of `
+        // We need to return VERBATIM_CONTENT then VERBATIM_END in the next
+        // scan.
+        s->verbatim_tick_count = 0;
+        set_delayed_token(s, VERBATIM_END, current);
         break;
       } else {
         // Found a number of ` that doesn't match the start,
@@ -370,8 +372,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   Scanner *s = (Scanner *)payload;
 
-  // printf("SCAN\n");
-  // dump(s, lexer);
+  printf("SCAN\n");
+  dump(s, lexer);
   // printf("? BLOCK_CLOSE %b\n", valid_symbols[BLOCK_CLOSE]);
   // printf("? DIV_START %b\n", valid_symbols[DIV_START]);
   // printf("? DIV_END %b\n", valid_symbols[DIV_END]);
