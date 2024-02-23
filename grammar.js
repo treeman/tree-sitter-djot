@@ -37,7 +37,7 @@ module.exports = grammar({
     _block: ($) =>
       choice(
         $._heading,
-        // $.list,
+        $.list,
         // $.pipe_table, // External. Has a caption too that needs to match indent
         // $.footnote, // External, needs to consider indentation level
         $.div,
@@ -99,14 +99,17 @@ module.exports = grammar({
           // $._list_task
         )
       ),
-    _list_dash: ($) => repeat1(alias($._list_item_dash, $.list_item)),
+    _list_dash: ($) =>
+      seq(
+        repeat1(alias($._list_item_dash, $.list_item)),
+        // alias($._block_close, $.list_block_close)
+        $._block_close
+      ),
     _list_item_dash: ($) => seq($.list_marker_dash, $._list_item_content),
 
     _list_item_content: ($) =>
-      seq(
-        repeat1($._block),
-        choice($._eof_or_blankline, $._block_close, $._list_item_end)
-      ),
+      // seq(repeat1($._block), alias($._list_item_end, $.list_item_end)),
+      seq(repeat1($._block), $._list_item_end),
 
     div: ($) =>
       seq(
@@ -127,8 +130,8 @@ module.exports = grammar({
         $.raw_block_info,
         /[ ]*\n/,
         alias($.code, $.content),
-        alias($._code_block_end, $.raw_block_marker_end),
-        "\n"
+        $._block_close,
+        optional(alias($._code_block_end, $.raw_block_marker_end))
       ),
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
@@ -139,19 +142,12 @@ module.exports = grammar({
         optional($.language),
         /[ ]*\n/,
         $.code,
-        alias($._code_block_end, $.code_block_marker_end),
-        "\n"
+        $._block_close,
+        optional(alias($._code_block_end, $.code_block_marker_end))
       ),
     language: (_) => /[^\n\t \{\}=]+/,
     code: ($) => prec.left(repeat1($._line)),
-    _line: (_) => seq(repeat(/[^\n]+/), "\n"),
-
-    // No clue how to get recursive highlighting, this is how some other project did it:
-    // (code_block
-    //   (language)
-    //   (code
-    //     (line)
-    //     (line))))
+    _line: (_) => /[^\n]*\n/,
 
     thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
     // Very pretty!
@@ -197,11 +193,12 @@ module.exports = grammar({
 
     paragraph: ($) =>
       seq(
-        $._inline_with_newlines,
+        // repeat1(seq(optional($._block_indent), $._inline, choice("\n", "\0"))),
+        repeat1(seq($._inline, choice("\n", "\0"))),
         choice($._eof_or_blankline, $._close_paragraph)
       ),
 
-    _eof_or_blankline: (_) => choice("\0", "\n\n", "\n\0"),
+    // _eof_or_blankline: (_) => choice("\0", "\n"),
     _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
 
     _whitespace: (_) => token.immediate(/[ \t]*/),
@@ -351,8 +348,12 @@ module.exports = grammar({
   },
 
   externals: ($) => [
-    // Blocks
+    // Block management
+    $._block_indent,
     $._block_close,
+    $._eof_or_blankline,
+
+    // Blocks
     $._div_start,
     $._div_end,
     $._code_block_start,

@@ -17,6 +17,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "list"
+        },
+        {
+          "type": "SYMBOL",
           "name": "div"
         },
         {
@@ -187,16 +191,25 @@
       }
     },
     "_list_dash": {
-      "type": "REPEAT1",
-      "content": {
-        "type": "ALIAS",
-        "content": {
-          "type": "SYMBOL",
-          "name": "_list_item_dash"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_dash"
+            },
+            "named": true,
+            "value": "list_item"
+          }
         },
-        "named": true,
-        "value": "list_item"
-      }
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
     },
     "_list_item_dash": {
       "type": "SEQ",
@@ -222,21 +235,8 @@
           }
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_eof_or_blankline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_block_close"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_list_item_end"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_list_item_end"
         }
       ]
     },
@@ -418,17 +418,25 @@
           "name": "code"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_code_block_end"
-          },
-          "named": true,
-          "value": "code_block_marker_end"
+          "type": "SYMBOL",
+          "name": "_block_close"
         },
         {
-          "type": "STRING",
-          "value": "\n"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_code_block_end"
+              },
+              "named": true,
+              "value": "code_block_marker_end"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -448,20 +456,8 @@
       }
     },
     "_line": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "PATTERN",
-            "value": "[^\\n]+"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "\n"
-        }
-      ]
+      "type": "PATTERN",
+      "value": "[^\\n]*\\n"
     },
     "thematicbreak": {
       "type": "CHOICE",
@@ -698,8 +694,29 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_inline_with_newlines"
+          "type": "REPEAT1",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_inline"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "\n"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "\u0000"
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "type": "CHOICE",
@@ -713,23 +730,6 @@
               "name": "_close_paragraph"
             }
           ]
-        }
-      ]
-    },
-    "_eof_or_blankline": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "\u0000"
-        },
-        {
-          "type": "STRING",
-          "value": "\n\n"
-        },
-        {
-          "type": "STRING",
-          "value": "\n\u0000"
         }
       ]
     },
@@ -1768,7 +1768,15 @@
   "externals": [
     {
       "type": "SYMBOL",
+      "name": "_block_indent"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_block_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_eof_or_blankline"
     },
     {
       "type": "SYMBOL",
