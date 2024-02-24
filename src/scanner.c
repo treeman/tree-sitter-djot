@@ -222,6 +222,7 @@ static bool output_delayed_token(Scanner *s, TSLexer *lexer,
     while (s->delayed_token_width--) {
       lexer->advance(lexer, false);
     }
+    lexer->mark_end(lexer);
     return true;
   } else {
     return false;
