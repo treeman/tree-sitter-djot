@@ -20,15 +20,17 @@ module.exports = grammar({
 
   extras: (_) => ["\r"],
 
-  // conflicts: ($) => [
-  // NOTE I don't know how/when these take into effect?
-  // [$._inline],
-  // [$._inline_no_spaces],
-  // [$.emphasis, $._text],
-  // [$._inline_no_surrounding_spaces],
-  //   [$.paragraph, $.div],
-  //   [$._inline_with_newlines, $._close_paragraph],
-  // ],
+  conflicts: ($) => [
+    // NOTE I don't know how/when these take into effect?
+    // [$._inline],
+    // [$._inline_no_spaces],
+    // [$.emphasis, $._text],
+    // [$._inline_no_surrounding_spaces],
+    //   [$.paragraph, $.div],
+    //   [$._inline_with_newlines, $._close_paragraph],
+    // [$._list_item_definition],
+    // [$._list_definition],
+  ],
 
   rules: {
     document: ($) => repeat($._block),
@@ -78,7 +80,7 @@ module.exports = grammar({
         choice(
           $._list_dash,
           $._list_plus,
-          $._list_star
+          $._list_star,
           // $._list_decimal_period,
           // $._list_decimal_paren,
           // $._list_decimal_parens,
@@ -94,19 +96,31 @@ module.exports = grammar({
           // $._list_upper_roman_period,
           // $._list_upper_roman_paren,
           // $._list_upper_roman_parens,
-          // $._list_definition,
+          $._list_definition
           // $._list_task
         )
       ),
     _list_dash: ($) =>
       seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
     _list_item_dash: ($) => seq($.list_marker_dash, $._list_item_content),
+
     _list_plus: ($) =>
       seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
     _list_item_plus: ($) => seq($.list_marker_plus, $._list_item_content),
+
     _list_star: ($) =>
       seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
     _list_item_star: ($) => seq($.list_marker_star, $._list_item_content),
+
+    _list_definition: ($) =>
+      seq(repeat1(alias($._list_item_definition, $.list_item)), $._block_close),
+    _list_item_definition: ($) =>
+      seq(
+        $.list_marker_definition,
+        alias($.paragraph, $.term),
+        alias(optional(repeat($._block)), $.definition),
+        $._list_item_end
+      ),
 
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
@@ -190,12 +204,10 @@ module.exports = grammar({
 
     paragraph: ($) =>
       seq(
-        // repeat1(seq(optional($._block_indent), $._inline, choice("\n", "\0"))),
         repeat1(seq($._inline, choice("\n", "\0"))),
         choice($._eof_or_blankline, $._close_paragraph)
       ),
 
-    // _eof_or_blankline: (_) => choice("\0", "\n"),
     _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
 
     _whitespace: (_) => token.immediate(/[ \t]*/),
@@ -346,7 +358,6 @@ module.exports = grammar({
 
   externals: ($) => [
     // Block management
-    $._block_indent,
     $._block_close,
     $._eof_or_blankline,
 
@@ -358,6 +369,7 @@ module.exports = grammar({
     $.list_marker_dash,
     $.list_marker_star,
     $.list_marker_plus,
+    $.list_marker_definition,
     $._list_item_end,
     $._close_paragraph,
     $._thematic_break_dash,

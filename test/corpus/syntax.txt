@@ -1537,3 +1537,48 @@ List: mixed bullets create new lists
     (list_item
       (list_marker_star)
       (paragraph))))
+
+===============================================================================
+List: close sublist
+===============================================================================
++ one
+
+  + sub
+
+  inner
+
+outer
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_plus)
+      (paragraph)
+      (list
+        (list_item
+          (list_marker_plus)
+          (paragraph)))
+    (paragraph)))
+  (paragraph))
+
+===============================================================================
+List: definition
+===============================================================================
+: term
+
+  Def
+
+  More def
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_definition)
+      (term)
+      (definition
+        (paragraph)
+        (paragraph)))))

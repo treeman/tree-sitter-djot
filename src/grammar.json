@@ -194,6 +194,10 @@
           {
             "type": "SYMBOL",
             "name": "_list_star"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_definition"
           }
         ]
       }
@@ -297,6 +301,69 @@
         {
           "type": "SYMBOL",
           "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_definition": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_definition"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_definition": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_definition"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "paragraph"
+          },
+          "named": true,
+          "value": "term"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_block"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          "named": true,
+          "value": "definition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_end"
         }
       ]
     },
@@ -1844,10 +1911,6 @@
   "externals": [
     {
       "type": "SYMBOL",
-      "name": "_block_indent"
-    },
-    {
-      "type": "SYMBOL",
       "name": "_block_close"
     },
     {
@@ -1881,6 +1944,10 @@
     {
       "type": "SYMBOL",
       "name": "list_marker_plus"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_definition"
     },
     {
       "type": "SYMBOL",

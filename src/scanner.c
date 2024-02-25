@@ -9,7 +9,6 @@
 // #define DEBUG
 
 typedef enum {
-  BLOCK_INDENT,
   BLOCK_CLOSE,
   EOF_OR_BLANKLINE,
 
@@ -20,6 +19,7 @@ typedef enum {
   LIST_MARKER_DASH,
   LIST_MARKER_STAR,
   LIST_MARKER_PLUS,
+  LIST_MARKER_DEFINITION,
   LIST_ITEM_END,
   CLOSE_PARAGRAPH,
   THEMATIC_BREAK_DASH,
@@ -39,6 +39,7 @@ typedef enum {
   LIST_DASH,
   LIST_STAR,
   LIST_PLUS,
+  LIST_DEFINITION,
 } BlockType;
 
 typedef struct {
@@ -83,6 +84,7 @@ static bool is_list(BlockType type) {
   case LIST_DASH:
   case LIST_STAR:
   case LIST_PLUS:
+  case LIST_DEFINITION:
     return true;
   default:
     return false;
@@ -97,6 +99,8 @@ static BlockType list_marker_to_block(TokenType type) {
     return LIST_STAR;
   case LIST_MARKER_PLUS:
     return LIST_PLUS;
+  case LIST_MARKER_DEFINITION:
+    return LIST_DEFINITION;
   default:
     assert(false);
   }
@@ -219,7 +223,7 @@ static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
   lexer->result_symbol = BLOCK_CLOSE;
 }
 
-static bool parse_block_close(Scanner *s, TSLexer *lexer) {
+static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
 #ifdef DEBUG
   printf("PARSE_BLOCK_CLOSE\n");
 #endif
@@ -241,7 +245,7 @@ static bool parse_block_close(Scanner *s, TSLexer *lexer) {
   return false;
 }
 
-static bool parse_block_close2(Scanner *s, TSLexer *lexer) {
+static bool close_lists_if_needed(Scanner *s, TSLexer *lexer) {
   if (s->open_blocks.size == 0) {
     return false;
   }
@@ -275,7 +279,6 @@ static bool parse_block_close2(Scanner *s, TSLexer *lexer) {
              block_type_s(to_open), block_type_s(top->type));
 #endif
       if (list->type != to_open) {
-        printf("CLOSING\n");
         lexer->result_symbol = BLOCK_CLOSE;
         pop_block(s);
         return true;
@@ -286,8 +289,8 @@ static bool parse_block_close2(Scanner *s, TSLexer *lexer) {
   return false;
 }
 
-static bool check_open_blocks(Scanner *s, TSLexer *lexer,
-                              const bool *valid_symbols) {
+static bool ensure_no_blocks_to_close(Scanner *s, TSLexer *lexer,
+                                      const bool *valid_symbols) {
   if (s->blocks_to_close > 0) {
     // We haven't closed all the blocks.
     // This should happen by handling BLOCK_CLOSE tokens in
@@ -307,33 +310,6 @@ static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
   }
   *from_top = number_of_blocks_from_top(s, DIV, *colons);
   return true;
-}
-
-static bool parse_div(Scanner *s, TSLexer *lexer) {
-  // The context could either be a start or an end token.
-  // To figure out which we should do, we search through the entire
-  // block stack to find if there's an open block somewhere
-  // with the same number of colons.
-  // If there is, we should close that one (and all open blocks before),
-  // otherwise we start a new div.
-  uint8_t colons;
-  size_t from_top;
-  if (!scan_div_marker(s, lexer, &colons, &from_top)) {
-    return false;
-  }
-
-  if (from_top > 0) {
-    // The div we want to close is not the top, close the open blocks until
-    // this div.
-    close_blocks_with_final_token(s, lexer, from_top, DIV_END, 3);
-    return true;
-  } else {
-    // We can consume the colons as we start a new div now.
-    lexer->mark_end(lexer);
-    push_block(s, DIV, colons);
-    lexer->result_symbol = DIV_START;
-    return true;
-  }
 }
 
 static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
@@ -475,6 +451,9 @@ static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   }
   if (scan_bullet_list_marker(s, lexer, '+')) {
     return LIST_MARKER_PLUS;
+  }
+  if (scan_bullet_list_marker(s, lexer, ':')) {
+    return LIST_MARKER_DEFINITION;
   }
 
   return IGNORED;
@@ -630,14 +609,20 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                                              THEMATIC_BREAK_STAR);
 }
 
-static bool parse_list_marker_plus(Scanner *s, TSLexer *lexer) {
-  if (!scan_bullet_list_marker(s, lexer, '+')) {
+static bool parse_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker,
+                                     TokenType token_type,
+                                     BlockType block_type) {
+  if (!scan_bullet_list_marker(s, lexer, marker)) {
     return false;
   }
-  ensure_list_open(s, LIST_PLUS, s->whitespace + 1);
-  lexer->result_symbol = LIST_MARKER_PLUS;
+  ensure_list_open(s, block_type, s->whitespace + 1);
+  lexer->result_symbol = token_type;
   lexer->mark_end(lexer);
   return true;
+}
+
+static bool parse_list_marker_plus(Scanner *s, TSLexer *lexer) {
+  return parse_bullet_list_marker(s, lexer, '+', LIST_MARKER_PLUS, LIST_PLUS);
 }
 
 static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
@@ -669,8 +654,50 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   return true;
 }
 
-static bool parse_block_indent(Scanner *s, TSLexer *lexer, uint8_t indent) {
-  return false;
+static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  bool can_be_div = valid_symbols[DIV_START] || valid_symbols[DIV_END];
+  if (!valid_symbols[LIST_MARKER_DEFINITION] && !can_be_div) {
+    return false;
+  }
+  assert(lexer->lookahead == ':');
+  lexer->advance(lexer, false);
+
+  if (lexer->lookahead == ' ') {
+    if (valid_symbols[LIST_MARKER_DEFINITION]) {
+      ensure_list_open(s, LIST_DEFINITION, s->whitespace + 1);
+      lexer->result_symbol = LIST_MARKER_DEFINITION;
+      lexer->mark_end(lexer);
+      return true;
+    } else {
+      // Can't be a div anymore.
+      return false;
+    }
+  }
+
+  if (!can_be_div) {
+    return false;
+  }
+
+  // We consume a colon in the start of the function.
+  uint8_t colons = consume_chars(s, lexer, ':') + 1;
+  if (colons < 3) {
+    return false;
+  }
+
+  size_t from_top = number_of_blocks_from_top(s, DIV, colons);
+
+  if (from_top > 0) {
+    // The div we want to close is not the top, close the open blocks until
+    // this div.
+    close_blocks_with_final_token(s, lexer, from_top, DIV_END, 3);
+    return true;
+  } else {
+    // We can consume the colons as we start a new div now.
+    lexer->mark_end(lexer);
+    push_block(s, DIV, colons);
+    lexer->result_symbol = DIV_START;
+    return true;
+  }
 }
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
@@ -691,10 +718,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   s->whitespace = consume_whitespace(s, lexer);
 
   // It's important to try to close blocks before other things.
-  if (valid_symbols[BLOCK_CLOSE] && parse_block_close(s, lexer)) {
+  if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
-  if (check_open_blocks(s, lexer, valid_symbols)) {
+  if (ensure_no_blocks_to_close(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -703,29 +730,21 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // if (valid_symbols[BLOCK_INDENT] && parse_block_indent(s, lexer, indent))
-  // {
-  //   return true;
-  // }
-
+  // After some refactoring, this might be doable in grammar.js,
+  // but I don't care to refactor and try it. This works well.
   if (valid_symbols[EOF_OR_BLANKLINE] && parse_eof_or_blankline(s, lexer)) {
     return true;
   }
-
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
-  if (valid_symbols[DIV_START] || valid_symbols[DIV_END]) {
-    if (parse_div(s, lexer)) {
-      return true;
-    }
-  }
+
+  // Closing verbatim is a bit special as we need to match number of `
+  // or eof and we can always consume everything until newline.
   if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
     return true;
   }
-  if (lexer->lookahead == '`' && parse_backtick(s, lexer, valid_symbols)) {
-    return true;
-  } else if (lexer->eof || lexer->lookahead == '\n') {
+  if (valid_symbols[VERBATIM_END] && lexer->eof) {
     if (try_close_verbatim(s, lexer)) {
       return true;
     }
@@ -736,22 +755,49 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       parse_list_item_end(s, lexer, valid_symbols)) {
     return true;
   }
-  if (lexer->lookahead == '-' && parse_dash(s, lexer, valid_symbols)) {
+
+  switch (lexer->lookahead) {
+  case '-':
+    if (parse_dash(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '*':
+    if (parse_star(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '+':
+    if (valid_symbols[LIST_MARKER_PLUS] && parse_list_marker_plus(s, lexer)) {
+      return true;
+    }
+    break;
+  case ':':
+    if (parse_colon(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '`':
+    if (parse_backtick(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '\n':
+    if (try_close_verbatim(s, lexer)) {
+      return true;
+    }
+    break;
+  default:
+    break;
+  }
+
+  // May scan a complete list marker, which we can't do before checking if
+  // we should output the list marker itself.
+  // Yeah, the order dependencies aren't very nice.
+  if (valid_symbols[BLOCK_CLOSE] && close_lists_if_needed(s, lexer)) {
     return true;
   }
-  if (lexer->lookahead == '*' && parse_star(s, lexer, valid_symbols)) {
-    return true;
-  }
-  if (valid_symbols[LIST_MARKER_PLUS] && parse_list_marker_plus(s, lexer)) {
-    return true;
-  }
-  // if (lexer->lookahead == '*' && valid_symbols[THEMATIC_BREAK_STAR] &&
-  //     parse_thematic_break_star(s, lexer)) {
-  //   return true;
-  // }
-  if (valid_symbols[BLOCK_CLOSE] && parse_block_close2(s, lexer)) {
-    return true;
-  }
+
   return false;
 }
 
@@ -821,8 +867,6 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
 
 static char *token_type_s(TokenType t) {
   switch (t) {
-  case BLOCK_INDENT:
-    return "BLOCK_INDENT";
   case BLOCK_CLOSE:
     return "BLOCK_CLOSE";
   case EOF_OR_BLANKLINE:
@@ -842,6 +886,8 @@ static char *token_type_s(TokenType t) {
     return "LIST_MARKER_STAR";
   case LIST_MARKER_PLUS:
     return "LIST_MARKER_PLUS";
+  case LIST_MARKER_DEFINITION:
+    return "LIST_MARKER_DEFINITION";
   case LIST_ITEM_END:
     return "LIST_ITEM_END";
   case CLOSE_PARAGRAPH:
@@ -879,6 +925,8 @@ static char *block_type_s(BlockType t) {
     return "LIST_STAR";
   case LIST_PLUS:
     return "LIST_PLUS";
+  case LIST_DEFINITION:
+    return "LIST_DEFINITION";
   default:
     return "BlockType not printable";
   }
