@@ -270,7 +270,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 ===============================================================================
@@ -291,7 +291,7 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 ===============================================================================
@@ -307,7 +307,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 ===============================================================================
@@ -323,7 +323,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 
@@ -340,7 +340,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 ===============================================================================
@@ -356,7 +356,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 ===============================================================================
@@ -366,13 +366,13 @@ Before
 
 -- - --
 
-Aft.dynamicer
+After
 
 -------------------------------------------------------------------------------
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 
@@ -389,7 +389,7 @@ After
 
 (document
   (paragraph)
-  (thematicbreak)
+  (thematic_break)
   (paragraph))
 
 
@@ -1481,3 +1481,59 @@ List: With sublist
           (list_marker_dash)
           (paragraph))))))
 
+===============================================================================
+List: plus
+===============================================================================
++ one
++ two
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_plus)
+      (paragraph))
+    (list_item
+      (list_marker_plus)
+      (paragraph))))
+
+===============================================================================
+List: star
+===============================================================================
+* one
+* two
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_star)
+      (paragraph))
+    (list_item
+      (list_marker_star)
+      (paragraph))))
+
+===============================================================================
+List: mixed bullets create new lists
+===============================================================================
+- one
++ two
+* tree
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_plus)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_star)
+      (paragraph))))

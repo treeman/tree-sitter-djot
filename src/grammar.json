@@ -33,7 +33,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "thematicbreak"
+          "name": "thematic_break"
         },
         {
           "type": "SYMBOL",
@@ -186,6 +186,14 @@
           {
             "type": "SYMBOL",
             "name": "_list_dash"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_plus"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_star"
           }
         ]
       }
@@ -217,6 +225,74 @@
         {
           "type": "SYMBOL",
           "name": "list_marker_dash"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_plus": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_plus"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_plus": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_plus"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_star": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_star"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_star": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_star"
         },
         {
           "type": "SYMBOL",
@@ -349,17 +425,25 @@
           "value": "content"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_code_block_end"
-          },
-          "named": true,
-          "value": "raw_block_marker_end"
+          "type": "SYMBOL",
+          "name": "_block_close"
         },
         {
-          "type": "STRING",
-          "value": "\n"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_code_block_end"
+              },
+              "named": true,
+              "value": "raw_block_marker_end"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -459,26 +543,18 @@
       "type": "PATTERN",
       "value": "[^\\n]*\\n"
     },
-    "thematicbreak": {
+    "thematic_break": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_star_thematicbreak"
+          "name": "_thematic_break_dash"
         },
         {
           "type": "SYMBOL",
-          "name": "_minus_thematicbreak"
+          "name": "_thematic_break_star"
         }
       ]
-    },
-    "_star_thematicbreak": {
-      "type": "PATTERN",
-      "value": "[ ]*\\*[ ]*\\*[ ]*\\*[ \\*]*\\n"
-    },
-    "_minus_thematicbreak": {
-      "type": "PATTERN",
-      "value": "[ ]*-[ ]*-[ ]*-[ \\-]*\\n"
     },
     "blockquote": {
       "type": "SEQ",
@@ -1800,11 +1876,27 @@
     },
     {
       "type": "SYMBOL",
+      "name": "list_marker_star"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_plus"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_list_item_end"
     },
     {
       "type": "SYMBOL",
       "name": "_close_paragraph"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_thematic_break_dash"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_thematic_break_star"
     },
     {
       "type": "SYMBOL",

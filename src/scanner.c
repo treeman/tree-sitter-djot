@@ -18,8 +18,12 @@ typedef enum {
   CODE_BLOCK_START,
   CODE_BLOCK_END,
   LIST_MARKER_DASH,
+  LIST_MARKER_STAR,
+  LIST_MARKER_PLUS,
   LIST_ITEM_END,
   CLOSE_PARAGRAPH,
+  THEMATIC_BREAK_DASH,
+  THEMATIC_BREAK_STAR,
 
   VERBATIM_START,
   VERBATIM_END,
@@ -33,6 +37,8 @@ typedef enum {
   DIV,
   CODE_BLOCK,
   LIST_DASH,
+  LIST_STAR,
+  LIST_PLUS,
 } BlockType;
 
 typedef struct {
@@ -63,96 +69,37 @@ typedef struct {
   uint8_t whitespace;
 } Scanner;
 
-static char *token_type_s(TokenType t) {
-  switch (t) {
-  case BLOCK_INDENT:
-    return "BLOCK_INDENT";
-  case BLOCK_CLOSE:
-    return "BLOCK_CLOSE";
-  case EOF_OR_BLANKLINE:
-    return "EOF_OR_BLANKLINE";
+static void dump_scanner(Scanner *s);
+static void dump(Scanner *s, TSLexer *lexer);
+static void dump_valid_symbols(const bool *valid_symbols);
 
-  case DIV_START:
-    return "DIV_START";
-  case DIV_END:
-    return "DIV_END";
-  case CODE_BLOCK_START:
-    return "CODE_BLOCK_START";
-  case CODE_BLOCK_END:
-    return "CODE_BLOCK_END";
-  case LIST_MARKER_DASH:
-    return "LIST_MARKER_DASH";
-  case LIST_ITEM_END:
-    return "LIST_ITEM_END";
-  case CLOSE_PARAGRAPH:
-    return "CLOSE_PARAGRAPH";
+static char *token_type_s(TokenType t);
+static char *block_type_s(BlockType t);
 
-  case VERBATIM_START:
-    return "VERBATIM_START";
-  case VERBATIM_END:
-    return "VERBATIM_END";
-  case VERBATIM_CONTENT:
-    return "VERBATIM_CONTENT";
+static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 
-  case ERROR:
-    return "ERROR";
-  case IGNORED:
-    return "IGNORED";
-  default:
-    return "TypenType not printable";
-  }
-}
-
-static bool is_list(BlockType type) { return type == LIST_DASH; }
-
-static char *block_type_s(BlockType t) {
-  switch (t) {
-  case DIV:
-    return "DIV";
-  case CODE_BLOCK:
-    return "CODE_BLOCK";
+static bool is_list(BlockType type) {
+  switch (type) {
   case LIST_DASH:
-    return "LIST_DASH";
+  case LIST_STAR:
+  case LIST_PLUS:
+    return true;
   default:
-    return "BlockType not printable";
+    return false;
   }
 }
 
-static void dump_scanner(Scanner *s) {
-  printf("--- Open blocks: %zu\n", s->open_blocks.size);
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
-    Block *b = s->open_blocks.items[i];
-    printf("  %d %s\n", b->level, block_type_s(b->type));
+static BlockType list_marker_to_block(TokenType type) {
+  switch (type) {
+  case LIST_MARKER_DASH:
+    return LIST_DASH;
+  case LIST_MARKER_STAR:
+    return LIST_STAR;
+  case LIST_MARKER_PLUS:
+    return LIST_PLUS;
+  default:
+    assert(false);
   }
-  printf("---\n");
-  printf("  blocks_to_close: %d\n", s->blocks_to_close);
-  if (s->delayed_token != IGNORED) {
-    printf("  delayed_token: %s\n", token_type_s(s->delayed_token));
-    printf("  delayed_token_width: %d\n", s->delayed_token_width);
-  }
-  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
-  printf("  whitespace: %u\n", s->whitespace);
-  printf("===\n");
-}
-
-static void dump(Scanner *s, TSLexer *lexer) {
-  printf("=== Lookahead: ");
-  if (lexer->eof(lexer)) {
-    printf("eof\n");
-  } else {
-    printf("`%c`\n", lexer->lookahead);
-  }
-  dump_scanner(s);
-}
-
-static void dump_valid_symbols(const bool *valid_symbols) {
-  printf("# valid_symbols:\n");
-  for (int i = 0; i <= IGNORED; ++i) {
-    if (valid_symbols[i]) {
-      printf("%s\n", token_type_s(i));
-    }
-  }
-  printf("#\n");
 }
 
 static uint8_t consume_chars(Scanner *s, TSLexer *lexer, char c) {
@@ -234,8 +181,7 @@ static bool output_delayed_token(Scanner *s, TSLexer *lexer,
 // If it cannot be found, returns 0.
 static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
                                         uint8_t level) {
-  // FIXME should search from the top
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
     Block *b = s->open_blocks.items[i];
     if (b->type == type && b->level == level) {
       return s->open_blocks.size - i;
@@ -292,18 +238,44 @@ static bool parse_block_close(Scanner *s, TSLexer *lexer) {
     pop_block(s);
     return true;
   }
+  return false;
+}
+
+static bool parse_block_close2(Scanner *s, TSLexer *lexer) {
+  if (s->open_blocks.size == 0) {
+    return false;
+  }
+
+  Block *top = peek_block(s);
+  Block *list = get_open_list(s);
 
   // If we're in a block that's in a list
   // we should check the indentation level,
   // and if it's less than the current list, we need to close that block.
-  if (lexer->lookahead != '\n') {
-    Block *top = peek_block(s);
-    Block *list = get_open_list(s);
-    if (list && list != top) {
-      if (s->whitespace < list->level) {
+  if (lexer->lookahead != '\n' && list && list != top) {
+    if (s->whitespace < list->level) {
 #ifdef DEBUG
-        printf("Closing block inside list item\n");
+      printf("Closing block inside list item\n");
 #endif
+      lexer->result_symbol = BLOCK_CLOSE;
+      pop_block(s);
+      return true;
+    }
+  }
+
+  // If we're about to open a list of a different type, we
+  // need to close the previous list.
+  if (list) {
+    TokenType list_marker = scan_list_marker_token(s, lexer);
+    if (list_marker != IGNORED) {
+      BlockType to_open = list_marker_to_block(list_marker);
+#ifdef DEBUG
+      printf("Close block for mismatching list?\n");
+      printf("  marker: %s type: %s top block: %s\n", token_type_s(list_marker),
+             block_type_s(to_open), block_type_s(top->type));
+#endif
+      if (list->type != to_open) {
+        printf("CLOSING\n");
         lexer->result_symbol = BLOCK_CLOSE;
         pop_block(s);
         return true;
@@ -318,9 +290,9 @@ static bool check_open_blocks(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   if (s->blocks_to_close > 0) {
     // We haven't closed all the blocks.
-    // This should happen by handling BLOCK_CLOSE tokens in `parse_block_close`.
-    // an assert may even be appropriate here as I think this signifies an
-    // implementation error, but try to be nice to users.
+    // This should happen by handling BLOCK_CLOSE tokens in
+    // `parse_block_close`. an assert may even be appropriate here as I think
+    // this signifies an implementation error, but try to be nice to users.
     lexer->result_symbol = ERROR;
     return true;
   }
@@ -351,8 +323,8 @@ static bool parse_div(Scanner *s, TSLexer *lexer) {
   }
 
   if (from_top > 0) {
-    // The div we want to close is not the top, close the open blocks until this
-    // div.
+    // The div we want to close is not the top, close the open blocks until
+    // this div.
     close_blocks_with_final_token(s, lexer, from_top, DIV_END, 3);
     return true;
   } else {
@@ -374,7 +346,6 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
     Block *top = peek_block(s);
     if (top->type == CODE_BLOCK) {
       if (top->level == ticks) {
-        printf("CLOSING...\n");
         // Found a matching block that we should close.
         lexer->mark_end(lexer);
         // Issue BLOCK_CLOSE before CODE_BLOCK_END.
@@ -482,22 +453,35 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static bool scan_list_marker_dash(Scanner *s, TSLexer *lexer) {
-  if (lexer->lookahead == '-') {
-    lexer->advance(lexer, false);
-    if (lexer->lookahead == ' ') {
-      lexer->advance(lexer, false);
-      return true;
-    }
+static bool scan_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker) {
+  if (lexer->lookahead != marker) {
+    return false;
   }
-  return false;
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != ' ') {
+    return false;
+  }
+
+  lexer->advance(lexer, false);
+  return true;
+}
+
+static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
+  if (scan_bullet_list_marker(s, lexer, '-')) {
+    return LIST_MARKER_DASH;
+  }
+  if (scan_bullet_list_marker(s, lexer, '*')) {
+    return LIST_MARKER_STAR;
+  }
+  if (scan_bullet_list_marker(s, lexer, '+')) {
+    return LIST_MARKER_PLUS;
+  }
+
+  return IGNORED;
 }
 
 static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
-  if (scan_list_marker_dash(s, lexer)) {
-    return true;
-  }
-  return false;
+  return scan_list_marker_token(s, lexer) != IGNORED;
 }
 
 static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
@@ -553,6 +537,7 @@ static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
     printf("indent: %d top->level: %d\n", indent, top->level);
 #endif
 
+    // NOTE I don't think we'll even get here...?
     if (top->type == type) {
       if (top->level == indent) {
         // Found a list with the same type and indent, we should continue it.
@@ -562,6 +547,7 @@ static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
         // it? Depending on if it's higher or lower?
       }
     } else if (is_list(top->type)) {
+      printf("DIFFERENT LIST!\n");
       // Found a different list, we should close it if this isn't a sublist I
       // guess But a sublist requires surrounding newlines so I dunno if this
       // should even happen?
@@ -575,19 +561,83 @@ static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
   push_block(s, type, indent);
 }
 
-static bool parse_list_marker(Scanner *s, TSLexer *lexer,
-                              const bool *valid_symbols) {
+// Consumes until newline or eof, only allowing 'c' or whitespace.
+// Returns the number of 'c' encountered (0 if any other character is
+// encountered).
+static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
+                                                    char c) {
+  uint8_t seen = 0;
+  while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == c) {
+      ++seen;
+      lexer->advance(lexer, false);
+    } else if (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+      lexer->advance(lexer, false);
+    } else if (lexer->lookahead == '\n') {
+      break;
+    } else {
+      return 0;
+    }
+  }
+  return seen;
+}
 
-  TokenType marker_type;
-  uint8_t token_width;
-  if (valid_symbols[LIST_MARKER_DASH] && scan_list_marker_dash(s, lexer)) {
-    ensure_list_open(s, LIST_DASH, s->whitespace + 1);
-    lexer->result_symbol = LIST_MARKER_DASH;
-    lexer->mark_end(lexer);
-    return true;
+// Either parse a list item marker (like '- ') or a thematic break
+// (like '- - -').
+static bool parse_list_marker_or_thematic_break(
+    Scanner *s, TSLexer *lexer, const bool *valid_symbols, char marker,
+    TokenType marker_type, BlockType list_type, TokenType thematic_break_type) {
+  if (!valid_symbols[marker_type] && !valid_symbols[thematic_break_type]) {
+    return false;
   }
 
-  return false;
+  assert(lexer->lookahead == marker);
+  lexer->advance(lexer, false);
+
+  // We need to remember if a '- ' is found, which means we can open a list.
+  bool can_be_list_marker =
+      valid_symbols[marker_type] && lexer->lookahead == ' ';
+
+  // But only if it's not also a thematic break.
+  bool can_be_thematic_break =
+      valid_symbols[thematic_break_type]
+      // We've already consumed one '-', two more is all that's needed.
+      && consume_line_with_char_or_whitespace(s, lexer, marker) >= 2;
+
+  if (can_be_thematic_break) {
+    lexer->result_symbol = thematic_break_type;
+    lexer->mark_end(lexer);
+    return true;
+  } else if (can_be_list_marker) {
+    ensure_list_open(s, list_type, s->whitespace + 1);
+    lexer->result_symbol = marker_type;
+    lexer->mark_end(lexer);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static bool parse_dash(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  return parse_list_marker_or_thematic_break(s, lexer, valid_symbols, '-',
+                                             LIST_MARKER_DASH, LIST_DASH,
+                                             THEMATIC_BREAK_DASH);
+}
+
+static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  return parse_list_marker_or_thematic_break(s, lexer, valid_symbols, '*',
+                                             LIST_MARKER_STAR, LIST_STAR,
+                                             THEMATIC_BREAK_STAR);
+}
+
+static bool parse_list_marker_plus(Scanner *s, TSLexer *lexer) {
+  if (!scan_bullet_list_marker(s, lexer, '+')) {
+    return false;
+  }
+  ensure_list_open(s, LIST_PLUS, s->whitespace + 1);
+  lexer->result_symbol = LIST_MARKER_PLUS;
+  lexer->mark_end(lexer);
+  return true;
 }
 
 static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
@@ -596,7 +646,9 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   if (!any_block(s)) {
     return false;
   }
-  // TODO maybe not only the top block.
+  // We only look at the top, list item end is only valid if we're
+  // about to close the list. Otherwise we need to close the open blocks
+  // first.
   Block *list = peek_block(s);
   if (!is_list(list->type)) {
     return false;
@@ -613,7 +665,6 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   }
 
   lexer->result_symbol = LIST_ITEM_END;
-  // TODO We may need to close more blocks.
   s->blocks_to_close = 1;
   return true;
 }
@@ -685,10 +736,21 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       parse_list_item_end(s, lexer, valid_symbols)) {
     return true;
   }
-  if (valid_symbols[LIST_MARKER_DASH]) {
-    if (parse_list_marker(s, lexer, valid_symbols)) {
-      return true;
-    }
+  if (lexer->lookahead == '-' && parse_dash(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (lexer->lookahead == '*' && parse_star(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (valid_symbols[LIST_MARKER_PLUS] && parse_list_marker_plus(s, lexer)) {
+    return true;
+  }
+  // if (lexer->lookahead == '*' && valid_symbols[THEMATIC_BREAK_STAR] &&
+  //     parse_thematic_break_star(s, lexer)) {
+  //   return true;
+  // }
+  if (valid_symbols[BLOCK_CLOSE] && parse_block_close2(s, lexer)) {
+    return true;
   }
   return false;
 }
@@ -755,4 +817,106 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     }
     s->open_blocks.size = blocks;
   }
+}
+
+static char *token_type_s(TokenType t) {
+  switch (t) {
+  case BLOCK_INDENT:
+    return "BLOCK_INDENT";
+  case BLOCK_CLOSE:
+    return "BLOCK_CLOSE";
+  case EOF_OR_BLANKLINE:
+    return "EOF_OR_BLANKLINE";
+
+  case DIV_START:
+    return "DIV_START";
+  case DIV_END:
+    return "DIV_END";
+  case CODE_BLOCK_START:
+    return "CODE_BLOCK_START";
+  case CODE_BLOCK_END:
+    return "CODE_BLOCK_END";
+  case LIST_MARKER_DASH:
+    return "LIST_MARKER_DASH";
+  case LIST_MARKER_STAR:
+    return "LIST_MARKER_STAR";
+  case LIST_MARKER_PLUS:
+    return "LIST_MARKER_PLUS";
+  case LIST_ITEM_END:
+    return "LIST_ITEM_END";
+  case CLOSE_PARAGRAPH:
+    return "CLOSE_PARAGRAPH";
+  case THEMATIC_BREAK_DASH:
+    return "THEMATIC_BREAK_DASH";
+  case THEMATIC_BREAK_STAR:
+    return "THEMATIC_BREAK_STAR";
+
+  case VERBATIM_START:
+    return "VERBATIM_START";
+  case VERBATIM_END:
+    return "VERBATIM_END";
+  case VERBATIM_CONTENT:
+    return "VERBATIM_CONTENT";
+
+  case ERROR:
+    return "ERROR";
+  case IGNORED:
+    return "IGNORED";
+  default:
+    return "TypenType not printable";
+  }
+}
+
+static char *block_type_s(BlockType t) {
+  switch (t) {
+  case DIV:
+    return "DIV";
+  case CODE_BLOCK:
+    return "CODE_BLOCK";
+  case LIST_DASH:
+    return "LIST_DASH";
+  case LIST_STAR:
+    return "LIST_STAR";
+  case LIST_PLUS:
+    return "LIST_PLUS";
+  default:
+    return "BlockType not printable";
+  }
+}
+
+static void dump_scanner(Scanner *s) {
+  printf("--- Open blocks: %zu\n", s->open_blocks.size);
+  for (size_t i = 0; i < s->open_blocks.size; ++i) {
+    Block *b = s->open_blocks.items[i];
+    printf("  %d %s\n", b->level, block_type_s(b->type));
+  }
+  printf("---\n");
+  printf("  blocks_to_close: %d\n", s->blocks_to_close);
+  if (s->delayed_token != IGNORED) {
+    printf("  delayed_token: %s\n", token_type_s(s->delayed_token));
+    printf("  delayed_token_width: %d\n", s->delayed_token_width);
+  }
+  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
+  printf("  whitespace: %u\n", s->whitespace);
+  printf("===\n");
+}
+
+static void dump(Scanner *s, TSLexer *lexer) {
+  printf("=== Lookahead: ");
+  if (lexer->eof(lexer)) {
+    printf("eof\n");
+  } else {
+    printf("`%c`\n", lexer->lookahead);
+  }
+  dump_scanner(s);
+}
+
+static void dump_valid_symbols(const bool *valid_symbols) {
+  printf("# valid_symbols:\n");
+  for (int i = 0; i <= IGNORED; ++i) {
+    if (valid_symbols[i]) {
+      printf("%s\n", token_type_s(i));
+    }
+  }
+  printf("#\n");
 }

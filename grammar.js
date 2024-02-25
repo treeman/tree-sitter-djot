@@ -43,8 +43,7 @@ module.exports = grammar({
         $.div,
         $.raw_block,
         $.code_block,
-        // FIXME maybe need to make this external, to not clash with lists?
-        $.thematicbreak,
+        $.thematic_break,
         $.blockquote, // External, can close other blocks end should capture marker + continuation
         $.link_reference_definition,
         $.block_attribute,
@@ -77,9 +76,9 @@ module.exports = grammar({
       // that we need to keep separate from each other.
       prec.left(
         choice(
-          $._list_dash
-          // $._list_plus,
-          // $._list_star,
+          $._list_dash,
+          $._list_plus,
+          $._list_star
           // $._list_decimal_period,
           // $._list_decimal_paren,
           // $._list_decimal_parens,
@@ -100,16 +99,16 @@ module.exports = grammar({
         )
       ),
     _list_dash: ($) =>
-      seq(
-        repeat1(alias($._list_item_dash, $.list_item)),
-        // alias($._block_close, $.list_block_close)
-        $._block_close
-      ),
+      seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
     _list_item_dash: ($) => seq($.list_marker_dash, $._list_item_content),
+    _list_plus: ($) =>
+      seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
+    _list_item_plus: ($) => seq($.list_marker_plus, $._list_item_content),
+    _list_star: ($) =>
+      seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
+    _list_item_star: ($) => seq($.list_marker_star, $._list_item_content),
 
-    _list_item_content: ($) =>
-      // seq(repeat1($._block), alias($._list_item_end, $.list_item_end)),
-      seq(repeat1($._block), $._list_item_end),
+    _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
     div: ($) =>
       seq(
@@ -149,10 +148,8 @@ module.exports = grammar({
     code: ($) => prec.left(repeat1($._line)),
     _line: (_) => /[^\n]*\n/,
 
-    thematicbreak: ($) => choice($._star_thematicbreak, $._minus_thematicbreak),
-    // Very pretty!
-    _star_thematicbreak: (_) => /[ ]*\*[ ]*\*[ ]*\*[ \*]*\n/,
-    _minus_thematicbreak: (_) => /[ ]*-[ ]*-[ ]*-[ \-]*\n/,
+    thematic_break: ($) =>
+      choice($._thematic_break_dash, $._thematic_break_star),
 
     // It's fine to let inline gobble up leading `>` for lazy
     // quotes lines.
@@ -359,8 +356,12 @@ module.exports = grammar({
     $._code_block_start,
     $._code_block_end,
     $.list_marker_dash,
+    $.list_marker_star,
+    $.list_marker_plus,
     $._list_item_end,
     $._close_paragraph,
+    $._thematic_break_dash,
+    $._thematic_break_star,
 
     // Inline
     $._verbatim_start,
