@@ -20,6 +20,21 @@ typedef enum {
   LIST_MARKER_STAR,
   LIST_MARKER_PLUS,
   LIST_MARKER_DEFINITION,
+  LIST_MARKER_DECIMAL_PERIOD,
+  LIST_MARKER_LOWER_ALPHA_PERIOD,
+  LIST_MARKER_UPPER_ALPHA_PERIOD,
+  LIST_MARKER_LOWER_ROMAN_PERIOD,
+  LIST_MARKER_UPPER_ROMAN_PERIOD,
+  LIST_MARKER_DECIMAL_PAREN,
+  LIST_MARKER_LOWER_ALPHA_PAREN,
+  LIST_MARKER_UPPER_ALPHA_PAREN,
+  LIST_MARKER_LOWER_ROMAN_PAREN,
+  LIST_MARKER_UPPER_ROMAN_PAREN,
+  LIST_MARKER_DECIMAL_PARENS,
+  LIST_MARKER_LOWER_ALPHA_PARENS,
+  LIST_MARKER_UPPER_ALPHA_PARENS,
+  LIST_MARKER_LOWER_ROMAN_PARENS,
+  LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_END,
   CLOSE_PARAGRAPH,
   THEMATIC_BREAK_DASH,
@@ -40,7 +55,30 @@ typedef enum {
   LIST_STAR,
   LIST_PLUS,
   LIST_DEFINITION,
+  LIST_DECIMAL_PERIOD,
+  LIST_LOWER_ALPHA_PERIOD,
+  LIST_UPPER_ALPHA_PERIOD,
+  LIST_LOWER_ROMAN_PERIOD,
+  LIST_UPPER_ROMAN_PERIOD,
+  LIST_DECIMAL_PAREN,
+  LIST_LOWER_ALPHA_PAREN,
+  LIST_UPPER_ALPHA_PAREN,
+  LIST_LOWER_ROMAN_PAREN,
+  LIST_UPPER_ROMAN_PAREN,
+  LIST_DECIMAL_PARENS,
+  LIST_LOWER_ALPHA_PARENS,
+  LIST_UPPER_ALPHA_PARENS,
+  LIST_LOWER_ROMAN_PARENS,
+  LIST_UPPER_ROMAN_PARENS,
 } BlockType;
+
+typedef enum {
+  DECIMAL,
+  LOWER_ALPHA,
+  UPPER_ALPHA,
+  LOWER_ROMAN,
+  UPPER_ROMAN,
+} OrderedListType;
 
 typedef struct {
   BlockType type;
@@ -85,6 +123,21 @@ static bool is_list(BlockType type) {
   case LIST_STAR:
   case LIST_PLUS:
   case LIST_DEFINITION:
+  case LIST_DECIMAL_PERIOD:
+  case LIST_LOWER_ALPHA_PERIOD:
+  case LIST_UPPER_ALPHA_PERIOD:
+  case LIST_LOWER_ROMAN_PERIOD:
+  case LIST_UPPER_ROMAN_PERIOD:
+  case LIST_DECIMAL_PAREN:
+  case LIST_LOWER_ALPHA_PAREN:
+  case LIST_UPPER_ALPHA_PAREN:
+  case LIST_LOWER_ROMAN_PAREN:
+  case LIST_UPPER_ROMAN_PAREN:
+  case LIST_DECIMAL_PARENS:
+  case LIST_LOWER_ALPHA_PARENS:
+  case LIST_UPPER_ALPHA_PARENS:
+  case LIST_LOWER_ROMAN_PARENS:
+  case LIST_UPPER_ROMAN_PARENS:
     return true;
   default:
     return false;
@@ -101,6 +154,36 @@ static BlockType list_marker_to_block(TokenType type) {
     return LIST_PLUS;
   case LIST_MARKER_DEFINITION:
     return LIST_DEFINITION;
+  case LIST_MARKER_DECIMAL_PERIOD:
+    return LIST_DECIMAL_PERIOD;
+  case LIST_MARKER_LOWER_ALPHA_PERIOD:
+    return LIST_LOWER_ALPHA_PERIOD;
+  case LIST_MARKER_UPPER_ALPHA_PERIOD:
+    return LIST_UPPER_ALPHA_PERIOD;
+  case LIST_MARKER_LOWER_ROMAN_PERIOD:
+    return LIST_LOWER_ROMAN_PERIOD;
+  case LIST_MARKER_UPPER_ROMAN_PERIOD:
+    return LIST_UPPER_ROMAN_PERIOD;
+  case LIST_MARKER_DECIMAL_PAREN:
+    return LIST_DECIMAL_PAREN;
+  case LIST_MARKER_LOWER_ALPHA_PAREN:
+    return LIST_LOWER_ALPHA_PAREN;
+  case LIST_MARKER_UPPER_ALPHA_PAREN:
+    return LIST_UPPER_ALPHA_PAREN;
+  case LIST_MARKER_LOWER_ROMAN_PAREN:
+    return LIST_LOWER_ROMAN_PAREN;
+  case LIST_MARKER_UPPER_ROMAN_PAREN:
+    return LIST_UPPER_ROMAN_PAREN;
+  case LIST_MARKER_DECIMAL_PARENS:
+    return LIST_DECIMAL_PARENS;
+  case LIST_MARKER_LOWER_ALPHA_PARENS:
+    return LIST_LOWER_ALPHA_PARENS;
+  case LIST_MARKER_UPPER_ALPHA_PARENS:
+    return LIST_UPPER_ALPHA_PARENS;
+  case LIST_MARKER_LOWER_ROMAN_PARENS:
+    return LIST_LOWER_ROMAN_PARENS;
+  case LIST_MARKER_UPPER_ROMAN_PARENS:
+    return LIST_UPPER_ROMAN_PARENS;
   default:
     assert(false);
   }
@@ -245,7 +328,26 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   return false;
 }
 
-static bool close_lists_if_needed(Scanner *s, TSLexer *lexer) {
+static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
+                                           Block *list, TokenType list_marker) {
+  if (list_marker != IGNORED) {
+    BlockType to_open = list_marker_to_block(list_marker);
+#ifdef DEBUG
+    printf("Close block for mismatching list?\n");
+    printf("  marker: %s type: %s top block: %s\n", token_type_s(list_marker),
+           block_type_s(to_open), block_type_s(top->type));
+#endif
+    if (list->type != to_open) {
+      lexer->result_symbol = BLOCK_CLOSE;
+      pop_block(s);
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
+                                  TokenType ordered_list_marker) {
   if (s->open_blocks.size == 0) {
     return false;
   }
@@ -256,7 +358,7 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer) {
   // If we're in a block that's in a list
   // we should check the indentation level,
   // and if it's less than the current list, we need to close that block.
-  if (lexer->lookahead != '\n' && list && list != top) {
+  if (non_newline && list && list != top) {
     if (s->whitespace < list->level) {
 #ifdef DEBUG
       printf("Closing block inside list item\n");
@@ -270,35 +372,15 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer) {
   // If we're about to open a list of a different type, we
   // need to close the previous list.
   if (list) {
-    TokenType list_marker = scan_list_marker_token(s, lexer);
-    if (list_marker != IGNORED) {
-      BlockType to_open = list_marker_to_block(list_marker);
-#ifdef DEBUG
-      printf("Close block for mismatching list?\n");
-      printf("  marker: %s type: %s top block: %s\n", token_type_s(list_marker),
-             block_type_s(to_open), block_type_s(top->type));
-#endif
-      if (list->type != to_open) {
-        lexer->result_symbol = BLOCK_CLOSE;
-        pop_block(s);
-        return true;
-      }
+    if (close_different_list_if_needed(s, lexer, list, ordered_list_marker)) {
+      return true;
+    }
+    TokenType other_list_marker = scan_list_marker_token(s, lexer);
+    if (close_different_list_if_needed(s, lexer, list, other_list_marker)) {
+      return true;
     }
   }
 
-  return false;
-}
-
-static bool ensure_no_blocks_to_close(Scanner *s, TSLexer *lexer,
-                                      const bool *valid_symbols) {
-  if (s->blocks_to_close > 0) {
-    // We haven't closed all the blocks.
-    // This should happen by handling BLOCK_CLOSE tokens in
-    // `parse_block_close`. an assert may even be appropriate here as I think
-    // this signifies an implementation error, but try to be nice to users.
-    lexer->result_symbol = ERROR;
-    return true;
-  }
   return false;
 }
 
@@ -442,6 +524,160 @@ static bool scan_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker) {
   return true;
 }
 
+static bool is_decimal(char c) { return '0' <= c && c <= '9'; }
+static bool is_lower_alpha(char c) { return 'a' <= c && c <= 'z'; }
+static bool is_upper_alpha(char c) { return 'A' <= c && c <= 'Z'; }
+static bool is_lower_roman(char c) {
+  switch (c) {
+  case 'i':
+  case 'v':
+  case 'x':
+  case 'l':
+  case 'c':
+  case 'd':
+  case 'm':
+    return true;
+  default:
+    return false;
+  }
+}
+static bool is_upper_roman(char c) {
+  switch (c) {
+  case 'I':
+  case 'V':
+  case 'X':
+  case 'L':
+  case 'C':
+  case 'D':
+  case 'M':
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool matches_ordered_list(OrderedListType type, char c) {
+  switch (type) {
+  case DECIMAL:
+    return is_decimal(c);
+  case LOWER_ALPHA:
+    return is_lower_alpha(c);
+  case UPPER_ALPHA:
+    return is_upper_alpha(c);
+  case LOWER_ROMAN:
+    return is_lower_roman(c);
+  case UPPER_ROMAN:
+    return is_upper_roman(c);
+  }
+}
+
+// Return true if we scan any character.
+static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
+                                         OrderedListType type) {
+  uint8_t scanned = 0;
+  while (!lexer->eof(lexer)) {
+    printf("Check %d %c\n", lexer->lookahead, lexer->lookahead);
+    if (matches_ordered_list(type, lexer->lookahead)) {
+      printf("  match %c\n", lexer->lookahead);
+      ++scanned;
+      lexer->advance(lexer, false);
+    } else {
+      break;
+    }
+  }
+  return scanned > 0;
+}
+
+static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
+                                   OrderedListType *res) {
+  // How to decide between alpha and roman?
+  // For now just prefer roman (starting with i seems a bit weird for alpha?)
+  bool first_lower_alpha = is_lower_alpha(lexer->lookahead);
+  bool first_upper_alpha = is_upper_alpha(lexer->lookahead);
+
+  printf("scanning decimal\n");
+  if (scan_ordered_list_enumerator(s, lexer, DECIMAL)) {
+    *res = DECIMAL;
+    return true;
+  }
+  if (scan_ordered_list_enumerator(s, lexer, LOWER_ROMAN)) {
+    *res = LOWER_ROMAN;
+    return true;
+  }
+  if (scan_ordered_list_enumerator(s, lexer, UPPER_ROMAN)) {
+    *res = UPPER_ROMAN;
+    return true;
+  }
+  if (scan_ordered_list_enumerator(s, lexer, LOWER_ALPHA)) {
+    *res = LOWER_ALPHA;
+    return true;
+  }
+  if (scan_ordered_list_enumerator(s, lexer, UPPER_ALPHA)) {
+    *res = UPPER_ALPHA;
+    return true;
+  }
+  return false;
+}
+
+static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+  bool surrounding_parens = false;
+  if (lexer->lookahead == '(') {
+    surrounding_parens = true;
+    lexer->advance(lexer, false);
+  }
+
+  OrderedListType list_type;
+  if (!scan_ordered_list_type(s, lexer, &list_type)) {
+    return IGNORED;
+  }
+
+  switch (lexer->lookahead) {
+  case ')':
+    if (surrounding_parens) {
+      switch (list_type) {
+      case DECIMAL:
+        return LIST_MARKER_DECIMAL_PARENS;
+      case LOWER_ALPHA:
+        return LIST_MARKER_LOWER_ALPHA_PARENS;
+      case UPPER_ALPHA:
+        return LIST_MARKER_UPPER_ALPHA_PARENS;
+      case LOWER_ROMAN:
+        return LIST_MARKER_LOWER_ROMAN_PARENS;
+      case UPPER_ROMAN:
+        return LIST_MARKER_UPPER_ROMAN_PARENS;
+      }
+    } else {
+      switch (list_type) {
+      case DECIMAL:
+        return LIST_MARKER_DECIMAL_PAREN;
+      case LOWER_ALPHA:
+        return LIST_MARKER_LOWER_ALPHA_PAREN;
+      case UPPER_ALPHA:
+        return LIST_MARKER_UPPER_ALPHA_PAREN;
+      case LOWER_ROMAN:
+        return LIST_MARKER_LOWER_ROMAN_PAREN;
+      case UPPER_ROMAN:
+        return LIST_MARKER_UPPER_ROMAN_PAREN;
+      }
+    }
+  case '.':
+    switch (list_type) {
+    case DECIMAL:
+      return LIST_MARKER_DECIMAL_PERIOD;
+    case LOWER_ALPHA:
+      return LIST_MARKER_LOWER_ALPHA_PERIOD;
+    case UPPER_ALPHA:
+      return LIST_MARKER_UPPER_ALPHA_PERIOD;
+    case LOWER_ROMAN:
+      return LIST_MARKER_LOWER_ROMAN_PERIOD;
+    case UPPER_ROMAN:
+      return LIST_MARKER_UPPER_ROMAN_PERIOD;
+    }
+  default:
+    return IGNORED;
+  }
+}
+
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, '-')) {
     return LIST_MARKER_DASH;
@@ -455,8 +691,7 @@ static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, ':')) {
     return LIST_MARKER_DEFINITION;
   }
-
-  return IGNORED;
+  return scan_ordered_list_marker_token(s, lexer);
 }
 
 static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
@@ -516,28 +751,30 @@ static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
     printf("indent: %d top->level: %d\n", indent, top->level);
 #endif
 
-    // NOTE I don't think we'll even get here...?
-    if (top->type == type) {
-      if (top->level == indent) {
-        // Found a list with the same type and indent, we should continue it.
-        return;
-      } else {
-        // Found the same list type but with a different indent level... Close
-        // it? Depending on if it's higher or lower?
-      }
-    } else if (is_list(top->type)) {
-      printf("DIFFERENT LIST!\n");
-      // Found a different list, we should close it if this isn't a sublist I
-      // guess But a sublist requires surrounding newlines so I dunno if this
-      // should even happen?
-    } else {
-      // Found some other type of block.
-      // Close it...?
-      // We probably need to search for the topmost list instead...
+    // Found a list with the same type and indent, we should continue it.
+    if (top->type == type && top->level == indent) {
+      return;
     }
+    // There might be other cases, like if the top list is a list of different
+    // types, but that's handled by BLOCK_CLOSE in `close_lists_if_needed` and
+    // we shouldn't see that state here.
   }
 
   push_block(s, type, indent);
+}
+
+static bool handle_ordered_list_marker(Scanner *s, TSLexer *lexer,
+                                       const bool *valid_symbols,
+                                       TokenType marker) {
+  printf("PARSE %s\n", token_type_s(marker));
+  if (marker != IGNORED && valid_symbols[marker]) {
+    ensure_list_open(s, list_marker_to_block(marker), s->whitespace + 1);
+    lexer->result_symbol = marker;
+    lexer->mark_end(lexer);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // Consumes until newline or eof, only allowing 'c' or whitespace.
@@ -716,14 +953,13 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // I found it easier to opt-in to consume tokens.
   lexer->mark_end(lexer);
   s->whitespace = consume_whitespace(s, lexer);
+  bool non_newline = lexer->lookahead != '\n';
 
   // It's important to try to close blocks before other things.
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
-  if (ensure_no_blocks_to_close(s, lexer, valid_symbols)) {
-    return true;
-  }
+  assert(s->blocks_to_close == 0);
 
   // Buffered tokens can come after blocks are closed.
   if (output_delayed_token(s, lexer, valid_symbols)) {
@@ -791,10 +1027,20 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     break;
   }
 
+  // Scan ordered list markers outside because the parsing may conflict with
+  // closing of lists (both may try to parse the same characters).
+  TokenType ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
+  if (ordered_list_marker != IGNORED &&
+      handle_ordered_list_marker(s, lexer, valid_symbols,
+                                 ordered_list_marker)) {
+    return true;
+  }
+
   // May scan a complete list marker, which we can't do before checking if
   // we should output the list marker itself.
   // Yeah, the order dependencies aren't very nice.
-  if (valid_symbols[BLOCK_CLOSE] && close_lists_if_needed(s, lexer)) {
+  if (valid_symbols[BLOCK_CLOSE] &&
+      close_lists_if_needed(s, lexer, non_newline, ordered_list_marker)) {
     return true;
   }
 
@@ -888,6 +1134,36 @@ static char *token_type_s(TokenType t) {
     return "LIST_MARKER_PLUS";
   case LIST_MARKER_DEFINITION:
     return "LIST_MARKER_DEFINITION";
+  case LIST_MARKER_DECIMAL_PERIOD:
+    return "LIST_MARKER_DECIMAL_PERIOD";
+  case LIST_MARKER_LOWER_ALPHA_PERIOD:
+    return "LIST_MARKER_LOWER_ALPHA_PERIOD";
+  case LIST_MARKER_UPPER_ALPHA_PERIOD:
+    return "LIST_MARKER_UPPER_ALPHA_PERIOD";
+  case LIST_MARKER_LOWER_ROMAN_PERIOD:
+    return "LIST_MARKER_LOWER_ROMAN_PERIOD";
+  case LIST_MARKER_UPPER_ROMAN_PERIOD:
+    return "LIST_MARKER_UPPER_ROMAN_PERIOD";
+  case LIST_MARKER_DECIMAL_PAREN:
+    return "LIST_MARKER_DECIMAL_PAREN";
+  case LIST_MARKER_LOWER_ALPHA_PAREN:
+    return "LIST_MARKER_LOWER_ALPHA_PAREN";
+  case LIST_MARKER_UPPER_ALPHA_PAREN:
+    return "LIST_MARKER_UPPER_ALPHA_PAREN";
+  case LIST_MARKER_LOWER_ROMAN_PAREN:
+    return "LIST_MARKER_LOWER_ROMAN_PAREN";
+  case LIST_MARKER_UPPER_ROMAN_PAREN:
+    return "LIST_MARKER_UPPER_ROMAN_PAREN";
+  case LIST_MARKER_DECIMAL_PARENS:
+    return "LIST_MARKER_DECIMAL_PARENS";
+  case LIST_MARKER_LOWER_ALPHA_PARENS:
+    return "LIST_MARKER_LOWER_ALPHA_PARENS";
+  case LIST_MARKER_UPPER_ALPHA_PARENS:
+    return "LIST_MARKER_UPPER_ALPHA_PARENS";
+  case LIST_MARKER_LOWER_ROMAN_PARENS:
+    return "LIST_MARKER_LOWER_ROMAN_PARENS";
+  case LIST_MARKER_UPPER_ROMAN_PARENS:
+    return "LIST_MARKER_UPPER_ROMAN_PARENS";
   case LIST_ITEM_END:
     return "LIST_ITEM_END";
   case CLOSE_PARAGRAPH:
@@ -908,8 +1184,6 @@ static char *token_type_s(TokenType t) {
     return "ERROR";
   case IGNORED:
     return "IGNORED";
-  default:
-    return "TypenType not printable";
   }
 }
 
@@ -927,8 +1201,36 @@ static char *block_type_s(BlockType t) {
     return "LIST_PLUS";
   case LIST_DEFINITION:
     return "LIST_DEFINITION";
-  default:
-    return "BlockType not printable";
+  case LIST_DECIMAL_PERIOD:
+    return "LIST_DECIMAL_PERIOD";
+  case LIST_LOWER_ALPHA_PERIOD:
+    return "LIST_LOWER_ALPHA_PERIOD";
+  case LIST_UPPER_ALPHA_PERIOD:
+    return "LIST_UPPER_ALPHA_PERIOD";
+  case LIST_LOWER_ROMAN_PERIOD:
+    return "LIST_LOWER_ROMAN_PERIOD";
+  case LIST_UPPER_ROMAN_PERIOD:
+    return "LIST_UPPER_ROMAN_PERIOD";
+  case LIST_DECIMAL_PAREN:
+    return "LIST_DECIMAL_PAREN";
+  case LIST_LOWER_ALPHA_PAREN:
+    return "LIST_LOWER_ALPHA_PAREN";
+  case LIST_UPPER_ALPHA_PAREN:
+    return "LIST_UPPER_ALPHA_PAREN";
+  case LIST_LOWER_ROMAN_PAREN:
+    return "LIST_LOWER_ROMAN_PAREN";
+  case LIST_UPPER_ROMAN_PAREN:
+    return "LIST_UPPER_ROMAN_PAREN";
+  case LIST_DECIMAL_PARENS:
+    return "LIST_DECIMAL_PARENS";
+  case LIST_LOWER_ALPHA_PARENS:
+    return "LIST_LOWER_ALPHA_PARENS";
+  case LIST_UPPER_ALPHA_PARENS:
+    return "LIST_UPPER_ALPHA_PARENS";
+  case LIST_LOWER_ROMAN_PARENS:
+    return "LIST_LOWER_ROMAN_PARENS";
+  case LIST_UPPER_ROMAN_PARENS:
+    return "LIST_UPPER_ROMAN_PARENS";
   }
 }
 

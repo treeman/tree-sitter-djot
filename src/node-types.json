@@ -2200,7 +2200,43 @@
           "named": true
         },
         {
+          "type": "list_marker_decimal_paren",
+          "named": true
+        },
+        {
+          "type": "list_marker_decimal_parens",
+          "named": true
+        },
+        {
+          "type": "list_marker_decimal_period",
+          "named": true
+        },
+        {
           "type": "list_marker_definition",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_alpha_paren",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_alpha_parens",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_alpha_period",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_roman_paren",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_roman_parens",
+          "named": true
+        },
+        {
+          "type": "list_marker_lower_roman_period",
           "named": true
         },
         {
@@ -2209,6 +2245,30 @@
         },
         {
           "type": "list_marker_star",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_alpha_paren",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_alpha_parens",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_alpha_period",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_roman_paren",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_roman_parens",
+          "named": true
+        },
+        {
+          "type": "list_marker_upper_roman_period",
           "named": true
         },
         {
@@ -3210,7 +3270,43 @@
     "named": true
   },
   {
+    "type": "list_marker_decimal_paren",
+    "named": true
+  },
+  {
+    "type": "list_marker_decimal_parens",
+    "named": true
+  },
+  {
+    "type": "list_marker_decimal_period",
+    "named": true
+  },
+  {
     "type": "list_marker_definition",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_alpha_paren",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_alpha_parens",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_alpha_period",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_roman_paren",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_roman_parens",
+    "named": true
+  },
+  {
+    "type": "list_marker_lower_roman_period",
     "named": true
   },
   {
@@ -3219,6 +3315,30 @@
   },
   {
     "type": "list_marker_star",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_alpha_paren",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_alpha_parens",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_alpha_period",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_roman_paren",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_roman_parens",
+    "named": true
+  },
+  {
+    "type": "list_marker_upper_roman_period",
     "named": true
   },
   {

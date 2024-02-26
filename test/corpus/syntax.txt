@@ -1582,3 +1582,215 @@ List: definition
       (definition
         (paragraph)
         (paragraph)))))
+
+===============================================================================
+List: ordered list markers
+===============================================================================
+1.
+1.
+
+1)
+1)
+
+(1)
+(1)
+
+a.
+a.
+
+a)
+a)
+
+(a)
+(a)
+
+A.
+A.
+
+A)
+A)
+
+(A)
+(A)
+
+i.
+i.
+
+i)
+i)
+
+(i)
+(i)
+
+I.
+I.
+
+I)
+I)
+
+(I)
+(I)
+
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (paragraph))
+    (list_item
+      (list_marker_decimal_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_decimal_paren)
+      (paragraph))
+    (list_item
+      (list_marker_decimal_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_decimal_parens)
+      (paragraph))
+    (list_item
+      (list_marker_decimal_parens)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_alpha_period)
+      (paragraph))
+    (list_item
+      (list_marker_lower_alpha_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_alpha_paren)
+      (paragraph))
+    (list_item
+      (list_marker_lower_alpha_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_alpha_parens)
+      (paragraph))
+    (list_item
+      (list_marker_lower_alpha_parens)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_alpha_period)
+      (paragraph))
+    (list_item
+      (list_marker_upper_alpha_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_alpha_paren)
+      (paragraph))
+    (list_item
+      (list_marker_upper_alpha_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_alpha_parens)
+      (paragraph))
+    (list_item
+      (list_marker_upper_alpha_parens)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_roman_period)
+      (paragraph))
+    (list_item
+      (list_marker_lower_roman_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_roman_paren)
+      (paragraph))
+    (list_item
+      (list_marker_lower_roman_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_roman_parens)
+      (paragraph))
+    (list_item
+      (list_marker_lower_roman_parens)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_roman_period)
+      (paragraph))
+    (list_item
+      (list_marker_upper_roman_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_roman_paren)
+      (paragraph))
+    (list_item
+      (list_marker_upper_roman_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_upper_roman_parens)
+      (paragraph))
+    (list_item
+      (list_marker_upper_roman_parens)
+      (paragraph))))
+
+===============================================================================
+List: close decimal sublist
+===============================================================================
+1. one
+
+  1. sub
+
+  inner
+
+outer
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (paragraph)
+      (list
+        (list_item
+          (list_marker_decimal_period)
+          (paragraph)))
+    (paragraph)))
+  (paragraph))
+
+===============================================================================
+List: ordered list don't mix
+===============================================================================
+1.
+1)
+i)
+(a)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_decimal_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_roman_paren)
+      (paragraph)))
+  (list
+    (list_item
+      (list_marker_lower_alpha_parens)
+      (paragraph))))
+

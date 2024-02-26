@@ -81,22 +81,22 @@ module.exports = grammar({
           $._list_dash,
           $._list_plus,
           $._list_star,
-          // $._list_decimal_period,
-          // $._list_decimal_paren,
-          // $._list_decimal_parens,
-          // $._list_lower_alpha_period,
-          // $._list_lower_alpha_paren,
-          // $._list_lower_alpha_parens,
-          // $._list_upper_alpha_period,
-          // $._list_upper_alpha_paren,
-          // $._list_upper_alpha_parens,
-          // $._list_lower_roman_period,
-          // $._list_lower_roman_paren,
-          // $._list_lower_roman_parens,
-          // $._list_upper_roman_period,
-          // $._list_upper_roman_paren,
-          // $._list_upper_roman_parens,
-          $._list_definition
+          $._list_definition,
+          $._list_decimal_period,
+          $._list_decimal_paren,
+          $._list_decimal_parens,
+          $._list_lower_alpha_period,
+          $._list_lower_alpha_paren,
+          $._list_lower_alpha_parens,
+          $._list_upper_alpha_period,
+          $._list_upper_alpha_paren,
+          $._list_upper_alpha_parens,
+          $._list_lower_roman_period,
+          $._list_lower_roman_paren,
+          $._list_lower_roman_parens,
+          $._list_upper_roman_period,
+          $._list_upper_roman_paren,
+          $._list_upper_roman_parens
           // $._list_task
         )
       ),
@@ -121,6 +121,116 @@ module.exports = grammar({
         alias(optional(repeat($._block)), $.definition),
         $._list_item_end
       ),
+
+    _list_decimal_period: ($) =>
+      seq(
+        repeat1(alias($._list_item_decimal_period, $.list_item)),
+        $._block_close
+      ),
+    _list_item_decimal_period: ($) =>
+      seq($.list_marker_decimal_period, $._list_item_content),
+    _list_decimal_paren: ($) =>
+      seq(
+        repeat1(alias($._list_item_decimal_paren, $.list_item)),
+        $._block_close
+      ),
+    _list_item_decimal_paren: ($) =>
+      seq($.list_marker_decimal_paren, $._list_item_content),
+    _list_decimal_parens: ($) =>
+      seq(
+        repeat1(alias($._list_item_decimal_parens, $.list_item)),
+        $._block_close
+      ),
+    _list_item_decimal_parens: ($) =>
+      seq($.list_marker_decimal_parens, $._list_item_content),
+
+    _list_lower_alpha_period: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_alpha_period, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_alpha_period: ($) =>
+      seq($.list_marker_lower_alpha_period, $._list_item_content),
+    _list_lower_alpha_paren: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_alpha_paren, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_alpha_paren: ($) =>
+      seq($.list_marker_lower_alpha_paren, $._list_item_content),
+    _list_lower_alpha_parens: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_alpha_parens, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_alpha_parens: ($) =>
+      seq($.list_marker_lower_alpha_parens, $._list_item_content),
+
+    _list_upper_alpha_period: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_alpha_period, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_alpha_period: ($) =>
+      seq($.list_marker_upper_alpha_period, $._list_item_content),
+    _list_upper_alpha_paren: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_alpha_paren, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_alpha_paren: ($) =>
+      seq($.list_marker_upper_alpha_paren, $._list_item_content),
+    _list_upper_alpha_parens: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_alpha_parens, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_alpha_parens: ($) =>
+      seq($.list_marker_upper_alpha_parens, $._list_item_content),
+
+    _list_lower_roman_period: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_roman_period, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_roman_period: ($) =>
+      seq($.list_marker_lower_roman_period, $._list_item_content),
+    _list_lower_roman_paren: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_roman_paren, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_roman_paren: ($) =>
+      seq($.list_marker_lower_roman_paren, $._list_item_content),
+    _list_lower_roman_parens: ($) =>
+      seq(
+        repeat1(alias($._list_item_lower_roman_parens, $.list_item)),
+        $._block_close
+      ),
+    _list_item_lower_roman_parens: ($) =>
+      seq($.list_marker_lower_roman_parens, $._list_item_content),
+
+    _list_upper_roman_period: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_roman_period, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_roman_period: ($) =>
+      seq($.list_marker_upper_roman_period, $._list_item_content),
+    _list_upper_roman_paren: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_roman_paren, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_roman_paren: ($) =>
+      seq($.list_marker_upper_roman_paren, $._list_item_content),
+    _list_upper_roman_parens: ($) =>
+      seq(
+        repeat1(alias($._list_item_upper_roman_parens, $.list_item)),
+        $._block_close
+      ),
+    _list_item_upper_roman_parens: ($) =>
+      seq($.list_marker_upper_roman_parens, $._list_item_content),
 
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
@@ -370,6 +480,21 @@ module.exports = grammar({
     $.list_marker_star,
     $.list_marker_plus,
     $.list_marker_definition,
+    $.list_marker_decimal_period,
+    $.list_marker_lower_alpha_period,
+    $.list_marker_upper_alpha_period,
+    $.list_marker_lower_roman_period,
+    $.list_marker_upper_roman_period,
+    $.list_marker_decimal_paren,
+    $.list_marker_lower_alpha_paren,
+    $.list_marker_upper_alpha_paren,
+    $.list_marker_lower_roman_paren,
+    $.list_marker_upper_roman_paren,
+    $.list_marker_decimal_parens,
+    $.list_marker_lower_alpha_parens,
+    $.list_marker_upper_alpha_parens,
+    $.list_marker_lower_roman_parens,
+    $.list_marker_upper_roman_parens,
     $._list_item_end,
     $._close_paragraph,
     $._thematic_break_dash,

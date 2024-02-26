@@ -198,6 +198,66 @@
           {
             "type": "SYMBOL",
             "name": "_list_definition"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_decimal_period"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_decimal_paren"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_decimal_parens"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_alpha_period"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_alpha_paren"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_alpha_parens"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_alpha_period"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_alpha_paren"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_alpha_parens"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_roman_period"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_roman_paren"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_lower_roman_parens"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_roman_period"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_roman_paren"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_list_upper_roman_parens"
           }
         ]
       }
@@ -364,6 +424,516 @@
         {
           "type": "SYMBOL",
           "name": "_list_item_end"
+        }
+      ]
+    },
+    "_list_decimal_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_decimal_period"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_decimal_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_decimal_period"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_decimal_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_decimal_paren"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_decimal_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_decimal_paren"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_decimal_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_decimal_parens"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_decimal_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_decimal_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_alpha_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_alpha_period"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_alpha_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_alpha_period"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_alpha_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_alpha_paren"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_alpha_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_alpha_paren"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_alpha_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_alpha_parens"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_alpha_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_alpha_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_alpha_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_alpha_period"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_alpha_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_alpha_period"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_alpha_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_alpha_paren"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_alpha_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_alpha_paren"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_alpha_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_alpha_parens"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_alpha_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_alpha_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_roman_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_roman_period"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_roman_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_roman_period"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_roman_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_roman_paren"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_roman_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_roman_paren"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_lower_roman_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_lower_roman_parens"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_lower_roman_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_lower_roman_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_roman_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_roman_period"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_roman_period": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_roman_period"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_roman_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_roman_paren"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_roman_paren": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_roman_paren"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_upper_roman_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_upper_roman_parens"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_upper_roman_parens": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_upper_roman_parens"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
         }
       ]
     },
@@ -1948,6 +2518,66 @@
     {
       "type": "SYMBOL",
       "name": "list_marker_definition"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_decimal_period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_alpha_period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_alpha_period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_roman_period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_roman_period"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_decimal_paren"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_alpha_paren"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_alpha_paren"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_roman_paren"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_roman_paren"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_decimal_parens"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_alpha_parens"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_alpha_parens"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_lower_roman_parens"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "list_marker_upper_roman_parens"
     },
     {
       "type": "SYMBOL",
