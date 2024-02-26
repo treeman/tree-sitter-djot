@@ -2248,6 +2248,10 @@
           "named": true
         },
         {
+          "type": "list_marker_task",
+          "named": true
+        },
+        {
           "type": "list_marker_upper_alpha_paren",
           "named": true
         },
@@ -2285,6 +2289,25 @@
         },
         {
           "type": "thematic_break",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "list_marker_task",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "checked",
+          "named": true
+        },
+        {
+          "type": "unchecked",
           "named": true
         }
       ]
@@ -3206,6 +3229,10 @@
     "named": false
   },
   {
+    "type": "] ",
+    "named": false
+  },
+  {
     "type": "^",
     "named": false
   },
@@ -3215,6 +3242,10 @@
   },
   {
     "type": "autolink",
+    "named": true
+  },
+  {
+    "type": "checked",
     "named": true
   },
   {
@@ -3371,6 +3402,10 @@
   },
   {
     "type": "symbol",
+    "named": true
+  },
+  {
+    "type": "unchecked",
     "named": true
   },
   {

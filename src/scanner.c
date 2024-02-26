@@ -19,6 +19,7 @@ typedef enum {
   LIST_MARKER_DASH,
   LIST_MARKER_STAR,
   LIST_MARKER_PLUS,
+  LIST_MARKER_TASK_START,
   LIST_MARKER_DEFINITION,
   LIST_MARKER_DECIMAL_PERIOD,
   LIST_MARKER_LOWER_ALPHA_PERIOD,
@@ -54,6 +55,7 @@ typedef enum {
   LIST_DASH,
   LIST_STAR,
   LIST_PLUS,
+  LIST_TASK,
   LIST_DEFINITION,
   LIST_DECIMAL_PERIOD,
   LIST_LOWER_ALPHA_PERIOD,
@@ -122,6 +124,7 @@ static bool is_list(BlockType type) {
   case LIST_DASH:
   case LIST_STAR:
   case LIST_PLUS:
+  case LIST_TASK:
   case LIST_DEFINITION:
   case LIST_DECIMAL_PERIOD:
   case LIST_LOWER_ALPHA_PERIOD:
@@ -152,6 +155,8 @@ static BlockType list_marker_to_block(TokenType type) {
     return LIST_STAR;
   case LIST_MARKER_PLUS:
     return LIST_PLUS;
+  case LIST_MARKER_TASK_START:
+    return LIST_TASK;
   case LIST_MARKER_DEFINITION:
     return LIST_DEFINITION;
   case LIST_MARKER_DECIMAL_PERIOD:
@@ -307,9 +312,6 @@ static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
 }
 
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
-#ifdef DEBUG
-  printf("PARSE_BLOCK_CLOSE\n");
-#endif
   if (s->open_blocks.size == 0) {
     return false;
   }
@@ -332,11 +334,6 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
                                            Block *list, TokenType list_marker) {
   if (list_marker != IGNORED) {
     BlockType to_open = list_marker_to_block(list_marker);
-#ifdef DEBUG
-    printf("Close block for mismatching list?\n");
-    printf("  marker: %s type: %s top block: %s\n", token_type_s(list_marker),
-           block_type_s(to_open), block_type_s(top->type));
-#endif
     if (list->type != to_open) {
       lexer->result_symbol = BLOCK_CLOSE;
       pop_block(s);
@@ -360,9 +357,6 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
   // and if it's less than the current list, we need to close that block.
   if (non_newline && list && list != top) {
     if (s->whitespace < list->level) {
-#ifdef DEBUG
-      printf("Closing block inside list item\n");
-#endif
       lexer->result_symbol = BLOCK_CLOSE;
       pop_block(s);
       return true;
@@ -519,7 +513,6 @@ static bool scan_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker) {
   if (lexer->lookahead != ' ') {
     return false;
   }
-
   lexer->advance(lexer, false);
   return true;
 }
@@ -576,9 +569,7 @@ static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
                                          OrderedListType type) {
   uint8_t scanned = 0;
   while (!lexer->eof(lexer)) {
-    printf("Check %d %c\n", lexer->lookahead, lexer->lookahead);
     if (matches_ordered_list(type, lexer->lookahead)) {
-      printf("  match %c\n", lexer->lookahead);
       ++scanned;
       lexer->advance(lexer, false);
     } else {
@@ -595,7 +586,6 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
   bool first_lower_alpha = is_lower_alpha(lexer->lookahead);
   bool first_upper_alpha = is_upper_alpha(lexer->lookahead);
 
-  printf("scanning decimal\n");
   if (scan_ordered_list_enumerator(s, lexer, DECIMAL)) {
     *res = DECIMAL;
     return true;
@@ -680,13 +670,25 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, '-')) {
-    return LIST_MARKER_DASH;
+    if (lexer->lookahead == '[') {
+      return LIST_MARKER_TASK_START;
+    } else {
+      return LIST_MARKER_DASH;
+    }
   }
   if (scan_bullet_list_marker(s, lexer, '*')) {
-    return LIST_MARKER_STAR;
+    if (lexer->lookahead == '[') {
+      return LIST_MARKER_TASK_START;
+    } else {
+      return LIST_MARKER_STAR;
+    }
   }
   if (scan_bullet_list_marker(s, lexer, '+')) {
-    return LIST_MARKER_PLUS;
+    if (lexer->lookahead == '[') {
+      return LIST_MARKER_TASK_START;
+    } else {
+      return LIST_MARKER_PLUS;
+    }
   }
   if (scan_bullet_list_marker(s, lexer, ':')) {
     return LIST_MARKER_DEFINITION;
@@ -746,11 +748,6 @@ static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
   if (any_block(s)) {
     Block *top = peek_block(s);
-#ifdef DEBUG
-    printf("OPENING LIST\n");
-    printf("indent: %d top->level: %d\n", indent, top->level);
-#endif
-
     // Found a list with the same type and indent, we should continue it.
     if (top->type == type && top->level == indent) {
       return;
@@ -766,7 +763,6 @@ static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
 static bool handle_ordered_list_marker(Scanner *s, TSLexer *lexer,
                                        const bool *valid_symbols,
                                        TokenType marker) {
-  printf("PARSE %s\n", token_type_s(marker));
   if (marker != IGNORED && valid_symbols[marker]) {
     ensure_list_open(s, list_marker_to_block(marker), s->whitespace + 1);
     lexer->result_symbol = marker;
@@ -787,7 +783,7 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
     if (lexer->lookahead == c) {
       ++seen;
       lexer->advance(lexer, false);
-    } else if (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+    } else if (lexer->lookahead == ' ') {
       lexer->advance(lexer, false);
     } else if (lexer->lookahead == '\n') {
       break;
@@ -803,35 +799,55 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
 static bool parse_list_marker_or_thematic_break(
     Scanner *s, TSLexer *lexer, const bool *valid_symbols, char marker,
     TokenType marker_type, BlockType list_type, TokenType thematic_break_type) {
-  if (!valid_symbols[marker_type] && !valid_symbols[thematic_break_type]) {
+  if (!valid_symbols[marker_type] && !valid_symbols[thematic_break_type] &&
+      !valid_symbols[LIST_MARKER_TASK_START]) {
     return false;
   }
 
   assert(lexer->lookahead == marker);
   lexer->advance(lexer, false);
+  // If we advance and check thematic break, we can still go back to only
+  // consume the list marker.
+  lexer->mark_end(lexer);
 
+  // We should prioritize a thematic break over lists.
   // We need to remember if a '- ' is found, which means we can open a list.
   bool can_be_list_marker =
-      valid_symbols[marker_type] && lexer->lookahead == ' ';
+      (valid_symbols[marker_type] || valid_symbols[LIST_MARKER_TASK_START]) &&
+      lexer->lookahead == ' ';
 
-  // But only if it's not also a thematic break.
-  bool can_be_thematic_break =
-      valid_symbols[thematic_break_type]
-      // We've already consumed one '-', two more is all that's needed.
-      && consume_line_with_char_or_whitespace(s, lexer, marker) >= 2;
+  // We have now checked the two first characters.
+  uint32_t marker_count = lexer->lookahead == marker ? 2 : 1;
+  bool can_be_thematic_break = marker_count == 2 || lexer->lookahead == ' ';
 
-  if (can_be_thematic_break) {
-    lexer->result_symbol = thematic_break_type;
+  // Advance once more so we can check '['
+  lexer->advance(lexer, false);
+  bool can_be_task = can_be_list_marker && lexer->lookahead == '[';
+
+  // Now check the entire line, if possible.
+  if (valid_symbols[thematic_break_type] && can_be_thematic_break) {
+    marker_count += consume_line_with_char_or_whitespace(s, lexer, marker);
+    if (marker_count >= 3) {
+      lexer->result_symbol = thematic_break_type;
+      lexer->mark_end(lexer);
+      return true;
+    }
+  }
+
+  if (valid_symbols[LIST_MARKER_TASK_START] && can_be_task) {
+    lexer->advance(lexer, false); // Consume the '['
+    ensure_list_open(s, LIST_TASK, s->whitespace + 1);
+    lexer->result_symbol = LIST_MARKER_TASK_START;
     lexer->mark_end(lexer);
     return true;
-  } else if (can_be_list_marker) {
+  }
+  if (valid_symbols[marker_type] && can_be_list_marker) {
     ensure_list_open(s, list_type, s->whitespace + 1);
     lexer->result_symbol = marker_type;
-    lexer->mark_end(lexer);
     return true;
-  } else {
-    return false;
   }
+
+  return false;
 }
 
 static bool parse_dash(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
@@ -846,20 +862,27 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
                                              THEMATIC_BREAK_STAR);
 }
 
-static bool parse_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker,
-                                     TokenType token_type,
-                                     BlockType block_type) {
-  if (!scan_bullet_list_marker(s, lexer, marker)) {
+static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
+  if (!valid_symbols[LIST_MARKER_PLUS] &&
+      !valid_symbols[LIST_MARKER_TASK_START]) {
     return false;
   }
-  ensure_list_open(s, block_type, s->whitespace + 1);
-  lexer->result_symbol = token_type;
-  lexer->mark_end(lexer);
-  return true;
-}
+  if (!scan_bullet_list_marker(s, lexer, '+')) {
+    return false;
+  }
 
-static bool parse_list_marker_plus(Scanner *s, TSLexer *lexer) {
-  return parse_bullet_list_marker(s, lexer, '+', LIST_MARKER_PLUS, LIST_PLUS);
+  if (lexer->lookahead == '[') {
+    lexer->advance(lexer, false); // Consume the '['
+    ensure_list_open(s, LIST_TASK, s->whitespace + 1);
+    lexer->result_symbol = LIST_MARKER_TASK_START;
+    lexer->mark_end(lexer);
+    return true;
+  } else {
+    ensure_list_open(s, LIST_PLUS, s->whitespace + 1);
+    lexer->result_symbol = LIST_MARKER_PLUS;
+    lexer->mark_end(lexer);
+    return true;
+  }
 }
 
 static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
@@ -1004,7 +1027,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     }
     break;
   case '+':
-    if (valid_symbols[LIST_MARKER_PLUS] && parse_list_marker_plus(s, lexer)) {
+    if (parse_plus(s, lexer, valid_symbols)) {
       return true;
     }
     break;
@@ -1132,6 +1155,8 @@ static char *token_type_s(TokenType t) {
     return "LIST_MARKER_STAR";
   case LIST_MARKER_PLUS:
     return "LIST_MARKER_PLUS";
+  case LIST_MARKER_TASK_START:
+    return "LIST_MARKER_TASK_START";
   case LIST_MARKER_DEFINITION:
     return "LIST_MARKER_DEFINITION";
   case LIST_MARKER_DECIMAL_PERIOD:
@@ -1199,6 +1224,8 @@ static char *block_type_s(BlockType t) {
     return "LIST_STAR";
   case LIST_PLUS:
     return "LIST_PLUS";
+  case LIST_TASK:
+    return "LIST_TASK";
   case LIST_DEFINITION:
     return "LIST_DEFINITION";
   case LIST_DECIMAL_PERIOD:

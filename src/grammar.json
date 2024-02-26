@@ -197,6 +197,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "_list_task"
+          },
+          {
+            "type": "SYMBOL",
             "name": "_list_definition"
           },
           {
@@ -361,6 +365,76 @@
         {
           "type": "SYMBOL",
           "name": "_list_item_content"
+        }
+      ]
+    },
+    "_list_task": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_list_item_task"
+            },
+            "named": true,
+            "value": "list_item"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_block_close"
+        }
+      ]
+    },
+    "_list_item_task": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_marker_task"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_list_item_content"
+        }
+      ]
+    },
+    "list_marker_task": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_list_marker_task_start"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "STRING",
+                "value": " "
+              },
+              "named": true,
+              "value": "unchecked"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "STRING",
+                "value": "x"
+              },
+              "named": true,
+              "value": "checked"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "] "
         }
       ]
     },
@@ -2514,6 +2588,10 @@
     {
       "type": "SYMBOL",
       "name": "list_marker_plus"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_list_marker_task_start"
     },
     {
       "type": "SYMBOL",

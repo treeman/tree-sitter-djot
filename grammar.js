@@ -20,17 +20,11 @@ module.exports = grammar({
 
   extras: (_) => ["\r"],
 
-  conflicts: ($) => [
-    // NOTE I don't know how/when these take into effect?
-    // [$._inline],
-    // [$._inline_no_spaces],
-    // [$.emphasis, $._text],
-    // [$._inline_no_surrounding_spaces],
-    //   [$.paragraph, $.div],
-    //   [$._inline_with_newlines, $._close_paragraph],
-    // [$._list_item_definition],
-    // [$._list_definition],
-  ],
+  // conflicts: ($) => [
+  //   [$._list_item_dash, $.list_marker_task],
+  //   [$._list_item_star, $.list_marker_task],
+  //   [$._list_item_plus, $.list_marker_task],
+  // ],
 
   rules: {
     document: ($) => repeat($._block),
@@ -40,8 +34,8 @@ module.exports = grammar({
       choice(
         $._heading,
         $.list,
-        // $.pipe_table, // External. Has a caption too that needs to match indent
-        // $.footnote, // External, needs to consider indentation level
+        // $.pipe_table,
+        // $.footnote,
         $.div,
         $.raw_block,
         $.code_block,
@@ -62,7 +56,7 @@ module.exports = grammar({
         $.heading5,
         $.heading6
       ),
-    // TODO mark '#' with marker
+    // TODO mark `#' with marker
     heading1: ($) => seq("#", $._gobble_header),
     heading2: ($) => seq(/#{2}/, $._gobble_header),
     heading3: ($) => seq(/#{3}/, $._gobble_header),
@@ -81,6 +75,7 @@ module.exports = grammar({
           $._list_dash,
           $._list_plus,
           $._list_star,
+          $._list_task,
           $._list_definition,
           $._list_decimal_period,
           $._list_decimal_paren,
@@ -97,7 +92,6 @@ module.exports = grammar({
           $._list_upper_roman_period,
           $._list_upper_roman_paren,
           $._list_upper_roman_parens
-          // $._list_task
         )
       ),
     _list_dash: ($) =>
@@ -111,6 +105,16 @@ module.exports = grammar({
     _list_star: ($) =>
       seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
     _list_item_star: ($) => seq($.list_marker_star, $._list_item_content),
+
+    _list_task: ($) =>
+      seq(repeat1(alias($._list_item_task, $.list_item)), $._block_close),
+    _list_item_task: ($) => seq($.list_marker_task, $._list_item_content),
+    list_marker_task: ($) =>
+      seq(
+        $._list_marker_task_start,
+        choice(alias(" ", $.unchecked), alias("x", $.checked)),
+        "] "
+      ),
 
     _list_definition: ($) =>
       seq(repeat1(alias($._list_item_definition, $.list_item)), $._block_close),
@@ -479,6 +483,7 @@ module.exports = grammar({
     $.list_marker_dash,
     $.list_marker_star,
     $.list_marker_plus,
+    $._list_marker_task_start,
     $.list_marker_definition,
     $.list_marker_decimal_period,
     $.list_marker_lower_alpha_period,
