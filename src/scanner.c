@@ -6,12 +6,24 @@
 // but this is probably fine.
 #define STACK_SIZE 512
 
-// #define DEBUG
+#define DEBUG
 
 typedef enum {
   BLOCK_CLOSE,
   EOF_OR_BLANKLINE,
 
+  HEADING1_START,
+  HEADING1_CONTINUATION,
+  HEADING2_START,
+  HEADING2_CONTINUATION,
+  HEADING3_START,
+  HEADING3_CONTINUATION,
+  HEADING4_START,
+  HEADING4_CONTINUATION,
+  HEADING5_START,
+  HEADING5_CONTINUATION,
+  HEADING6_START,
+  HEADING6_CONTINUATION,
   DIV_START,
   DIV_END,
   CODE_BLOCK_START,
@@ -50,6 +62,7 @@ typedef enum {
 } TokenType;
 
 typedef enum {
+  HEADING,
   DIV,
   CODE_BLOCK,
   LIST_DASH,
@@ -244,8 +257,11 @@ static void pop_block(Scanner *s) {
 static bool any_block(Scanner *s) { return s->open_blocks.size > 0; }
 
 static Block *peek_block(Scanner *s) {
-  assert(s->open_blocks.size > 0);
-  return s->open_blocks.items[s->open_blocks.size - 1];
+  if (s->open_blocks.size == 0) {
+    return NULL;
+  } else {
+    return s->open_blocks.items[s->open_blocks.size - 1];
+  }
 }
 
 void set_delayed_token(Scanner *s, TokenType token, uint8_t token_width) {
@@ -386,6 +402,12 @@ static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
   }
   *from_top = number_of_blocks_from_top(s, DIV, *colons);
   return true;
+}
+
+static bool is_div_marker_next(Scanner *s, TSLexer *lexer) {
+  uint8_t colons;
+  size_t from_top;
+  return scan_div_marker(s, lexer, &colons, &from_top);
 }
 
 static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
@@ -721,11 +743,10 @@ static bool parse_eof_or_blankline(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
-static bool should_close_paragraph(Scanner *s, TSLexer *lexer) {
-  uint8_t colons;
-  size_t from_top;
-  // FIXME should we setup the already parsed results here?
-  if (scan_div_marker(s, lexer, &colons, &from_top)) {
+// Can we scan a block closing marker?
+// For example, if we see a valid div marker.
+static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
+  if (is_div_marker_next(s, lexer)) {
     return true;
   }
 
@@ -737,7 +758,7 @@ static bool should_close_paragraph(Scanner *s, TSLexer *lexer) {
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
-  if (should_close_paragraph(s, lexer)) {
+  if (scan_containing_block_closing_marker(s, lexer)) {
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
   } else {
@@ -960,6 +981,110 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 }
 
+static TokenType heading_start_token(uint8_t level) {
+  switch (level) {
+  case 1:
+    return HEADING1_START;
+  case 2:
+    return HEADING2_START;
+  case 3:
+    return HEADING3_START;
+  case 4:
+    return HEADING4_START;
+  case 5:
+    return HEADING5_START;
+  case 6:
+    return HEADING6_START;
+  default:
+    return ERROR;
+  }
+}
+
+static TokenType heading_continuation_token(uint8_t level) {
+  switch (level) {
+  case 1:
+    return HEADING1_CONTINUATION;
+  case 2:
+    return HEADING2_CONTINUATION;
+  case 3:
+    return HEADING3_CONTINUATION;
+  case 4:
+    return HEADING4_CONTINUATION;
+  case 5:
+    return HEADING5_CONTINUATION;
+  case 6:
+    return HEADING6_CONTINUATION;
+  default:
+    return ERROR;
+  }
+}
+
+static bool parse_heading(Scanner *s, TSLexer *lexer,
+                          const bool *valid_symbols) {
+  // It's fine to always consume, since this only parses '#'
+  uint8_t hash_count = consume_chars(s, lexer, '#');
+  printf("Found %d hashes\n", hash_count);
+
+  // Note that headings don't contain other blocks, only inline.
+  Block *top = peek_block(s);
+  bool top_heading = top && top->type == HEADING;
+
+  printf("Lookahead: '%c'\n", lexer->lookahead);
+
+  if (hash_count > 0 && lexer->lookahead == ' ') {
+    TokenType start_token = heading_start_token(hash_count);
+    TokenType continuation_token = heading_continuation_token(hash_count);
+
+    if (!valid_symbols[start_token] && !valid_symbols[continuation_token] &&
+        !valid_symbols[BLOCK_CLOSE]) {
+      return false;
+    }
+
+    lexer->advance(lexer, false); // Consume the ' '
+
+    if (valid_symbols[continuation_token] && top_heading &&
+        top->level == hash_count) {
+      // We're in a heading matching the same number of '#'
+      lexer->mark_end(lexer);
+      lexer->result_symbol = continuation_token;
+      return true;
+    }
+
+    if (valid_symbols[BLOCK_CLOSE] && top_heading && top->level != hash_count) {
+      // Found a mismatched heading level, need to close the previous
+      // before opening this one.
+      close_blocks_with_final_token(s, lexer, 1, start_token, hash_count + 1);
+      return true;
+    }
+
+    // Open a new heading
+    lexer->mark_end(lexer);
+    push_block(s, HEADING, hash_count);
+    lexer->result_symbol = start_token;
+    return true;
+  } else if (hash_count == 0 && top_heading) {
+    // We need to always provide a BLOCK_CLOSE to end headings.
+    // We do this here, either when a blankline is followed or
+    // by the end of a container block.
+    if (valid_symbols[BLOCK_CLOSE] &&
+        (scan_eof_or_blankline(s, lexer) ||
+         scan_containing_block_closing_marker(s, lexer))) {
+      pop_block(s);
+      lexer->result_symbol = BLOCK_CLOSE;
+      return true;
+    }
+
+    // We should continue the heading, if it's open.
+    TokenType res = heading_continuation_token(top->level);
+    if (valid_symbols[res]) {
+      lexer->result_symbol = res;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -989,12 +1114,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // After some refactoring, this might be doable in grammar.js,
-  // but I don't care to refactor and try it. This works well.
-  if (valid_symbols[EOF_OR_BLANKLINE] && parse_eof_or_blankline(s, lexer)) {
+  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
-  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
+  if (parse_heading(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -1064,6 +1187,12 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // Yeah, the order dependencies aren't very nice.
   if (valid_symbols[BLOCK_CLOSE] &&
       close_lists_if_needed(s, lexer, non_newline, ordered_list_marker)) {
+    return true;
+  }
+
+  // After some refactoring, this might be doable in grammar.js,
+  // but I don't care to refactor and try it. This works well.
+  if (valid_symbols[EOF_OR_BLANKLINE] && parse_eof_or_blankline(s, lexer)) {
     return true;
   }
 
@@ -1141,6 +1270,30 @@ static char *token_type_s(TokenType t) {
   case EOF_OR_BLANKLINE:
     return "EOF_OR_BLANKLINE";
 
+  case HEADING1_START:
+    return "HEADING1_START";
+  case HEADING1_CONTINUATION:
+    return "HEADING1_CONTINUATION";
+  case HEADING2_START:
+    return "HEADING2_START";
+  case HEADING2_CONTINUATION:
+    return "HEADING2_CONTINUATION";
+  case HEADING3_START:
+    return "HEADING3_START";
+  case HEADING3_CONTINUATION:
+    return "HEADING3_CONTINUATION";
+  case HEADING4_START:
+    return "HEADING4_START";
+  case HEADING4_CONTINUATION:
+    return "HEADING4_CONTINUATION";
+  case HEADING5_START:
+    return "HEADING5_START";
+  case HEADING5_CONTINUATION:
+    return "HEADING5_CONTINUATION";
+  case HEADING6_START:
+    return "HEADING6_START";
+  case HEADING6_CONTINUATION:
+    return "HEADING6_CONTINUATION";
   case DIV_START:
     return "DIV_START";
   case DIV_END:
@@ -1214,6 +1367,8 @@ static char *token_type_s(TokenType t) {
 
 static char *block_type_s(BlockType t) {
   switch (t) {
+  case HEADING:
+    return "HEADING";
   case DIV:
     return "DIV";
   case CODE_BLOCK:

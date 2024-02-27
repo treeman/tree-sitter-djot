@@ -748,7 +748,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -820,6 +820,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -863,7 +867,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -935,6 +939,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -978,7 +986,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -1050,6 +1058,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -1093,7 +1105,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -1165,6 +1177,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -1208,7 +1224,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -1280,6 +1296,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -1323,7 +1343,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "autolink",
@@ -1395,6 +1415,10 @@
         },
         {
           "type": "insert",
+          "named": true
+        },
+        {
+          "type": "marker",
           "named": true
         },
         {
@@ -3169,10 +3193,6 @@
     "named": false
   },
   {
-    "type": "#",
-    "named": false
-  },
-  {
     "type": "%",
     "named": false
   },
@@ -3370,6 +3390,10 @@
   },
   {
     "type": "list_marker_upper_roman_period",
+    "named": true
+  },
+  {
+    "type": "marker",
     "named": true
   },
   {

@@ -56,16 +56,54 @@ module.exports = grammar({
         $.heading5,
         $.heading6
       ),
-    // TODO mark `#' with marker
-    heading1: ($) => seq("#", $._gobble_header),
-    heading2: ($) => seq(/#{2}/, $._gobble_header),
-    heading3: ($) => seq(/#{3}/, $._gobble_header),
-    heading4: ($) => seq(/#{4}/, $._gobble_header),
-    heading5: ($) => seq(/#{5}/, $._gobble_header),
-    heading6: ($) => seq(/#{6}/, $._gobble_header),
-    // NOTE because we don't tag the `#` character individually,
-    // there's no need to match the beginning `#` of each consecutive line.
-    _gobble_header: ($) => seq($._inline_with_newlines, $._eof_or_blankline),
+    heading1: ($) =>
+      seq(
+        alias($._heading1_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading1_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
+    heading2: ($) =>
+      seq(
+        alias($._heading2_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading2_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
+    heading3: ($) =>
+      seq(
+        alias($._heading3_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading3_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
+    heading4: ($) =>
+      seq(
+        alias($._heading4_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading4_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
+    heading5: ($) =>
+      seq(
+        alias($._heading5_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading5_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
+    heading6: ($) =>
+      seq(
+        alias($._heading6_start, $.marker),
+        $._inline_line,
+        repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line)),
+        $._block_close,
+        optional($._eof_or_blankline)
+      ),
 
     list: ($) =>
       // Djot has a crazy number of different list types,
@@ -362,6 +400,7 @@ module.exports = grammar({
         seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
       ),
     _inline_with_newlines: ($) => repeat1(prec.left(choice($._inline, /\s/))),
+    _inline_line: ($) => seq($._inline, "\n"),
 
     autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
 
@@ -476,6 +515,18 @@ module.exports = grammar({
     $._eof_or_blankline,
 
     // Blocks
+    $._heading1_start,
+    $._heading1_continuation,
+    $._heading2_start,
+    $._heading2_continuation,
+    $._heading3_start,
+    $._heading3_continuation,
+    $._heading4_start,
+    $._heading4_continuation,
+    $._heading5_start,
+    $._heading5_continuation,
+    $._heading6_start,
+    $._heading6_continuation,
     $._div_start,
     $._div_end,
     $._code_block_start,
