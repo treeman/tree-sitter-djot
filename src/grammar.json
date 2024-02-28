@@ -1287,11 +1287,28 @@
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
-        "type": "REPEAT1",
-        "content": {
-          "type": "SYMBOL",
-          "name": "_table_content"
-        }
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_table_content"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "table_caption"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
       }
     },
     "_table_content": {
@@ -1445,6 +1462,49 @@
     "table_cell": {
       "type": "SYMBOL",
       "name": "_inline"
+    },
+    "table_caption": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_newline"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_table_caption_begin"
+          },
+          "named": true,
+          "value": "marker"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_inline_with_newlines"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_table_caption_end"
+            },
+            {
+              "type": "STRING",
+              "value": "\u0000"
+            }
+          ]
+        }
+      ]
     },
     "footnote": {
       "type": "SEQ",
@@ -2255,8 +2315,12 @@
               "name": "_inline"
             },
             {
-              "type": "PATTERN",
-              "value": "\\s"
+              "type": "STRING",
+              "value": " "
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_newline"
             }
           ]
         }
@@ -3110,6 +3174,9 @@
   "conflicts": [
     [
       "_table_content"
+    ],
+    [
+      "table_caption"
     ]
   ],
   "precedences": [],
@@ -3301,6 +3368,14 @@
     {
       "type": "SYMBOL",
       "name": "_footnote_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_caption_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_caption_end"
     },
     {
       "type": "SYMBOL",

@@ -60,6 +60,8 @@ typedef enum {
   THEMATIC_BREAK_STAR,
   FOOTNOTE_BEGIN,
   FOOTNOTE_END,
+  TABLE_CAPTION_BEGIN,
+  TABLE_CAPTION_END,
 
   VERBATIM_BEGIN,
   VERBATIM_END,
@@ -75,6 +77,7 @@ typedef enum {
   DIV,
   HEADING,
   FOOTNOTE,
+  TABLE_CAPTION,
   LIST_DASH,
   LIST_STAR,
   LIST_PLUS,
@@ -1238,9 +1241,8 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // Only look at top block?
   Block *footnote = peek_block(s);
-  if (footnote->type != FOOTNOTE) {
+  if (!footnote || footnote->type != FOOTNOTE) {
     return false;
   }
 
@@ -1250,6 +1252,43 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
 
   pop_block(s);
   lexer->result_symbol = FOOTNOTE_END;
+  return true;
+}
+
+static bool parse_table_caption(Scanner *s, TSLexer *lexer,
+                                const bool *valid_symbols) {
+  if (!valid_symbols[TABLE_CAPTION_BEGIN]) {
+    return false;
+  }
+
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != ' ') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  push_block(s, TABLE_CAPTION, s->whitespace + 2);
+  lexer->mark_end(lexer);
+  lexer->result_symbol = TABLE_CAPTION_BEGIN;
+  return true;
+}
+
+static bool parse_table_caption_end(Scanner *s, TSLexer *lexer,
+                                    const bool *valid_symbols) {
+  if (!valid_symbols[TABLE_CAPTION_END]) {
+    return false;
+  }
+
+  Block *caption = peek_block(s);
+  if (!caption || caption->type != TABLE_CAPTION) {
+    return false;
+  }
+
+  if (s->whitespace >= caption->level) {
+    return false;
+  }
+
+  pop_block(s);
+  lexer->result_symbol = TABLE_CAPTION_END;
   return true;
 }
 
@@ -1343,6 +1382,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     break;
   case '[':
     if (parse_open_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
+  case '^':
+    if (parse_table_caption(s, lexer, valid_symbols)) {
       return true;
     }
   case '\n':
@@ -1554,6 +1597,10 @@ static char *token_type_s(TokenType t) {
     return "FOOTNOTE_BEGIN";
   case FOOTNOTE_END:
     return "FOOTNOTE_END";
+  case TABLE_CAPTION_BEGIN:
+    return "TABLE_CAPTION_BEGIN";
+  case TABLE_CAPTION_END:
+    return "TABLE_CAPTION_END";
 
   case VERBATIM_BEGIN:
     return "VERBATIM_BEGIN";
@@ -1581,6 +1628,8 @@ static char *block_type_s(BlockType t) {
     return "CODE_BLOCK";
   case FOOTNOTE:
     return "FOOTNOTE";
+  case TABLE_CAPTION:
+    return "TABLE_CAPTION";
   case LIST_DASH:
     return "LIST_DASH";
   case LIST_STAR:
@@ -1666,8 +1715,10 @@ static void dump_valid_symbols(const bool *valid_symbols) {
     case BLOCK_QUOTE_BEGIN:
     case BLOCK_QUOTE_CONTINUATION:
     case CLOSE_PARAGRAPH:
-    case FOOTNOTE_BEGIN:
-    case FOOTNOTE_END:
+    // case FOOTNOTE_BEGIN:
+    // case FOOTNOTE_END:
+    case TABLE_CAPTION_BEGIN:
+    case TABLE_CAPTION_END:
       if (valid_symbols[i]) {
         printf("%s\n", token_type_s(i));
       }

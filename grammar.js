@@ -1,12 +1,11 @@
 module.exports = grammar({
   name: "djot",
 
-  // TODO need to escape special characters everywhere
-  // maybe we can do this early and automatically skip them in our token logic?
-  // But we shouldn't mark things inside verbatim or code blocks
-
   // TODO
   // - Caption for tables
+  // - Escape characters (context dependent?)
+  // - Fallback to text and paragraphs
+  //   Probably need to add conflicts and dynamic(?) precedence
 
   extras: (_) => ["\r"],
 
@@ -15,6 +14,7 @@ module.exports = grammar({
     //   [$._list_item_star, $.list_marker_task],
     //   [$._list_item_plus, $.list_marker_task],
     [$._table_content],
+    [$.table_caption],
   ],
 
   rules: {
@@ -23,8 +23,6 @@ module.exports = grammar({
     // Every block contains a newline.
     _block: ($) => choice($._block_without_standalone_newline, $._newline),
 
-    // FIXME maybe link ref defs and footnotes should only be valid
-    // on the top level?
     _block_without_standalone_newline: ($) =>
       choice(
         $._heading,
@@ -270,7 +268,8 @@ module.exports = grammar({
 
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
-    table: ($) => prec.right(repeat1($._table_content)),
+    table: ($) =>
+      prec.right(seq(repeat1($._table_content), optional($.table_caption))),
     _table_content: ($) =>
       choice(
         $.table_separator,
@@ -301,6 +300,13 @@ module.exports = grammar({
       ),
     table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
     table_cell: ($) => $._inline,
+    table_caption: ($) =>
+      seq(
+        optional($._newline),
+        alias($._table_caption_begin, $.marker),
+        $._inline_with_newlines,
+        choice($._table_caption_end, "\0")
+      ),
 
     footnote: ($) =>
       seq(
@@ -449,7 +455,8 @@ module.exports = grammar({
         repeat1(prec.left($._inline_no_spaces)),
         seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
       ),
-    _inline_with_newlines: ($) => repeat1(prec.left(choice($._inline, /\s/))),
+    _inline_with_newlines: ($) =>
+      repeat1(prec.left(choice($._inline, " ", $._newline))),
     _inline_line: ($) => seq($._inline, $._newline),
 
     autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
@@ -610,6 +617,8 @@ module.exports = grammar({
     $._thematic_break_star,
     $._footnote_begin,
     $._footnote_end,
+    $._table_caption_begin,
+    $._table_caption_end,
 
     // Inline
     $._verbatim_begin,
