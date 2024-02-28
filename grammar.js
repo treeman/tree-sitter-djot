@@ -5,26 +5,18 @@ module.exports = grammar({
   // maybe we can do this early and automatically skip them in our token logic?
   // But we shouldn't mark things inside verbatim or code blocks
 
-  // Containing block should automatically close:
-  // - Paragraph
-  // - Header
-  // - Changing list style closes adjacent list of other type
-  // - Code block (from blockquote or list)
-  // - Raw block
-  // - Div
-
-  // Container blocks that can close:
-  // - Block quote
-  // - Div
-  // - List
-
+  // TODO
+  // - Footnotes
+  // - Caption for tables
+  //
   extras: (_) => ["\r"],
 
-  // conflicts: ($) => [
-  //   [$._list_item_dash, $.list_marker_task],
-  //   [$._list_item_star, $.list_marker_task],
-  //   [$._list_item_plus, $.list_marker_task],
-  // ],
+  conflicts: ($) => [
+    //   [$._list_item_dash, $.list_marker_task],
+    //   [$._list_item_star, $.list_marker_task],
+    //   [$._list_item_plus, $.list_marker_task],
+    [$._table_content],
+  ],
 
   rules: {
     document: ($) => repeat($._block),
@@ -36,7 +28,7 @@ module.exports = grammar({
       choice(
         $._heading,
         $.list,
-        // $.pipe_table,
+        $.table,
         // $.footnote,
         $.div,
         $.raw_block,
@@ -276,6 +268,38 @@ module.exports = grammar({
       seq($.list_marker_upper_roman_parens, $._list_item_content),
 
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
+
+    table: ($) => prec.right(repeat1($._table_content)),
+    _table_content: ($) =>
+      choice(
+        $.table_separator,
+        seq(alias($.table_row, $.table_header), $.table_separator),
+        $.table_row
+      ),
+    table_separator: ($) =>
+      prec.right(
+        seq(
+          optional($._block_quote_prefix),
+          "|",
+          $.table_cell_alignment,
+          repeat(seq("|", $.table_cell_alignment)),
+          "|",
+          $._newline
+        )
+      ),
+    table_row: ($) =>
+      prec.right(
+        seq(
+          optional($._block_quote_prefix),
+          "|",
+          $.table_cell,
+          repeat(seq("|", $.table_cell)),
+          "|",
+          $._newline
+        )
+      ),
+    table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
+    table_cell: ($) => $._inline,
 
     div: ($) =>
       seq(

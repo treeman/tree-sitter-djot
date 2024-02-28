@@ -95,6 +95,10 @@
           "named": true
         },
         {
+          "type": "table",
+          "named": true
+        },
+        {
           "type": "thematic_break",
           "named": true
         }
@@ -265,6 +269,10 @@
         },
         {
           "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "table",
           "named": true
         },
         {
@@ -462,6 +470,10 @@
           "named": true
         },
         {
+          "type": "table",
+          "named": true
+        },
+        {
           "type": "thematic_break",
           "named": true
         }
@@ -545,6 +557,10 @@
         },
         {
           "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "table",
           "named": true
         },
         {
@@ -2293,6 +2309,10 @@
           "named": true
         },
         {
+          "type": "table",
+          "named": true
+        },
+        {
           "type": "term",
           "named": true
         },
@@ -3014,6 +3034,201 @@
     }
   },
   {
+    "type": "table",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "table_header",
+          "named": true
+        },
+        {
+          "type": "table_row",
+          "named": true
+        },
+        {
+          "type": "table_separator",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table_cell",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "autolink",
+          "named": true
+        },
+        {
+          "type": "collapsed_reference_image",
+          "named": true
+        },
+        {
+          "type": "collapsed_reference_link",
+          "named": true
+        },
+        {
+          "type": "delete",
+          "named": true
+        },
+        {
+          "type": "ellipsis",
+          "named": true
+        },
+        {
+          "type": "em_dash",
+          "named": true
+        },
+        {
+          "type": "emphasis",
+          "named": true
+        },
+        {
+          "type": "en_dash",
+          "named": true
+        },
+        {
+          "type": "escaped_quote",
+          "named": true
+        },
+        {
+          "type": "footnote_reference",
+          "named": true
+        },
+        {
+          "type": "full_reference_image",
+          "named": true
+        },
+        {
+          "type": "full_reference_link",
+          "named": true
+        },
+        {
+          "type": "hard_line_break",
+          "named": true
+        },
+        {
+          "type": "highlighted",
+          "named": true
+        },
+        {
+          "type": "inline_attribute",
+          "named": true
+        },
+        {
+          "type": "inline_image",
+          "named": true
+        },
+        {
+          "type": "inline_link",
+          "named": true
+        },
+        {
+          "type": "insert",
+          "named": true
+        },
+        {
+          "type": "math",
+          "named": true
+        },
+        {
+          "type": "raw_inline",
+          "named": true
+        },
+        {
+          "type": "span",
+          "named": true
+        },
+        {
+          "type": "strong",
+          "named": true
+        },
+        {
+          "type": "subscript",
+          "named": true
+        },
+        {
+          "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "verbatim",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table_header",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
+          "type": "table_cell",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table_row",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
+          "type": "table_cell",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table_separator",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
+          "type": "table_cell_alignment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "term",
     "named": true,
     "fields": {},
@@ -3414,6 +3629,10 @@
     "named": true
   },
   {
+    "type": "table_cell_alignment",
+    "named": true
+  },
+  {
     "type": "unchecked",
     "named": true
   },
@@ -3447,6 +3666,10 @@
   },
   {
     "type": "{~",
+    "named": false
+  },
+  {
+    "type": "|",
     "named": false
   },
   {

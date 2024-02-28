@@ -34,6 +34,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "table"
+        },
+        {
+          "type": "SYMBOL",
           "name": "div"
         },
         {
@@ -1274,6 +1278,169 @@
           "name": "_list_item_end"
         }
       ]
+    },
+    "table": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "SYMBOL",
+          "name": "_table_content"
+        }
+      }
+    },
+    "_table_content": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "table_separator"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "table_row"
+              },
+              "named": true,
+              "value": "table_header"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "table_separator"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "table_row"
+        }
+      ]
+    },
+    "table_separator": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_block_quote_prefix"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": "|"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "table_cell_alignment"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "|"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "table_cell_alignment"
+                }
+              ]
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "|"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_newline"
+          }
+        ]
+      }
+    },
+    "table_row": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_block_quote_prefix"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": "|"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "table_cell"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "|"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "table_cell"
+                }
+              ]
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "|"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_newline"
+          }
+        ]
+      }
+    },
+    "table_cell_alignment": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 100,
+        "content": {
+          "type": "PATTERN",
+          "value": ":?-+:?"
+        }
+      }
+    },
+    "table_cell": {
+      "type": "SYMBOL",
+      "name": "_inline"
     },
     "div": {
       "type": "SEQ",
@@ -2908,7 +3075,11 @@
       "value": "\r"
     }
   ],
-  "conflicts": [],
+  "conflicts": [
+    [
+      "_table_content"
+    ]
+  ],
   "precedences": [],
   "externals": [
     {

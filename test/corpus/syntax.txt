@@ -1920,3 +1920,142 @@ List: double dash
       (list_marker_dash)
       (paragraph))))
 
+===============================================================================
+Table: single row
+===============================================================================
+| a | b |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_row
+      (table_cell)
+      (table_cell))))
+
+===============================================================================
+Table: initial separator
+===============================================================================
+|---|---|
+| a | b |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_separator
+      (table_cell_alignment)
+      (table_cell_alignment))
+    (table_row
+      (table_cell)
+      (table_cell))))
+
+===============================================================================
+Table: separator + header
+===============================================================================
+| x|y|
+|--|--:|
+| a | b |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_header
+      (table_cell)
+      (table_cell))
+    (table_separator
+      (table_cell_alignment)
+      (table_cell_alignment))
+    (table_row
+      (table_cell)
+      (table_cell))))
+
+===============================================================================
+Table: separator alignments
+===============================================================================
+|----|---:|:---|:--:|
+| a | b | c | d |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_separator
+      (table_cell_alignment)
+      (table_cell_alignment)
+      (table_cell_alignment)
+      (table_cell_alignment))
+    (table_row
+      (table_cell)
+      (table_cell)
+      (table_cell)
+      (table_cell))))
+
+===============================================================================
+Table: multiple headers
+===============================================================================
+|1|2|
+|-|-|
+|3|4|
+|-|-|
+|a|b|
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_header
+      (table_cell)
+      (table_cell))
+    (table_separator
+      (table_cell_alignment)
+      (table_cell_alignment))
+    (table_header
+      (table_cell)
+      (table_cell))
+    (table_separator
+      (table_cell_alignment)
+      (table_cell_alignment))
+    (table_row
+      (table_cell)
+      (table_cell))))
+
+===============================================================================
+Table: inside blockquote
+===============================================================================
+> | x|y|
+> |--|--:|
+> | a | b |
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (table
+      (table_header
+        (table_cell)
+        (table_cell))
+      (table_separator
+        (block_quote_marker)
+        (table_cell_alignment)
+        (table_cell_alignment))
+      (table_row
+        (block_quote_marker)
+        (table_cell)
+        (table_cell)))))
+
+===============================================================================
+Table: with inline styling
+===============================================================================
+| _x_ | *y* |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_row
+      (table_cell (emphasis))
+      (table_cell (strong)))))
+
