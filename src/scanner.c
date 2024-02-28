@@ -2,6 +2,9 @@
 #include <assert.h>
 #include <stdio.h>
 
+// NOTE maybe we should never use asserts?
+// Issue ERROR token instead.
+
 // Maybe we should implement a growable stack or something,
 // but this is probably fine.
 #define STACK_SIZE 512
@@ -1135,23 +1138,16 @@ static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
   }
 }
 
-// static uint8_t count_block_quote_markers(Scanner *s, TSLexer *lexer) {
-//   uint8_t count = 0;
-//   while (scan_block_quote_marker(s, lexer)) {
-//     ++count;
-//   }
-//   return count;
-// }
-
-// static bool handle_block_quote_start_level(Scanner *s, TSLexer *lexer) {
-//   if (s->block_quote_start_level == 0) {
-//     return false;
-//   }
-//   push_block(s, BLOCK_QUOTE, s->block_quote_start_level--);
-//   lexer->result_symbol = BLOCK_QUOTE_START;
-//   return true;
-// }
-
+// Parse block quote related things.
+//
+// It's made complicated by the need to match nested quotes,
+// but we still want to keep block quotes separated,
+// so we can't match '> > ' in one go, but in multiple passes.
+//
+// We also need to close any contained paragraphs if there's a mismatch of
+// quote indentation, or if there's an "empty line" (only > on a line).
+//
+// And we also need to close open blocks when we go down a nesting level.
 static bool parse_block_quote(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   // Don't scan unless needed.
@@ -1161,51 +1157,46 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // uint8_t marker_count = count_block_quote_markers(s, lexer);
-
-  printf("Block quote lookahead: '%c'\n", lexer->lookahead);
-
+  // A valid marker is a '> ' or '>\n'.
   bool ending_newline = false;
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
-  printf("  after scan: '%c' ending_newline %b\n", lexer->lookahead,
-         ending_newline);
+  // Store nesting level on the scanner, to keep it between runs.
   uint8_t marker_count = s->block_quote_level + has_marker;
 
   size_t matching_block_pos =
       number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
   Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
-  // size_t block_quote_pos = number_of_blocks_from_top_no_level(s,
-  // BLOCK_QUOTE); bool has_marker = scan_block_quote_marker(s, lexer);
-  printf("existing: %zu marker: %u\n", matching_block_pos, marker_count);
-  if (highest_block_quote) {
-    printf("  highest: %u\n", highest_block_quote->level);
-  }
-
+  // If we have a marker but with an empty line,
+  // we need to close the paragraph.
   if (has_marker && ending_newline && valid_symbols[CLOSE_PARAGRAPH]) {
-    printf("Close paragraph on empty continuation\n");
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
   }
 
+  // There is an open block quote with a higher nesting level than what we've
+  // found.
   if (highest_block_quote && marker_count < highest_block_quote->level) {
+    // Close the paragraph, but allow lazy continuation (without any > marker).
     if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
       lexer->result_symbol = CLOSE_PARAGRAPH;
       return true;
     }
     if (valid_symbols[BLOCK_CLOSE]) {
+      // We may need to close more than one block (nested block quotes, lists,
+      // etc).
       size_t close_pos =
           number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count + 1);
-      printf("Closing blocks until pos: %zu\n", close_pos);
       close_blocks(s, lexer, close_pos);
       return true;
     }
   }
 
-  // // If we found a continuation (match top block quote level)
+  // If we should continue an open block quote.
   if (valid_symbols[BLOCK_QUOTE_CONTINUATION] && has_marker &&
       matching_block_pos != 0) {
     lexer->mark_end(lexer);
+    // It's important to always clear the stored level on newlines.
     if (ending_newline) {
       s->block_quote_level = 0;
     } else {
@@ -1215,9 +1206,11 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return true;
   }
 
+  // Finally, start a new block quote if there's any marker.
   if (valid_symbols[BLOCK_QUOTE_START] && has_marker) {
     push_block(s, BLOCK_QUOTE, marker_count);
     lexer->mark_end(lexer);
+    // It's important to always clear the stored level on newlines.
     if (ending_newline) {
       s->block_quote_level = 0;
     } else {
@@ -1249,20 +1242,13 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   bool is_newline = lexer->lookahead == '\n';
 
   if (is_newline) {
-    printf("RESET BLOCK_QUOTE LEVEL\n");
     s->block_quote_level = 0;
   }
 
-  // It's important to try to close blocks before other things.
-  // ... Is it? We do
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
-  // if (valid_symbols[BLOCK_QUOTE_START] &&
-  //     handle_block_quote_start_level(s, lexer)) {
-  //   return true;
-  // }
-  // assert(s->blocks_to_close == 0);
+  assert(s->blocks_to_close == 0);
 
   // Buffered tokens can come after blocks are closed.
   if (output_delayed_token(s, lexer, valid_symbols)) {
