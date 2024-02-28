@@ -42,7 +42,6 @@ module.exports = grammar({
         $.raw_block,
         $.code_block,
         $.thematic_break,
-        // $.blockquote,
         $.block_quote,
         $.link_reference_definition,
         $.block_attribute,
@@ -313,7 +312,8 @@ module.exports = grammar({
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
     language: (_) => /[^\n\t \{\}=]+/,
-    code: ($) => prec.left(repeat1($._line)),
+    code: ($) =>
+      prec.left(repeat1(seq(optional($._block_quote_prefix), $._line))),
     _line: ($) => seq(/[^\n]*/, $._newline),
 
     thematic_break: ($) =>
@@ -368,7 +368,6 @@ module.exports = grammar({
         repeat1(
           seq(
             optional($._block_quote_prefix),
-            // optional(alias($._block_quote_continuation, $.block_quote_marker)),
             $._inline,
             choice($._newline, "\0")
           )

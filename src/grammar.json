@@ -1493,8 +1493,25 @@
       "content": {
         "type": "REPEAT1",
         "content": {
-          "type": "SYMBOL",
-          "name": "_line"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_quote_prefix"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_line"
+            }
+          ]
         }
       }
     },

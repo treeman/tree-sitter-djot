@@ -308,17 +308,6 @@ static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
   return 0;
 }
 
-// static size_t number_of_blocks_from_top_no_level(Scanner *s, BlockType type)
-// {
-//   for (int i = s->open_blocks.size - 1; i >= 0; --i) {
-//     Block *b = s->open_blocks.items[i];
-//     if (b->type == type) {
-//       return s->open_blocks.size - i;
-//     }
-//   }
-//   return 0;
-// }
-
 static Block *find_block(Scanner *s, BlockType type) {
   for (int i = s->open_blocks.size - 1; i >= 0; --i) {
     Block *b = s->open_blocks.items[i];
