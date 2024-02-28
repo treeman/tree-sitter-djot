@@ -30,7 +30,9 @@ module.exports = grammar({
     document: ($) => repeat($._block),
 
     // Every block contains a newline.
-    _block: ($) =>
+    _block: ($) => choice($._block_without_standalone_newline, $._newline),
+
+    _block_without_standalone_newline: ($) =>
       choice(
         $._heading,
         $.list,
@@ -40,11 +42,11 @@ module.exports = grammar({
         $.raw_block,
         $.code_block,
         $.thematic_break,
-        $.blockquote, // External, can close other blocks end should capture marker + continuation
+        // $.blockquote,
+        $.block_quote,
         $.link_reference_definition,
         $.block_attribute,
-        $.paragraph,
-        "\n"
+        $.paragraph
       ),
 
     _heading: ($) =>
@@ -279,7 +281,7 @@ module.exports = grammar({
     div: ($) =>
       seq(
         $.div_marker_start,
-        "\n",
+        $._newline,
         repeat($._block),
         $._block_close,
         optional(alias($._div_end, $.div_marker_end))
@@ -293,7 +295,8 @@ module.exports = grammar({
         alias($._code_block_start, $.raw_block_marker_start),
         $._whitespace,
         $.raw_block_info,
-        /[ ]*\n/,
+        /[ ]*/,
+        $._newline,
         alias($.code, $.content),
         $._block_close,
         optional(alias($._code_block_end, $.raw_block_marker_end))
@@ -305,22 +308,30 @@ module.exports = grammar({
         alias($._code_block_start, $.code_block_marker_start),
         $._whitespace,
         optional($.language),
-        /[ ]*\n/,
+        /[ ]*/,
+        $._newline,
         $.code,
         $._block_close,
         optional(alias($._code_block_end, $.code_block_marker_end))
       ),
     language: (_) => /[^\n\t \{\}=]+/,
     code: ($) => prec.left(repeat1($._line)),
-    _line: (_) => /[^\n]*\n/,
+    _line: ($) => seq(/[^\n]*/, $._newline),
 
     thematic_break: ($) =>
       choice($._thematic_break_dash, $._thematic_break_star),
 
-    // It's fine to let inline gobble up leading `>` for lazy
-    // quotes lines.
-    // ... But is it really?? Shouldn't we mark them as something as well?
-    blockquote: ($) => seq(">", $._inline_with_newlines, $._eof_or_blankline),
+    block_quote: ($) =>
+      seq(
+        alias($._block_quote_start, $.block_quote_marker),
+        $._block_without_standalone_newline,
+        repeat(seq($._block_quote_prefix, $._block_without_standalone_newline)),
+        $._block_close
+      ),
+    _block_quote_prefix: ($) =>
+      prec.left(
+        repeat1(alias($._block_quote_continuation, $.block_quote_marker))
+      ),
 
     link_reference_definition: ($) =>
       seq(
@@ -356,11 +367,19 @@ module.exports = grammar({
 
     paragraph: ($) =>
       seq(
-        repeat1(seq($._inline, choice("\n", "\0"))),
+        repeat1(
+          seq(
+            optional($._block_quote_prefix),
+            // optional(alias($._block_quote_continuation, $.block_quote_marker)),
+            $._inline,
+            choice($._newline, "\0")
+          )
+        ),
         choice($._eof_or_blankline, $._close_paragraph)
       ),
 
-    _one_or_two_newlines: (_) => choice("\0", "\n\n", "\n"),
+    _one_or_two_newlines: ($) =>
+      prec.left(choice("\0", seq($._newline, $._newline), $._newline)),
 
     _whitespace: (_) => token.immediate(/[ \t]*/),
     _whitespace1: (_) => token.immediate(/[ \t]+/),
@@ -400,7 +419,7 @@ module.exports = grammar({
         seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
       ),
     _inline_with_newlines: ($) => repeat1(prec.left(choice($._inline, /\s/))),
-    _inline_line: ($) => seq($._inline, "\n"),
+    _inline_line: ($) => seq($._inline, $._newline),
 
     autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
 
@@ -438,7 +457,7 @@ module.exports = grammar({
     footnote_reference: ($) => seq("[^", $.reference_label, "]"),
     reference_label: (_) => /\w+/,
 
-    hard_line_break: (_) => "\\\n",
+    hard_line_break: ($) => seq("\\", $._newline),
 
     _image: ($) =>
       choice(
@@ -513,6 +532,7 @@ module.exports = grammar({
     // Block management
     $._block_close,
     $._eof_or_blankline,
+    $._newline,
 
     // Blocks
     $._heading1_start,
@@ -553,6 +573,8 @@ module.exports = grammar({
     $.list_marker_upper_roman_parens,
     $._list_item_end,
     $._close_paragraph,
+    $._block_quote_start,
+    $._block_quote_continuation,
     $._thematic_break_dash,
     $._thematic_break_star,
 

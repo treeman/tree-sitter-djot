@@ -43,10 +43,8 @@ Second
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-   )
-  (paragraph
-   ))
+  (paragraph)
+  (paragraph))
 
 ===============================================================================
 Paragraph: two multiline
@@ -59,10 +57,8 @@ Second
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-   )
-  (paragraph
-   ))
+  (paragraph)
+  (paragraph))
 
 ===============================================================================
 Heading 1
@@ -213,7 +209,9 @@ Block quote: oneline
 -------------------------------------------------------------------------------
 
 (document
-  (blockquote))
+  (block_quote
+    (block_quote_marker)
+    (paragraph)))
 
 ===============================================================================
 Block quote: long
@@ -225,7 +223,12 @@ Block quote: long
 -------------------------------------------------------------------------------
 
 (document
-  (blockquote))
+  (block_quote
+    (block_quote_marker)
+    (paragraph)
+    (block_quote_marker)
+    (paragraph
+      (block_quote_marker))))
 
 ===============================================================================
 Block quote: lazy
@@ -236,7 +239,50 @@ This is included
 -------------------------------------------------------------------------------
 
 (document
-  (blockquote))
+  (block_quote
+    (block_quote_marker)
+    (paragraph)))
+
+===============================================================================
+Block quote: multilevel close nesting
+===============================================================================
+> > > a
+> b
+
+c
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (block_quote
+      (block_quote_marker)
+      (block_quote
+        (block_quote_marker)
+        (paragraph)))
+    (block_quote_marker)
+    (paragraph))
+  (paragraph))
+
+===============================================================================
+Block quote: multilevel nesting with space
+===============================================================================
+> > a
+>
+> b
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (block_quote
+      (block_quote_marker)
+      (paragraph))
+    (block_quote_marker)
+    (paragraph
+      (block_quote_marker))))
 
 ===============================================================================
 Code block: without langugae

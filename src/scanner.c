@@ -11,6 +11,7 @@
 typedef enum {
   BLOCK_CLOSE,
   EOF_OR_BLANKLINE,
+  NEWLINE,
 
   HEADING1_START,
   HEADING1_CONTINUATION,
@@ -50,6 +51,8 @@ typedef enum {
   LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_END,
   CLOSE_PARAGRAPH,
+  BLOCK_QUOTE_START,
+  BLOCK_QUOTE_CONTINUATION,
   THEMATIC_BREAK_DASH,
   THEMATIC_BREAK_STAR,
 
@@ -62,9 +65,10 @@ typedef enum {
 } TokenType;
 
 typedef enum {
-  HEADING,
-  DIV,
+  BLOCK_QUOTE,
   CODE_BLOCK,
+  DIV,
+  HEADING,
   LIST_DASH,
   LIST_STAR,
   LIST_PLUS,
@@ -118,6 +122,9 @@ typedef struct {
 
   // The number of ` we are currently matching, or 0 when not inside.
   uint8_t verbatim_tick_count;
+
+  // What's our current block quote level?
+  uint8_t block_quote_level;
 
   // Currently consumed whitespace.
   uint8_t whitespace;
@@ -298,6 +305,27 @@ static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
   return 0;
 }
 
+// static size_t number_of_blocks_from_top_no_level(Scanner *s, BlockType type)
+// {
+//   for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+//     Block *b = s->open_blocks.items[i];
+//     if (b->type == type) {
+//       return s->open_blocks.size - i;
+//     }
+//   }
+//   return 0;
+// }
+
+static Block *find_block(Scanner *s, BlockType type) {
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+    Block *b = s->open_blocks.items[i];
+    if (b->type == type) {
+      return b;
+    }
+  }
+  return NULL;
+}
+
 static Block *get_open_list(Scanner *s) {
   for (int i = s->open_blocks.size - 1; i >= 0; --i) {
     Block *b = s->open_blocks.items[i];
@@ -313,6 +341,16 @@ static bool has_open_list(Scanner *s) { return get_open_list(s) != NULL; }
 // Mark that we should close `count` blocks.
 // This call will only emit a single BLOCK_CLOSE token,
 // the other are emitted in `parse_block_close`.
+static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
+  // assert(s->blocks_to_close == 0);
+  pop_block(s);
+  s->blocks_to_close = s->blocks_to_close + count - 1;
+  lexer->result_symbol = BLOCK_CLOSE;
+}
+
+// Mark that we should close `count` blocks.
+// This call will only emit a single BLOCK_CLOSE token,
+// the other are emitted in `parse_block_close`.
 //
 // The final block type (such as a `DIV_END` token)
 // is emitted from `output_delayed_token` when all BLOCK_CLOSE
@@ -320,11 +358,8 @@ static bool has_open_list(Scanner *s) { return get_open_list(s) != NULL; }
 static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
                                           size_t count, TokenType final,
                                           uint8_t final_token_width) {
-  assert(s->blocks_to_close == 0);
+  close_blocks(s, lexer, count);
   set_delayed_token(s, final, final_token_width);
-  pop_block(s);
-  s->blocks_to_close = count - 1;
-  lexer->result_symbol = BLOCK_CLOSE;
 }
 
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
@@ -761,9 +796,9 @@ static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
   if (scan_containing_block_closing_marker(s, lexer)) {
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
-  } else {
-    return false;
   }
+
+  return false;
 }
 
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
@@ -1023,13 +1058,10 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
   // It's fine to always consume, since this only parses '#'
   uint8_t hash_count = consume_chars(s, lexer, '#');
-  printf("Found %d hashes\n", hash_count);
 
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
   bool top_heading = top && top->type == HEADING;
-
-  printf("Lookahead: '%c'\n", lexer->lookahead);
 
   if (hash_count > 0 && lexer->lookahead == ' ') {
     TokenType start_token = heading_start_token(hash_count);
@@ -1085,6 +1117,119 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   return false;
 }
 
+static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
+                                    bool *ending_newline) {
+  if (lexer->lookahead != '>') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  if (lexer->lookahead == ' ') {
+    lexer->advance(lexer, false);
+    return true;
+  } else if (lexer->lookahead == '\n') {
+    lexer->advance(lexer, false);
+    *ending_newline = true;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// static uint8_t count_block_quote_markers(Scanner *s, TSLexer *lexer) {
+//   uint8_t count = 0;
+//   while (scan_block_quote_marker(s, lexer)) {
+//     ++count;
+//   }
+//   return count;
+// }
+
+// static bool handle_block_quote_start_level(Scanner *s, TSLexer *lexer) {
+//   if (s->block_quote_start_level == 0) {
+//     return false;
+//   }
+//   push_block(s, BLOCK_QUOTE, s->block_quote_start_level--);
+//   lexer->result_symbol = BLOCK_QUOTE_START;
+//   return true;
+// }
+
+static bool parse_block_quote(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  // Don't scan unless needed.
+  if (!valid_symbols[BLOCK_QUOTE_START] &&
+      !valid_symbols[BLOCK_QUOTE_CONTINUATION] && !valid_symbols[BLOCK_CLOSE] &&
+      !valid_symbols[CLOSE_PARAGRAPH]) {
+    return false;
+  }
+
+  // uint8_t marker_count = count_block_quote_markers(s, lexer);
+
+  printf("Block quote lookahead: '%c'\n", lexer->lookahead);
+
+  bool ending_newline = false;
+  bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
+  printf("  after scan: '%c' ending_newline %b\n", lexer->lookahead,
+         ending_newline);
+  uint8_t marker_count = s->block_quote_level + has_marker;
+
+  size_t matching_block_pos =
+      number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
+  Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
+
+  // size_t block_quote_pos = number_of_blocks_from_top_no_level(s,
+  // BLOCK_QUOTE); bool has_marker = scan_block_quote_marker(s, lexer);
+  printf("existing: %zu marker: %u\n", matching_block_pos, marker_count);
+  if (highest_block_quote) {
+    printf("  highest: %u\n", highest_block_quote->level);
+  }
+
+  if (has_marker && ending_newline && valid_symbols[CLOSE_PARAGRAPH]) {
+    printf("Close paragraph on empty continuation\n");
+    lexer->result_symbol = CLOSE_PARAGRAPH;
+    return true;
+  }
+
+  if (highest_block_quote && marker_count < highest_block_quote->level) {
+    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
+      lexer->result_symbol = CLOSE_PARAGRAPH;
+      return true;
+    }
+    if (valid_symbols[BLOCK_CLOSE]) {
+      size_t close_pos =
+          number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count + 1);
+      printf("Closing blocks until pos: %zu\n", close_pos);
+      close_blocks(s, lexer, close_pos);
+      return true;
+    }
+  }
+
+  // // If we found a continuation (match top block quote level)
+  if (valid_symbols[BLOCK_QUOTE_CONTINUATION] && has_marker &&
+      matching_block_pos != 0) {
+    lexer->mark_end(lexer);
+    if (ending_newline) {
+      s->block_quote_level = 0;
+    } else {
+      s->block_quote_level = marker_count;
+    }
+    lexer->result_symbol = BLOCK_QUOTE_CONTINUATION;
+    return true;
+  }
+
+  if (valid_symbols[BLOCK_QUOTE_START] && has_marker) {
+    push_block(s, BLOCK_QUOTE, marker_count);
+    lexer->mark_end(lexer);
+    if (ending_newline) {
+      s->block_quote_level = 0;
+    } else {
+      s->block_quote_level = marker_count;
+    }
+    lexer->result_symbol = BLOCK_QUOTE_START;
+    return true;
+  }
+
+  return false;
+}
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -1101,23 +1246,36 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // I found it easier to opt-in to consume tokens.
   lexer->mark_end(lexer);
   s->whitespace = consume_whitespace(s, lexer);
-  bool non_newline = lexer->lookahead != '\n';
+  bool is_newline = lexer->lookahead == '\n';
+
+  if (is_newline) {
+    printf("RESET BLOCK_QUOTE LEVEL\n");
+    s->block_quote_level = 0;
+  }
 
   // It's important to try to close blocks before other things.
+  // ... Is it? We do
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
-  assert(s->blocks_to_close == 0);
+  // if (valid_symbols[BLOCK_QUOTE_START] &&
+  //     handle_block_quote_start_level(s, lexer)) {
+  //   return true;
+  // }
+  // assert(s->blocks_to_close == 0);
 
   // Buffered tokens can come after blocks are closed.
   if (output_delayed_token(s, lexer, valid_symbols)) {
     return true;
   }
 
-  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
+  if (parse_block_quote(s, lexer, valid_symbols)) {
     return true;
   }
   if (parse_heading(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
 
@@ -1186,7 +1344,17 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we should output the list marker itself.
   // Yeah, the order dependencies aren't very nice.
   if (valid_symbols[BLOCK_CLOSE] &&
-      close_lists_if_needed(s, lexer, non_newline, ordered_list_marker)) {
+      close_lists_if_needed(s, lexer, !is_newline, ordered_list_marker)) {
+    return true;
+  }
+
+  // We need to handle NEWLINE in the external scanner for our
+  // changes to the Scanner state to be saved
+  // (the reset of `block_quote_level` at newline).
+  if (valid_symbols[NEWLINE] && is_newline) {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = NEWLINE;
     return true;
   }
 
@@ -1205,6 +1373,7 @@ void init(Scanner *s) {
   s->delayed_token = IGNORED;
   s->delayed_token_width = 0;
   s->verbatim_tick_count = 0;
+  s->block_quote_level = 0;
   s->whitespace = 0;
 }
 
@@ -1230,6 +1399,7 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->delayed_token;
   buffer[size++] = (char)s->delayed_token_width;
   buffer[size++] = (char)s->verbatim_tick_count;
+  buffer[size++] = (char)s->block_quote_level;
   buffer[size++] = (char)s->whitespace;
 
   for (size_t i = 0; i < s->open_blocks.size; ++i) {
@@ -1251,6 +1421,7 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     s->delayed_token = (TokenType)buffer[size++];
     s->delayed_token_width = (uint8_t)buffer[size++];
     s->verbatim_tick_count = (uint8_t)buffer[size++];
+    s->block_quote_level = (uint8_t)buffer[size++];
     s->whitespace = (uint8_t)buffer[size++];
 
     size_t blocks = 0;
@@ -1269,6 +1440,8 @@ static char *token_type_s(TokenType t) {
     return "BLOCK_CLOSE";
   case EOF_OR_BLANKLINE:
     return "EOF_OR_BLANKLINE";
+  case NEWLINE:
+    return "NEWLINE";
 
   case HEADING1_START:
     return "HEADING1_START";
@@ -1346,6 +1519,10 @@ static char *token_type_s(TokenType t) {
     return "LIST_ITEM_END";
   case CLOSE_PARAGRAPH:
     return "CLOSE_PARAGRAPH";
+  case BLOCK_QUOTE_START:
+    return "BLOCK_QUOTE_START";
+  case BLOCK_QUOTE_CONTINUATION:
+    return "BLOCK_QUOTE_CONTINUATION";
   case THEMATIC_BREAK_DASH:
     return "THEMATIC_BREAK_DASH";
   case THEMATIC_BREAK_STAR:
@@ -1371,6 +1548,8 @@ static char *block_type_s(BlockType t) {
     return "HEADING";
   case DIV:
     return "DIV";
+  case BLOCK_QUOTE:
+    return "BLOCK_QUOTE";
   case CODE_BLOCK:
     return "CODE_BLOCK";
   case LIST_DASH:
@@ -1417,7 +1596,7 @@ static char *block_type_s(BlockType t) {
 }
 
 static void dump_scanner(Scanner *s) {
-  printf("--- Open blocks: %zu\n", s->open_blocks.size);
+  printf("--- Open blocks: %zu (last -> first)\n", s->open_blocks.size);
   for (size_t i = 0; i < s->open_blocks.size; ++i) {
     Block *b = s->open_blocks.items[i];
     printf("  %d %s\n", b->level, block_type_s(b->type));
@@ -1429,6 +1608,7 @@ static void dump_scanner(Scanner *s) {
     printf("  delayed_token_width: %d\n", s->delayed_token_width);
   }
   printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
+  printf("  block_quote_level: %u\n", s->block_quote_level);
   printf("  whitespace: %u\n", s->whitespace);
   printf("===\n");
 }
@@ -1444,10 +1624,25 @@ static void dump(Scanner *s, TSLexer *lexer) {
 }
 
 static void dump_valid_symbols(const bool *valid_symbols) {
-  printf("# valid_symbols:\n");
+  // printf("# valid_symbols:\n");
+  // for (int i = 0; i <= IGNORED; ++i) {
+  //   if (valid_symbols[i]) {
+  //     printf("%s\n", token_type_s(i));
+  //   }
+  // }
+  printf("# valid_symbols (shortened):\n");
   for (int i = 0; i <= IGNORED; ++i) {
-    if (valid_symbols[i]) {
-      printf("%s\n", token_type_s(i));
+    switch (i) {
+    case BLOCK_CLOSE:
+    case BLOCK_QUOTE_START:
+    case BLOCK_QUOTE_CONTINUATION:
+    case CLOSE_PARAGRAPH:
+      if (valid_symbols[i]) {
+        printf("%s\n", token_type_s(i));
+      }
+      break;
+    default:
+      continue;
     }
   }
   printf("#\n");
