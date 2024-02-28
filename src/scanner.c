@@ -9,7 +9,7 @@
 // but this is probably fine.
 #define STACK_SIZE 512
 
-#define DEBUG
+// #define DEBUG
 
 typedef enum {
   BLOCK_CLOSE,

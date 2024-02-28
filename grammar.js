@@ -290,12 +290,21 @@ module.exports = grammar({
       seq($._div_start, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
 
+    code_block: ($) =>
+      seq(
+        alias($._code_block_start, $.code_block_marker_start),
+        $._whitespace,
+        optional($.language),
+        $._newline,
+        $.code,
+        $._block_close,
+        optional(alias($._code_block_end, $.code_block_marker_end))
+      ),
     raw_block: ($) =>
       seq(
         alias($._code_block_start, $.raw_block_marker_start),
         $._whitespace,
         $.raw_block_info,
-        /[ ]*/,
         $._newline,
         alias($.code, $.content),
         $._block_close,
@@ -303,17 +312,6 @@ module.exports = grammar({
       ),
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
-    code_block: ($) =>
-      seq(
-        alias($._code_block_start, $.code_block_marker_start),
-        $._whitespace,
-        optional($.language),
-        /[ ]*/,
-        $._newline,
-        $.code,
-        $._block_close,
-        optional(alias($._code_block_end, $.code_block_marker_end))
-      ),
     language: (_) => /[^\n\t \{\}=]+/,
     code: ($) => prec.left(repeat1($._line)),
     _line: ($) => seq(/[^\n]*/, $._newline),

@@ -1409,7 +1409,10 @@ List: Immediate blockquote
   (list
     (list_item
       (list_marker_dash)
-      (blockquote))))
+      (block_quote
+        (block_quote_marker)
+        (paragraph
+          (block_quote_marker))))))
 
 ===============================================================================
 List: Close contained code block at eof
