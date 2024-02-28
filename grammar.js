@@ -2,7 +2,6 @@ module.exports = grammar({
   name: "djot",
 
   // TODO
-  // - Caption for tables
   // - Escape characters (context dependent?)
   // - Fallback to text and paragraphs
   //   Probably need to add conflicts and dynamic(?) precedence
