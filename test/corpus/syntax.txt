@@ -166,7 +166,7 @@ stop
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (heading4 (marker))
     (div_marker_end))
   (paragraph))
@@ -296,7 +296,7 @@ Block quote: contain code block
   (block_quote
     (block_quote_marker)
     (code_block
-      (code_block_marker_start)
+      (code_block_marker_begin)
       (language)
       (code
         (block_quote_marker)))))
@@ -313,7 +313,7 @@ here
 
 (document
   (code_block
-    (code_block_marker_start)
+    (code_block_marker_begin)
     (code)
     (code_block_marker_end)))
 
@@ -329,7 +329,7 @@ here
 
 (document
   (code_block
-    (code_block_marker_start)
+    (code_block_marker_begin)
     (language)
     (code)
     (code_block_marker_end)))
@@ -356,7 +356,7 @@ y
 
 (document
   (code_block
-    (code_block_marker_start)
+    (code_block_marker_begin)
     (code)
     (code_block_marker_end)))
 
@@ -371,7 +371,7 @@ Raw block
 
 (document
   (raw_block
-    (raw_block_marker_start)
+    (raw_block_marker_begin)
     (raw_block_info
       (language_marker)
       (language))
@@ -994,7 +994,7 @@ Inside
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (paragraph)
     (div_marker_end)))
 
@@ -1010,7 +1010,7 @@ Inside
 
 (document
   (div
-    (div_marker_start
+    (div_marker_begin
       (class_name))
     (paragraph)
     (div_marker_end)))
@@ -1026,7 +1026,7 @@ Inside
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (paragraph)
     (div_marker_end)))
 
@@ -1041,7 +1041,7 @@ Inside
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (paragraph)))
 
 ===============================================================================
@@ -1060,10 +1060,10 @@ Div: nested
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (paragraph)
     (div
-      (div_marker_start)
+      (div_marker_begin)
       (paragraph)
       (div_marker_end))
     (paragraph)
@@ -1084,10 +1084,10 @@ Div: close nested div
 
 (document
   (div
-    (div_marker_start)
+    (div_marker_begin)
     (paragraph)
     (div
-      (div_marker_start)
+      (div_marker_begin)
       (paragraph))
     (div_marker_end)))
 
@@ -1176,7 +1176,7 @@ Simple `verbatim` here
 (document
   (paragraph
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1189,7 +1189,7 @@ Verbatim: double with single inside
 (document
   (paragraph
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1202,7 +1202,7 @@ Verbatim: with triple inside
 (document
   (paragraph
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1215,7 +1215,7 @@ Verbatim: newline closes
 (document
   (paragraph
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))))
 
 
@@ -1229,10 +1229,10 @@ Verbatim: multiple
 (document
   (paragraph
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))
     (verbatim
-      (verbatim_marker_start)
+      (verbatim_marker_begin)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1245,7 +1245,7 @@ Raw inline
 (document
   (paragraph
     (raw_inline
-      (raw_inline_marker_start)
+      (raw_inline_marker_begin)
       (raw_inline_marker_end)
       (raw_inline_attribute
         (language)))))
@@ -1261,7 +1261,7 @@ $`1 + 2`
   (paragraph
     (math
       (math_marker)
-      (math_marker_start)
+      (math_marker_begin)
       (math_marker_end))))
 
 ===============================================================================
@@ -1444,7 +1444,7 @@ List: Close contained code block at eof
     (list_item
       (list_marker_dash)
       (code_block
-        (code_block_marker_start)
+        (code_block_marker_begin)
         (code)))))
 
 ===============================================================================
@@ -1462,7 +1462,7 @@ x
     (list_item
       (list_marker_dash)
       (code_block
-        (code_block_marker_start)
+        (code_block_marker_begin)
         (code))))
   (paragraph))
 
@@ -1483,7 +1483,7 @@ x
     (list_item
       (list_marker_dash)
       (code_block
-        (code_block_marker_start)
+        (code_block_marker_begin)
         (code))))
   (paragraph))
 
@@ -1500,7 +1500,7 @@ List: Close contained div at eof
     (list_item
       (list_marker_dash)
       (div
-        (div_marker_start
+        (div_marker_begin
           (class_name))
         (paragraph)))))
 
@@ -1519,7 +1519,7 @@ x
     (list_item
       (list_marker_dash)
       (div
-        (div_marker_start
+        (div_marker_begin
           (class_name))
         (paragraph))))
   (paragraph))
@@ -2058,4 +2058,49 @@ Table: with inline styling
     (table_row
       (table_cell (emphasis))
       (table_cell (strong)))))
+
+===============================================================================
+Footnote: simple
+===============================================================================
+[^x]: a
+
+-------------------------------------------------------------------------------
+
+(document
+  (footnote
+    (reference_label)
+    (paragraph)))
+
+===============================================================================
+Footnote: multiline
+===============================================================================
+[^foo]: Text
+that continues
+
+  Next paragraph
+
+-------------------------------------------------------------------------------
+
+(document
+  (footnote
+    (reference_label)
+    (paragraph)
+    (paragraph)))
+
+===============================================================================
+Footnote: With block quote
+===============================================================================
+[^foo]: Text
+
+  > block quote inside
+
+-------------------------------------------------------------------------------
+
+(document
+  (footnote
+    (reference_label)
+    (paragraph)
+    (block_quote
+      (block_quote_marker)
+      (paragraph))))
 

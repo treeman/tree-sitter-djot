@@ -6,9 +6,8 @@ module.exports = grammar({
   // But we shouldn't mark things inside verbatim or code blocks
 
   // TODO
-  // - Footnotes
   // - Caption for tables
-  //
+
   extras: (_) => ["\r"],
 
   conflicts: ($) => [
@@ -24,12 +23,14 @@ module.exports = grammar({
     // Every block contains a newline.
     _block: ($) => choice($._block_without_standalone_newline, $._newline),
 
+    // FIXME maybe link ref defs and footnotes should only be valid
+    // on the top level?
     _block_without_standalone_newline: ($) =>
       choice(
         $._heading,
         $.list,
         $.table,
-        // $.footnote,
+        $.footnote,
         $.div,
         $.raw_block,
         $.code_block,
@@ -51,7 +52,7 @@ module.exports = grammar({
       ),
     heading1: ($) =>
       seq(
-        alias($._heading1_start, $.marker),
+        alias($._heading1_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading1_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -59,7 +60,7 @@ module.exports = grammar({
       ),
     heading2: ($) =>
       seq(
-        alias($._heading2_start, $.marker),
+        alias($._heading2_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading2_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -67,7 +68,7 @@ module.exports = grammar({
       ),
     heading3: ($) =>
       seq(
-        alias($._heading3_start, $.marker),
+        alias($._heading3_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading3_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -75,7 +76,7 @@ module.exports = grammar({
       ),
     heading4: ($) =>
       seq(
-        alias($._heading4_start, $.marker),
+        alias($._heading4_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading4_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -83,7 +84,7 @@ module.exports = grammar({
       ),
     heading5: ($) =>
       seq(
-        alias($._heading5_start, $.marker),
+        alias($._heading5_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading5_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -91,7 +92,7 @@ module.exports = grammar({
       ),
     heading6: ($) =>
       seq(
-        alias($._heading6_start, $.marker),
+        alias($._heading6_begin, $.marker),
         $._inline_line,
         repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line)),
         $._block_close,
@@ -142,7 +143,7 @@ module.exports = grammar({
     _list_item_task: ($) => seq($.list_marker_task, $._list_item_content),
     list_marker_task: ($) =>
       seq(
-        $._list_marker_task_start,
+        $._list_marker_task_begin,
         choice(alias(" ", $.unchecked), alias("x", $.checked)),
         "] "
       ),
@@ -301,21 +302,30 @@ module.exports = grammar({
     table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
     table_cell: ($) => $._inline,
 
+    footnote: ($) =>
+      seq(
+        $._footnote_begin,
+        $.reference_label,
+        "]:",
+        repeat1($._block),
+        $._footnote_end
+      ),
+
     div: ($) =>
       seq(
-        $.div_marker_start,
+        $.div_marker_begin,
         $._newline,
         repeat($._block),
         $._block_close,
         optional(alias($._div_end, $.div_marker_end))
       ),
-    div_marker_start: ($) =>
-      seq($._div_start, optional(seq($._whitespace1, $.class_name))),
+    div_marker_begin: ($) =>
+      seq($._div_begin, optional(seq($._whitespace1, $.class_name))),
     class_name: (_) => /\w+/,
 
     code_block: ($) =>
       seq(
-        alias($._code_block_start, $.code_block_marker_start),
+        alias($._code_block_begin, $.code_block_marker_begin),
         $._whitespace,
         optional($.language),
         $._newline,
@@ -325,7 +335,7 @@ module.exports = grammar({
       ),
     raw_block: ($) =>
       seq(
-        alias($._code_block_start, $.raw_block_marker_start),
+        alias($._code_block_begin, $.raw_block_marker_begin),
         $._whitespace,
         $.raw_block_info,
         $._newline,
@@ -345,7 +355,7 @@ module.exports = grammar({
 
     block_quote: ($) =>
       seq(
-        alias($._block_quote_start, $.block_quote_marker),
+        alias($._block_quote_begin, $.block_quote_marker),
         $._block_without_standalone_newline,
         repeat(seq($._block_quote_prefix, $._block_without_standalone_newline)),
         $._block_close
@@ -447,13 +457,13 @@ module.exports = grammar({
     // FIXME errors out if there's spaces instead of parsing other inline options
     // need to somehow tell it to explore all possibilities?
     emphasis: ($) =>
-      seq($._emphasis_start, $._inline_no_surrounding_spaces, $._emphasis_end),
-    _emphasis_start: (_) => token(choice(seq("{_", /[ ]*/), "_")),
+      seq($._emphasis_begin, $._inline_no_surrounding_spaces, $._emphasis_end),
+    _emphasis_begin: (_) => token(choice(seq("{_", /[ ]*/), "_")),
     _emphasis_end: (_) => token.immediate(choice(seq(/[ ]*/, "_}"), "_")),
 
     strong: ($) =>
-      seq($._strong_start, $._inline_no_surrounding_spaces, $._strong_end),
-    _strong_start: (_) => token(choice(seq("{*", /[ ]*/), "*")),
+      seq($._strong_begin, $._inline_no_surrounding_spaces, $._strong_end),
+    _strong_begin: (_) => token(choice(seq("{*", /[ ]*/), "*")),
     _strong_end: (_) => token.immediate(choice(seq(/[ ]*/, "*}"), "*")),
 
     highlighted: ($) => prec.left(seq("{=", $._inline, "=}")),
@@ -526,7 +536,7 @@ module.exports = grammar({
 
     raw_inline: ($) =>
       seq(
-        alias($._verbatim_start, $.raw_inline_marker_start),
+        alias($._verbatim_begin, $.raw_inline_marker_begin),
         $._verbatim_content,
         alias($._verbatim_end, $.raw_inline_marker_end),
         $.raw_inline_attribute
@@ -535,13 +545,13 @@ module.exports = grammar({
     math: ($) =>
       seq(
         alias("$", $.math_marker),
-        alias($._verbatim_start, $.math_marker_start),
+        alias($._verbatim_begin, $.math_marker_begin),
         $._verbatim_content,
         alias($._verbatim_end, $.math_marker_end)
       ),
     verbatim: ($) =>
       seq(
-        alias($._verbatim_start, $.verbatim_marker_start),
+        alias($._verbatim_begin, $.verbatim_marker_begin),
         $._verbatim_content,
         alias($._verbatim_end, $.verbatim_marker_end)
       ),
@@ -556,26 +566,26 @@ module.exports = grammar({
     $._newline,
 
     // Blocks
-    $._heading1_start,
+    $._heading1_begin,
     $._heading1_continuation,
-    $._heading2_start,
+    $._heading2_begin,
     $._heading2_continuation,
-    $._heading3_start,
+    $._heading3_begin,
     $._heading3_continuation,
-    $._heading4_start,
+    $._heading4_begin,
     $._heading4_continuation,
-    $._heading5_start,
+    $._heading5_begin,
     $._heading5_continuation,
-    $._heading6_start,
+    $._heading6_begin,
     $._heading6_continuation,
-    $._div_start,
+    $._div_begin,
     $._div_end,
-    $._code_block_start,
+    $._code_block_begin,
     $._code_block_end,
     $.list_marker_dash,
     $.list_marker_star,
     $.list_marker_plus,
-    $._list_marker_task_start,
+    $._list_marker_task_begin,
     $.list_marker_definition,
     $.list_marker_decimal_period,
     $.list_marker_lower_alpha_period,
@@ -594,13 +604,15 @@ module.exports = grammar({
     $.list_marker_upper_roman_parens,
     $._list_item_end,
     $._close_paragraph,
-    $._block_quote_start,
+    $._block_quote_begin,
     $._block_quote_continuation,
     $._thematic_break_dash,
     $._thematic_break_star,
+    $._footnote_begin,
+    $._footnote_end,
 
     // Inline
-    $._verbatim_start,
+    $._verbatim_begin,
     $._verbatim_end,
     $._verbatim_content,
 

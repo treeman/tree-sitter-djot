@@ -16,26 +16,26 @@ typedef enum {
   EOF_OR_BLANKLINE,
   NEWLINE,
 
-  HEADING1_START,
+  HEADING1_BEGIN,
   HEADING1_CONTINUATION,
-  HEADING2_START,
+  HEADING2_BEGIN,
   HEADING2_CONTINUATION,
-  HEADING3_START,
+  HEADING3_BEGIN,
   HEADING3_CONTINUATION,
-  HEADING4_START,
+  HEADING4_BEGIN,
   HEADING4_CONTINUATION,
-  HEADING5_START,
+  HEADING5_BEGIN,
   HEADING5_CONTINUATION,
-  HEADING6_START,
+  HEADING6_BEGIN,
   HEADING6_CONTINUATION,
-  DIV_START,
+  DIV_BEGIN,
   DIV_END,
-  CODE_BLOCK_START,
+  CODE_BLOCK_BEGIN,
   CODE_BLOCK_END,
   LIST_MARKER_DASH,
   LIST_MARKER_STAR,
   LIST_MARKER_PLUS,
-  LIST_MARKER_TASK_START,
+  LIST_MARKER_TASK_BEGIN,
   LIST_MARKER_DEFINITION,
   LIST_MARKER_DECIMAL_PERIOD,
   LIST_MARKER_LOWER_ALPHA_PERIOD,
@@ -54,12 +54,14 @@ typedef enum {
   LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_END,
   CLOSE_PARAGRAPH,
-  BLOCK_QUOTE_START,
+  BLOCK_QUOTE_BEGIN,
   BLOCK_QUOTE_CONTINUATION,
   THEMATIC_BREAK_DASH,
   THEMATIC_BREAK_STAR,
+  FOOTNOTE_BEGIN,
+  FOOTNOTE_END,
 
-  VERBATIM_START,
+  VERBATIM_BEGIN,
   VERBATIM_END,
   VERBATIM_CONTENT,
 
@@ -72,6 +74,7 @@ typedef enum {
   CODE_BLOCK,
   DIV,
   HEADING,
+  FOOTNOTE,
   LIST_DASH,
   LIST_STAR,
   LIST_PLUS,
@@ -178,7 +181,7 @@ static BlockType list_marker_to_block(TokenType type) {
     return LIST_STAR;
   case LIST_MARKER_PLUS:
     return LIST_PLUS;
-  case LIST_MARKER_TASK_START:
+  case LIST_MARKER_TASK_BEGIN:
     return LIST_TASK;
   case LIST_MARKER_DEFINITION:
     return LIST_DEFINITION;
@@ -462,14 +465,14 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   // Not in a code block, let's start a new one.
   lexer->mark_end(lexer);
   push_block(s, CODE_BLOCK, ticks);
-  lexer->result_symbol = CODE_BLOCK_START;
+  lexer->result_symbol = CODE_BLOCK_BEGIN;
   return true;
 }
 
 static bool parse_verbatim_start(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   lexer->mark_end(lexer);
   s->verbatim_tick_count = ticks;
-  lexer->result_symbol = VERBATIM_START;
+  lexer->result_symbol = VERBATIM_BEGIN;
   return true;
 }
 
@@ -540,7 +543,7 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
 
   // CODE_BLOCK_END is issued after BLOCK_CLOSE and is handled with a delayed
   // output.
-  if (valid_symbols[CODE_BLOCK_START] || valid_symbols[BLOCK_CLOSE]) {
+  if (valid_symbols[CODE_BLOCK_BEGIN] || valid_symbols[BLOCK_CLOSE]) {
     if (parse_code_block(s, lexer, ticks)) {
       return true;
     }
@@ -548,7 +551,7 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
   if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer, ticks)) {
     return true;
   }
-  if (valid_symbols[VERBATIM_START] && parse_verbatim_start(s, lexer, ticks)) {
+  if (valid_symbols[VERBATIM_BEGIN] && parse_verbatim_start(s, lexer, ticks)) {
     return true;
   }
   return false;
@@ -720,21 +723,21 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, '-')) {
     if (lexer->lookahead == '[') {
-      return LIST_MARKER_TASK_START;
+      return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_DASH;
     }
   }
   if (scan_bullet_list_marker(s, lexer, '*')) {
     if (lexer->lookahead == '[') {
-      return LIST_MARKER_TASK_START;
+      return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_STAR;
     }
   }
   if (scan_bullet_list_marker(s, lexer, '+')) {
     if (lexer->lookahead == '[') {
-      return LIST_MARKER_TASK_START;
+      return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_PLUS;
     }
@@ -848,7 +851,7 @@ static bool parse_list_marker_or_thematic_break(
     Scanner *s, TSLexer *lexer, const bool *valid_symbols, char marker,
     TokenType marker_type, BlockType list_type, TokenType thematic_break_type) {
   if (!valid_symbols[marker_type] && !valid_symbols[thematic_break_type] &&
-      !valid_symbols[LIST_MARKER_TASK_START]) {
+      !valid_symbols[LIST_MARKER_TASK_BEGIN]) {
     return false;
   }
 
@@ -861,7 +864,7 @@ static bool parse_list_marker_or_thematic_break(
   // We should prioritize a thematic break over lists.
   // We need to remember if a '- ' is found, which means we can open a list.
   bool can_be_list_marker =
-      (valid_symbols[marker_type] || valid_symbols[LIST_MARKER_TASK_START]) &&
+      (valid_symbols[marker_type] || valid_symbols[LIST_MARKER_TASK_BEGIN]) &&
       lexer->lookahead == ' ';
 
   // We have now checked the two first characters.
@@ -882,10 +885,10 @@ static bool parse_list_marker_or_thematic_break(
     }
   }
 
-  if (valid_symbols[LIST_MARKER_TASK_START] && can_be_task) {
+  if (valid_symbols[LIST_MARKER_TASK_BEGIN] && can_be_task) {
     lexer->advance(lexer, false); // Consume the '['
     ensure_list_open(s, LIST_TASK, s->whitespace + 1);
-    lexer->result_symbol = LIST_MARKER_TASK_START;
+    lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
     lexer->mark_end(lexer);
     return true;
   }
@@ -912,7 +915,7 @@ static bool parse_star(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
 
 static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   if (!valid_symbols[LIST_MARKER_PLUS] &&
-      !valid_symbols[LIST_MARKER_TASK_START]) {
+      !valid_symbols[LIST_MARKER_TASK_BEGIN]) {
     return false;
   }
   if (!scan_bullet_list_marker(s, lexer, '+')) {
@@ -922,7 +925,7 @@ static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   if (lexer->lookahead == '[') {
     lexer->advance(lexer, false); // Consume the '['
     ensure_list_open(s, LIST_TASK, s->whitespace + 1);
-    lexer->result_symbol = LIST_MARKER_TASK_START;
+    lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
     lexer->mark_end(lexer);
     return true;
   } else {
@@ -963,7 +966,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 }
 
 static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  bool can_be_div = valid_symbols[DIV_START] || valid_symbols[DIV_END];
+  bool can_be_div = valid_symbols[DIV_BEGIN] || valid_symbols[DIV_END];
   if (!valid_symbols[LIST_MARKER_DEFINITION] && !can_be_div) {
     return false;
   }
@@ -1003,7 +1006,7 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     // We can consume the colons as we start a new div now.
     lexer->mark_end(lexer);
     push_block(s, DIV, colons);
-    lexer->result_symbol = DIV_START;
+    lexer->result_symbol = DIV_BEGIN;
     return true;
   }
 }
@@ -1011,17 +1014,17 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
 static TokenType heading_start_token(uint8_t level) {
   switch (level) {
   case 1:
-    return HEADING1_START;
+    return HEADING1_BEGIN;
   case 2:
-    return HEADING2_START;
+    return HEADING2_BEGIN;
   case 3:
-    return HEADING3_START;
+    return HEADING3_BEGIN;
   case 4:
-    return HEADING4_START;
+    return HEADING4_BEGIN;
   case 5:
-    return HEADING5_START;
+    return HEADING5_BEGIN;
   case 6:
-    return HEADING6_START;
+    return HEADING6_BEGIN;
   default:
     return ERROR;
   }
@@ -1140,7 +1143,7 @@ static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
 static bool parse_block_quote(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   // Don't scan unless needed.
-  if (!valid_symbols[BLOCK_QUOTE_START] &&
+  if (!valid_symbols[BLOCK_QUOTE_BEGIN] &&
       !valid_symbols[BLOCK_QUOTE_CONTINUATION] && !valid_symbols[BLOCK_CLOSE] &&
       !valid_symbols[CLOSE_PARAGRAPH]) {
     return false;
@@ -1196,7 +1199,7 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   }
 
   // Finally, start a new block quote if there's any marker.
-  if (valid_symbols[BLOCK_QUOTE_START] && has_marker) {
+  if (valid_symbols[BLOCK_QUOTE_BEGIN] && has_marker) {
     push_block(s, BLOCK_QUOTE, marker_count);
     lexer->mark_end(lexer);
     // It's important to always clear the stored level on newlines.
@@ -1205,11 +1208,49 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     } else {
       s->block_quote_level = marker_count;
     }
-    lexer->result_symbol = BLOCK_QUOTE_START;
+    lexer->result_symbol = BLOCK_QUOTE_BEGIN;
     return true;
   }
 
   return false;
+}
+
+static bool parse_open_bracket(Scanner *s, TSLexer *lexer,
+                               const bool *valid_symbols) {
+  if (!valid_symbols[FOOTNOTE_BEGIN]) {
+    return false;
+  }
+
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != '^') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  push_block(s, FOOTNOTE, s->whitespace + 2);
+  lexer->mark_end(lexer);
+  lexer->result_symbol = FOOTNOTE_BEGIN;
+  return true;
+}
+
+static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
+                               const bool *valid_symbols) {
+  if (!valid_symbols[FOOTNOTE_END]) {
+    return false;
+  }
+
+  // Only look at top block?
+  Block *footnote = peek_block(s);
+  if (footnote->type != FOOTNOTE) {
+    return false;
+  }
+
+  if (s->whitespace >= footnote->level) {
+    return false;
+  }
+
+  pop_block(s);
+  lexer->result_symbol = FOOTNOTE_END;
+  return true;
 }
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
@@ -1251,6 +1292,9 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
+    return true;
+  }
+  if (parse_footnote_end(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -1297,6 +1341,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
     break;
+  case '[':
+    if (parse_open_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
   case '\n':
     if (try_close_verbatim(s, lexer)) {
       return true;
@@ -1418,36 +1466,36 @@ static char *token_type_s(TokenType t) {
   case NEWLINE:
     return "NEWLINE";
 
-  case HEADING1_START:
-    return "HEADING1_START";
+  case HEADING1_BEGIN:
+    return "HEADING1_BEGIN";
   case HEADING1_CONTINUATION:
     return "HEADING1_CONTINUATION";
-  case HEADING2_START:
-    return "HEADING2_START";
+  case HEADING2_BEGIN:
+    return "HEADING2_BEGIN";
   case HEADING2_CONTINUATION:
     return "HEADING2_CONTINUATION";
-  case HEADING3_START:
-    return "HEADING3_START";
+  case HEADING3_BEGIN:
+    return "HEADING3_BEGIN";
   case HEADING3_CONTINUATION:
     return "HEADING3_CONTINUATION";
-  case HEADING4_START:
-    return "HEADING4_START";
+  case HEADING4_BEGIN:
+    return "HEADING4_BEGIN";
   case HEADING4_CONTINUATION:
     return "HEADING4_CONTINUATION";
-  case HEADING5_START:
-    return "HEADING5_START";
+  case HEADING5_BEGIN:
+    return "HEADING5_BEGIN";
   case HEADING5_CONTINUATION:
     return "HEADING5_CONTINUATION";
-  case HEADING6_START:
-    return "HEADING6_START";
+  case HEADING6_BEGIN:
+    return "HEADING6_BEGIN";
   case HEADING6_CONTINUATION:
     return "HEADING6_CONTINUATION";
-  case DIV_START:
-    return "DIV_START";
+  case DIV_BEGIN:
+    return "DIV_BEGIN";
   case DIV_END:
     return "DIV_END";
-  case CODE_BLOCK_START:
-    return "CODE_BLOCK_START";
+  case CODE_BLOCK_BEGIN:
+    return "CODE_BLOCK_BEGIN";
   case CODE_BLOCK_END:
     return "CODE_BLOCK_END";
   case LIST_MARKER_DASH:
@@ -1456,8 +1504,8 @@ static char *token_type_s(TokenType t) {
     return "LIST_MARKER_STAR";
   case LIST_MARKER_PLUS:
     return "LIST_MARKER_PLUS";
-  case LIST_MARKER_TASK_START:
-    return "LIST_MARKER_TASK_START";
+  case LIST_MARKER_TASK_BEGIN:
+    return "LIST_MARKER_TASK_BEGIN";
   case LIST_MARKER_DEFINITION:
     return "LIST_MARKER_DEFINITION";
   case LIST_MARKER_DECIMAL_PERIOD:
@@ -1494,17 +1542,21 @@ static char *token_type_s(TokenType t) {
     return "LIST_ITEM_END";
   case CLOSE_PARAGRAPH:
     return "CLOSE_PARAGRAPH";
-  case BLOCK_QUOTE_START:
-    return "BLOCK_QUOTE_START";
+  case BLOCK_QUOTE_BEGIN:
+    return "BLOCK_QUOTE_BEGIN";
   case BLOCK_QUOTE_CONTINUATION:
     return "BLOCK_QUOTE_CONTINUATION";
   case THEMATIC_BREAK_DASH:
     return "THEMATIC_BREAK_DASH";
   case THEMATIC_BREAK_STAR:
     return "THEMATIC_BREAK_STAR";
+  case FOOTNOTE_BEGIN:
+    return "FOOTNOTE_BEGIN";
+  case FOOTNOTE_END:
+    return "FOOTNOTE_END";
 
-  case VERBATIM_START:
-    return "VERBATIM_START";
+  case VERBATIM_BEGIN:
+    return "VERBATIM_BEGIN";
   case VERBATIM_END:
     return "VERBATIM_END";
   case VERBATIM_CONTENT:
@@ -1527,6 +1579,8 @@ static char *block_type_s(BlockType t) {
     return "BLOCK_QUOTE";
   case CODE_BLOCK:
     return "CODE_BLOCK";
+  case FOOTNOTE:
+    return "FOOTNOTE";
   case LIST_DASH:
     return "LIST_DASH";
   case LIST_STAR:
@@ -1609,9 +1663,11 @@ static void dump_valid_symbols(const bool *valid_symbols) {
   for (int i = 0; i <= IGNORED; ++i) {
     switch (i) {
     case BLOCK_CLOSE:
-    case BLOCK_QUOTE_START:
+    case BLOCK_QUOTE_BEGIN:
     case BLOCK_QUOTE_CONTINUATION:
     case CLOSE_PARAGRAPH:
+    case FOOTNOTE_BEGIN:
+    case FOOTNOTE_END:
       if (valid_symbols[i]) {
         printf("%s\n", token_type_s(i));
       }

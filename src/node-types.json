@@ -55,6 +55,10 @@
           "named": true
         },
         {
+          "type": "footnote",
+          "named": true
+        },
+        {
           "type": "heading1",
           "named": true
         },
@@ -143,11 +147,11 @@
           "named": true
         },
         {
-          "type": "code_block_marker_end",
+          "type": "code_block_marker_begin",
           "named": true
         },
         {
-          "type": "code_block_marker_start",
+          "type": "code_block_marker_end",
           "named": true
         },
         {
@@ -229,6 +233,10 @@
         },
         {
           "type": "div",
+          "named": true
+        },
+        {
+          "type": "footnote",
           "named": true
         },
         {
@@ -422,11 +430,15 @@
           "named": true
         },
         {
+          "type": "div_marker_begin",
+          "named": true
+        },
+        {
           "type": "div_marker_end",
           "named": true
         },
         {
-          "type": "div_marker_start",
+          "type": "footnote",
           "named": true
         },
         {
@@ -481,7 +493,7 @@
     }
   },
   {
-    "type": "div_marker_start",
+    "type": "div_marker_begin",
     "named": true,
     "fields": {},
     "children": {
@@ -517,6 +529,10 @@
         },
         {
           "type": "div",
+          "named": true
+        },
+        {
+          "type": "footnote",
           "named": true
         },
         {
@@ -680,6 +696,89 @@
         },
         {
           "type": "verbatim",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "footnote",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_attribute",
+          "named": true
+        },
+        {
+          "type": "block_quote",
+          "named": true
+        },
+        {
+          "type": "code_block",
+          "named": true
+        },
+        {
+          "type": "div",
+          "named": true
+        },
+        {
+          "type": "footnote",
+          "named": true
+        },
+        {
+          "type": "heading1",
+          "named": true
+        },
+        {
+          "type": "heading2",
+          "named": true
+        },
+        {
+          "type": "heading3",
+          "named": true
+        },
+        {
+          "type": "heading4",
+          "named": true
+        },
+        {
+          "type": "heading5",
+          "named": true
+        },
+        {
+          "type": "heading6",
+          "named": true
+        },
+        {
+          "type": "link_reference_definition",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "reference_label",
+          "named": true
+        },
+        {
+          "type": "table",
+          "named": true
+        },
+        {
+          "type": "thematic_break",
           "named": true
         }
       ]
@@ -2189,6 +2288,10 @@
           "named": true
         },
         {
+          "type": "footnote",
+          "named": true
+        },
+        {
           "type": "heading1",
           "named": true
         },
@@ -2355,11 +2458,11 @@
           "named": true
         },
         {
-          "type": "math_marker_end",
+          "type": "math_marker_begin",
           "named": true
         },
         {
-          "type": "math_marker_start",
+          "type": "math_marker_end",
           "named": true
         }
       ]
@@ -2501,11 +2604,11 @@
           "named": true
         },
         {
-          "type": "raw_block_marker_end",
+          "type": "raw_block_marker_begin",
           "named": true
         },
         {
-          "type": "raw_block_marker_start",
+          "type": "raw_block_marker_end",
           "named": true
         }
       ]
@@ -2543,11 +2646,11 @@
           "named": true
         },
         {
-          "type": "raw_inline_marker_end",
+          "type": "raw_inline_marker_begin",
           "named": true
         },
         {
-          "type": "raw_inline_marker_start",
+          "type": "raw_inline_marker_end",
           "named": true
         }
       ]
@@ -3366,11 +3469,11 @@
       "required": true,
       "types": [
         {
-          "type": "verbatim_marker_end",
+          "type": "verbatim_marker_begin",
           "named": true
         },
         {
-          "type": "verbatim_marker_start",
+          "type": "verbatim_marker_end",
           "named": true
         }
       ]
@@ -3453,6 +3556,10 @@
     "named": false
   },
   {
+    "type": "]:",
+    "named": false
+  },
+  {
     "type": "^",
     "named": false
   },
@@ -3473,11 +3580,11 @@
     "named": true
   },
   {
-    "type": "code_block_marker_end",
+    "type": "code_block_marker_begin",
     "named": true
   },
   {
-    "type": "code_block_marker_start",
+    "type": "code_block_marker_end",
     "named": true
   },
   {
@@ -3601,11 +3708,15 @@
     "named": true
   },
   {
+    "type": "math_marker_begin",
+    "named": true
+  },
+  {
     "type": "math_marker_end",
     "named": true
   },
   {
-    "type": "math_marker_start",
+    "type": "raw_block_marker_begin",
     "named": true
   },
   {
@@ -3613,15 +3724,11 @@
     "named": true
   },
   {
-    "type": "raw_block_marker_start",
+    "type": "raw_inline_marker_begin",
     "named": true
   },
   {
     "type": "raw_inline_marker_end",
-    "named": true
-  },
-  {
-    "type": "raw_inline_marker_start",
     "named": true
   },
   {
@@ -3637,11 +3744,11 @@
     "named": true
   },
   {
-    "type": "verbatim_marker_end",
+    "type": "verbatim_marker_begin",
     "named": true
   },
   {
-    "type": "verbatim_marker_start",
+    "type": "verbatim_marker_end",
     "named": true
   },
   {
