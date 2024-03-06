@@ -13,7 +13,7 @@ module.exports = grammar({
     //   [$._list_item_star, $.list_marker_task],
     //   [$._list_item_plus, $.list_marker_task],
     [$._table_content],
-    [$.table_caption],
+    // [$.table_caption],
   ],
 
   rules: {
@@ -301,9 +301,11 @@ module.exports = grammar({
     table_cell: ($) => $._inline,
     table_caption: ($) =>
       seq(
-        optional($._newline),
+        // FIXME This always match and will disrupt paragraph detection
+        // optional($._newline),
         alias($._table_caption_begin, $.marker),
-        $._inline_with_newlines,
+        repeat1($._inline_line),
+        // $._inline_with_newlines,
         choice($._table_caption_end, "\0")
       ),
 

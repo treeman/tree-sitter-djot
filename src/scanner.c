@@ -9,7 +9,7 @@
 // but this is probably fine.
 #define STACK_SIZE 512
 
-// #define DEBUG
+#define DEBUG
 
 typedef enum {
   BLOCK_CLOSE,
@@ -1255,9 +1255,8 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
   return true;
 }
 
-static bool parse_table_caption(Scanner *s, TSLexer *lexer,
-                                const bool *valid_symbols) {
-  if (!valid_symbols[TABLE_CAPTION_BEGIN]) {
+static bool parse_table_caption_begin(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '^') {
     return false;
   }
 
@@ -1272,17 +1271,15 @@ static bool parse_table_caption(Scanner *s, TSLexer *lexer,
   return true;
 }
 
-static bool parse_table_caption_end(Scanner *s, TSLexer *lexer,
-                                    const bool *valid_symbols) {
-  if (!valid_symbols[TABLE_CAPTION_END]) {
-    return false;
-  }
-
+static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   Block *caption = peek_block(s);
+
   if (!caption || caption->type != TABLE_CAPTION) {
     return false;
   }
 
+  // End is only checked at the beginning of a line, and should stop if we're
+  // not indented enough.
   if (s->whitespace >= caption->level) {
     return false;
   }
@@ -1384,10 +1381,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     if (parse_open_bracket(s, lexer, valid_symbols)) {
       return true;
     }
-  case '^':
-    if (parse_table_caption(s, lexer, valid_symbols)) {
-      return true;
-    }
   case '\n':
     if (try_close_verbatim(s, lexer)) {
       return true;
@@ -1403,6 +1396,14 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (ordered_list_marker != IGNORED &&
       handle_ordered_list_marker(s, lexer, valid_symbols,
                                  ordered_list_marker)) {
+    return true;
+  }
+
+  if (valid_symbols[TABLE_CAPTION_END] && parse_table_caption_end(s, lexer)) {
+    return true;
+  }
+  if (valid_symbols[TABLE_CAPTION_BEGIN] &&
+      parse_table_caption_begin(s, lexer)) {
     return true;
   }
 
@@ -1717,6 +1718,8 @@ static void dump_valid_symbols(const bool *valid_symbols) {
     case CLOSE_PARAGRAPH:
     // case FOOTNOTE_BEGIN:
     // case FOOTNOTE_END:
+    case NEWLINE:
+    case EOF_OR_BLANKLINE:
     case TABLE_CAPTION_BEGIN:
     case TABLE_CAPTION_END:
       if (valid_symbols[i]) {

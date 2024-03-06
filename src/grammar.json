@@ -1467,18 +1467,6 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_newline"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -1488,8 +1476,11 @@
           "value": "marker"
         },
         {
-          "type": "SYMBOL",
-          "name": "_inline_with_newlines"
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_inline_line"
+          }
         },
         {
           "type": "CHOICE",
@@ -3174,9 +3165,6 @@
   "conflicts": [
     [
       "_table_content"
-    ],
-    [
-      "table_caption"
     ]
   ],
   "precedences": [],
@@ -3401,4 +3389,3 @@
   "inline": [],
   "supertypes": []
 }
-
