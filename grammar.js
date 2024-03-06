@@ -268,7 +268,13 @@ module.exports = grammar({
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
     table: ($) =>
-      prec.right(seq(repeat1($._table_content), optional($.table_caption))),
+      prec.right(
+        seq(
+          repeat1($._table_content),
+          optional($._newline),
+          optional($.table_caption)
+        )
+      ),
     _table_content: ($) =>
       choice(
         $.table_separator,
@@ -301,11 +307,8 @@ module.exports = grammar({
     table_cell: ($) => $._inline,
     table_caption: ($) =>
       seq(
-        // FIXME This always match and will disrupt paragraph detection
-        // optional($._newline),
         alias($._table_caption_begin, $.marker),
         repeat1($._inline_line),
-        // $._inline_with_newlines,
         choice($._table_caption_end, "\0")
       ),
 
