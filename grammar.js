@@ -1,19 +1,21 @@
 module.exports = grammar({
   name: "djot",
 
-  // TODO
-  // - Escape characters (context dependent?)
-  // - Fallback to text and paragraphs
-  //   Probably need to add conflicts and dynamic(?) precedence
-
   extras: (_) => ["\r"],
 
   conflicts: ($) => [
-    //   [$._list_item_dash, $.list_marker_task],
-    //   [$._list_item_star, $.list_marker_task],
-    //   [$._list_item_plus, $.list_marker_task],
     [$._table_content],
-    // [$.table_caption],
+    [$._inline_no_surrounding_spaces],
+    [$.emphasis, $._symbol_fallback],
+    [$.strong, $._symbol_fallback],
+    [$.highlighted, $._symbol_fallback],
+    [$.superscript, $._symbol_fallback],
+    [$.subscript, $._symbol_fallback],
+    [$.insert, $._symbol_fallback],
+    [$.delete, $._symbol_fallback],
+    [$.table_row, $._symbol_fallback],
+    [$.image_description, $._symbol_fallback],
+    [$.link_text, $.span, $._symbol_fallback],
   ],
 
   rules: {
@@ -304,7 +306,7 @@ module.exports = grammar({
         )
       ),
     table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
-    table_cell: ($) => $._inline,
+    table_cell: ($) => prec.left($._inline),
     table_caption: ($) =>
       seq(
         alias($._table_caption_begin, $.marker),
@@ -430,6 +432,9 @@ module.exports = grammar({
       choice(
         seq(
           choice(
+            $.hard_line_break,
+            $._smart_punctuation,
+            $.backslash_escape,
             $.autolink,
             $.emphasis,
             $.strong,
@@ -438,16 +443,15 @@ module.exports = grammar({
             $.subscript,
             $.insert,
             $.delete,
-            $._smart_punctuation,
             $.verbatim,
             $.math,
             $.raw_inline,
             $.footnote_reference,
-            $.hard_line_break,
             $.symbol,
             $.span,
             $._image,
             $._link,
+            $._symbol_fallback,
             $._text
           ),
           optional($.inline_attribute)
@@ -455,51 +459,55 @@ module.exports = grammar({
         $.span
       ),
     _inline_no_surrounding_spaces: ($) =>
-      choice(
-        repeat1(prec.left($._inline_no_spaces)),
-        seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
+      prec.left(
+        choice(
+          repeat1(prec.left($._inline_no_spaces)),
+          seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
+        )
       ),
     _inline_with_newlines: ($) =>
       repeat1(prec.left(choice($._inline, " ", $._newline))),
     _inline_line: ($) => seq($._inline, $._newline),
 
-    autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
-
-    // FIXME errors out if there's spaces instead of parsing other inline options
-    // need to somehow tell it to explore all possibilities?
-    emphasis: ($) =>
-      seq($._emphasis_begin, $._inline_no_surrounding_spaces, $._emphasis_end),
-    _emphasis_begin: (_) => token(choice(seq("{_", /[ ]*/), "_")),
-    _emphasis_end: (_) => token.immediate(choice(seq(/[ ]*/, "_}"), "_")),
-
-    strong: ($) =>
-      seq($._strong_begin, $._inline_no_surrounding_spaces, $._strong_end),
-    _strong_begin: (_) => token(choice(seq("{*", /[ ]*/), "*")),
-    _strong_end: (_) => token.immediate(choice(seq(/[ ]*/, "*}"), "*")),
-
-    highlighted: ($) => prec.left(seq("{=", $._inline, "=}")),
-    insert: ($) => prec.left(seq("{+", $._inline, "+}")),
-    delete: ($) => prec.left(seq("{-", $._inline, "-}")),
-    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
-
-    // The syntax description isn't clear about this.
-    // Can the non-bracketed versions include spaces?
-    superscript: ($) =>
-      prec.left(seq(choice("{^", "^"), $._inline, choice("^}", "^"))),
-    subscript: ($) =>
-      prec.left(seq(choice("{~", "~"), $._inline, choice("~}", "~"))),
+    hard_line_break: ($) => seq("\\", $._newline),
 
     _smart_punctuation: ($) =>
-      choice($.escaped_quote, $.ellipsis, $.em_dash, $.en_dash),
-    escaped_quote: (_) => token(choice('{"', '}"', "{'", "}'", '\\"', "\\'")),
+      choice($.straight_quote, $.ellipsis, $.em_dash, $.en_dash),
+    straight_quote: (_) => token(choice('{"', '}"', "{'", "}'", '\\"', "\\'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
     en_dash: (_) => "--",
 
+    backslash_escape: (_) => /\\[^\\\n]/,
+
+    autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
+
+    emphasis: ($) =>
+      seq(
+        choice(seq("{_", repeat(" ")), "_"),
+        $._inline_no_surrounding_spaces,
+        choice(token(seq(repeat(" "), "_}")), "_")
+      ),
+
+    strong: ($) =>
+      seq(
+        choice(seq("{*", repeat(" ")), "*"),
+        $._inline_no_surrounding_spaces,
+        choice(token(seq(repeat(" "), "*}")), "*")
+      ),
+
+    highlighted: ($) => seq("{=", $._inline, "=}"),
+    insert: ($) => seq("{+", $._inline, "+}"),
+    delete: ($) => seq("{-", $._inline, "-}"),
+    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
+
+    // The syntax description isn't clear about if non-bracket can contain surrounding spaces?
+    // The live playground suggests that yes they can.
+    superscript: ($) => seq(choice("{^", "^"), $._inline, choice("^}", "^")),
+    subscript: ($) => seq(choice("{~", "~"), $._inline, choice("~}", "~")),
+
     footnote_reference: ($) => seq("[^", $.reference_label, "]"),
     reference_label: (_) => /\w+/,
-
-    hard_line_break: ($) => seq("\\", $._newline),
 
     _image: ($) =>
       choice(
@@ -567,6 +575,28 @@ module.exports = grammar({
         alias($._verbatim_end, $.verbatim_marker_end)
       ),
 
+    _symbol_fallback: (_) =>
+      prec.dynamic(
+        -100,
+        choice(
+          "![",
+          "*",
+          "[",
+          "[^",
+          "^",
+          "_",
+          "{",
+          "{*",
+          "{+",
+          "{-",
+          "{=",
+          "{^",
+          "{_",
+          "{~",
+          "|",
+          "~"
+        )
+      ),
     _text: (_) => /\S/,
   },
 

@@ -754,12 +754,17 @@ Emphasis and strong
 ===============================================================================
 With _*strong* emphasis_ here
 
+With *_emphasis_ strong* here
+
 -------------------------------------------------------------------------------
 
 (document
   (paragraph
     (emphasis
-      (strong))))
+      (strong)))
+  (paragraph
+    (strong
+      (emphasis))))
 
 ===============================================================================
 Emphasis: nested
@@ -799,7 +804,7 @@ Strong: forced despite spaces
 
 *yes *}
 
-{* yes*}
+{* yes*
 
 {* yes *}
 
@@ -1133,13 +1138,42 @@ Some{"quotes"} be{'here'}yo
     (em_dash)
     (en_dash))
   (paragraph
-    (escaped_quote)
-    (escaped_quote))
+    (straight_quote)
+    (straight_quote))
   (paragraph
-    (escaped_quote)
-    (escaped_quote)
-    (escaped_quote)
-    (escaped_quote)))
+    (straight_quote)
+    (straight_quote)
+    (straight_quote)
+    (straight_quote)))
+
+===============================================================================
+Backslash escape
+===============================================================================
+
+No \_emphasis\_
+
+No \_strong\_
+
+No \<autolink>
+
+Regular \.\.\. dots
+
+Inside _x\_y_
+
+No \{+insert\*}
+
+\> no quote
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (backslash_escape) (backslash_escape))
+  (paragraph (backslash_escape) (backslash_escape))
+  (paragraph (backslash_escape))
+  (paragraph (backslash_escape) (backslash_escape) (backslash_escape))
+  (paragraph (emphasis (backslash_escape)))
+  (paragraph (backslash_escape) (backslash_escape))
+  (paragraph (backslash_escape)))
 
 ===============================================================================
 Paragraph: not recognized
@@ -2202,6 +2236,8 @@ Paragraph: broken things
 
 {=x
 
+{+x
+
 {-x
 
 ^x
@@ -2222,11 +2258,7 @@ x *x *
 
 x * x*
 
-- [
-
 [x
-
-[^x]
 
 ^
 
@@ -2244,5 +2276,26 @@ x * x*
   (paragraph)
   (paragraph)
   (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (verbatim_marker_end)))
   (paragraph)
   (paragraph))
