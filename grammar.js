@@ -15,7 +15,9 @@ module.exports = grammar({
     [$.delete, $._symbol_fallback],
     [$.table_row, $._symbol_fallback],
     [$.image_description, $._symbol_fallback],
+    [$.math, $._symbol_fallback],
     [$.link_text, $.span, $._symbol_fallback],
+    [$.block_attribute, $._symbol_fallback],
   ],
 
   rules: {
@@ -144,7 +146,8 @@ module.exports = grammar({
       seq(
         $._list_marker_task_begin,
         choice(alias(" ", $.unchecked), alias("x", $.checked)),
-        "] "
+        "]",
+        $._whitespace1
       ),
 
     _list_definition: ($) =>
@@ -316,9 +319,9 @@ module.exports = grammar({
 
     footnote: ($) =>
       seq(
-        $._footnote_begin,
+        alias($._footnote_begin, $.footnote_marker_begin),
         $.reference_label,
-        "]:",
+        alias("]:", $.footnote_marker_end),
         repeat1($._block),
         $._footnote_end
       ),
@@ -333,7 +336,7 @@ module.exports = grammar({
       ),
     div_marker_begin: ($) =>
       seq($._div_begin, optional(seq($._whitespace1, $.class_name))),
-    class_name: (_) => /\w+/,
+    class_name: (_) => /[\w_-]+/,
 
     code_block: ($) =>
       seq(
@@ -406,7 +409,7 @@ module.exports = grammar({
     class: ($) => seq(".", alias($.class_name, "class")),
     identifier: (_) => token(seq("#", token.immediate(/\w+/))),
     key_value: ($) => seq($.key, "=", $.value),
-    key: (_) => /\w+/,
+    key: (_) => /[\w_-]+/,
     value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
 
     paragraph: ($) =>
@@ -427,7 +430,7 @@ module.exports = grammar({
     _whitespace: (_) => token.immediate(/[ \t]*/),
     _whitespace1: (_) => token.immediate(/[ \t]+/),
 
-    _inline: ($) => repeat1(choice($._inline_no_spaces, " ")),
+    _inline: ($) => repeat1(choice($._inline_no_spaces, $._whitespace1)),
     _inline_no_spaces: ($) =>
       choice(
         seq(
@@ -466,7 +469,7 @@ module.exports = grammar({
         )
       ),
     _inline_with_newlines: ($) =>
-      repeat1(prec.left(choice($._inline, " ", $._newline))),
+      repeat1(prec.left(choice($._inline, $._whitespace1, $._newline))),
     _inline_line: ($) => seq($._inline, $._newline),
 
     hard_line_break: ($) => seq("\\", $._newline),
@@ -482,6 +485,7 @@ module.exports = grammar({
 
     autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
 
+    // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
     emphasis: ($) =>
       seq(
         choice(seq("{_", repeat(" ")), "_"),
@@ -506,7 +510,12 @@ module.exports = grammar({
     superscript: ($) => seq(choice("{^", "^"), $._inline, choice("^}", "^")),
     subscript: ($) => seq(choice("{~", "~"), $._inline, choice("~}", "~")),
 
-    footnote_reference: ($) => seq("[^", $.reference_label, "]"),
+    footnote_reference: ($) =>
+      seq(
+        alias("[^", $.footnote_marker_begin),
+        $.reference_label,
+        alias("]", $.footnote_marker_end)
+      ),
     reference_label: (_) => /\w+/,
 
     _image: ($) =>
@@ -520,7 +529,7 @@ module.exports = grammar({
       seq($.image_description, token.immediate("[]")),
     inline_image: ($) => seq($.image_description, $.inline_link_destination),
 
-    image_description: ($) => seq("![", $._inline, "]"),
+    image_description: ($) => seq("![", optional($._inline), "]"),
 
     _link: ($) =>
       choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
@@ -542,7 +551,8 @@ module.exports = grammar({
             $.identifier,
             $.key_value,
             alias($._comment_with_newline, $.comment),
-            /\s+/
+            $._whitespace1,
+            $._newline
           )
         ),
         "}"
@@ -594,7 +604,8 @@ module.exports = grammar({
           "{_",
           "{~",
           "|",
-          "~"
+          "~",
+          "$"
         )
       ),
     _text: (_) => /\S/,

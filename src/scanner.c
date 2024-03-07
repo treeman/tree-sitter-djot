@@ -454,9 +454,9 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
     if (top->type == CODE_BLOCK) {
       if (top->level == ticks) {
         // Found a matching block that we should close.
-        lexer->mark_end(lexer);
         // Issue BLOCK_CLOSE before CODE_BLOCK_END.
-        close_blocks_with_final_token(s, lexer, 1, CODE_BLOCK_END, 3);
+        // Don't consume ` characters this time, do it in the future.
+        close_blocks_with_final_token(s, lexer, 1, CODE_BLOCK_END, ticks);
         return true;
       } else {
         // We're in a code block with a different number of `, ignore these.
@@ -678,6 +678,7 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
 
   switch (lexer->lookahead) {
   case ')':
+    lexer->advance(lexer, false);
     if (surrounding_parens) {
       switch (list_type) {
       case DECIMAL:
@@ -706,6 +707,7 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
       }
     }
   case '.':
+    lexer->advance(lexer, false);
     switch (list_type) {
     case DECIMAL:
       return LIST_MARKER_DECIMAL_PERIOD;
