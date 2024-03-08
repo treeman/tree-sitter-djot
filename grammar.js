@@ -344,7 +344,7 @@ module.exports = grammar({
         $._whitespace,
         optional($.language),
         $._newline,
-        $.code,
+        optional($.code),
         $._block_close,
         optional(alias($._code_block_end, $.code_block_marker_end))
       ),
@@ -354,7 +354,7 @@ module.exports = grammar({
         $._whitespace,
         $.raw_block_info,
         $._newline,
-        alias($.code, $.content),
+        optional(alias($.code, $.content)),
         $._block_close,
         optional(alias($._code_block_end, $.raw_block_marker_end))
       ),
@@ -566,7 +566,7 @@ module.exports = grammar({
     raw_inline: ($) =>
       seq(
         alias($._verbatim_begin, $.raw_inline_marker_begin),
-        $._verbatim_content,
+        alias($._verbatim_content, $.content),
         alias($._verbatim_end, $.raw_inline_marker_end),
         $.raw_inline_attribute
       ),
@@ -575,13 +575,13 @@ module.exports = grammar({
       seq(
         alias("$", $.math_marker),
         alias($._verbatim_begin, $.math_marker_begin),
-        $._verbatim_content,
+        alias($._verbatim_content, $.content),
         alias($._verbatim_end, $.math_marker_end)
       ),
     verbatim: ($) =>
       seq(
         alias($._verbatim_begin, $.verbatim_marker_begin),
-        $._verbatim_content,
+        alias($._verbatim_content, $.content),
         alias($._verbatim_end, $.verbatim_marker_end)
       ),
 

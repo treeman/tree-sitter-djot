@@ -1663,8 +1663,16 @@
           "name": "_newline"
         },
         {
-          "type": "SYMBOL",
-          "name": "code"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "code"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -1714,13 +1722,21 @@
           "name": "_newline"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "code"
-          },
-          "named": true,
-          "value": "content"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "code"
+              },
+              "named": true,
+              "value": "content"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -3088,8 +3104,13 @@
           "value": "raw_inline_marker_begin"
         },
         {
-          "type": "SYMBOL",
-          "name": "_verbatim_content"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_content"
+          },
+          "named": true,
+          "value": "content"
         },
         {
           "type": "ALIAS",
@@ -3148,8 +3169,13 @@
           "value": "math_marker_begin"
         },
         {
-          "type": "SYMBOL",
-          "name": "_verbatim_content"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_content"
+          },
+          "named": true,
+          "value": "content"
         },
         {
           "type": "ALIAS",
@@ -3175,8 +3201,13 @@
           "value": "verbatim_marker_begin"
         },
         {
-          "type": "SYMBOL",
-          "name": "_verbatim_content"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_verbatim_content"
+          },
+          "named": true,
+          "value": "content"
         },
         {
           "type": "ALIAS",

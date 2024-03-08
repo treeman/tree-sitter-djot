@@ -112,13 +112,7 @@
  (raw_inline_marker_end)
  ] @punctuation.delimiter
 
-(raw_inline_attribute (language) @attribute)
-
-; FIXME how to handle spell?
-
 (paragraph) @text
-; (paragraph) @spell ; Can't really do this, then everything will be marked as spell?
-; Or we do it, and then set @nospell everywhere else
 
 (span ["[" "]"] @punctuation.delimiter)
 (inline_attribute ["{" "}"] @punctuation.delimiter)
@@ -164,3 +158,27 @@
   (inline_link_destination)
   (link_destination)
 ] @text.uri
+
+[
+ (paragraph)
+ (comment)
+ (table_cell)
+ ] @spell
+[
+ (autolink)
+ (inline_link_destination)
+ (link_destination)
+ (code_block)
+ (raw_block)
+ (math)
+ (raw_inline)
+ (verbatim)
+ (reference_label)
+ (class)
+ (class_name)
+ (identifier)
+ (key_value)
+] @nospell
+(full_reference_link (link_label) @nospell)
+(full_reference_image (link_label) @nospell)
+

@@ -325,6 +325,19 @@ here
     (code_block_marker_end)))
 
 ===============================================================================
+Code block: empty
+===============================================================================
+```
+```
+
+-------------------------------------------------------------------------------
+
+(document
+  (code_block
+    (code_block_marker_begin)
+    (code_block_marker_end)))
+
+===============================================================================
 Code block: before short paragraph
 ===============================================================================
 ```
@@ -1340,6 +1353,7 @@ Simple `verbatim` here
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1353,6 +1367,7 @@ Verbatim: double with single inside
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1366,6 +1381,7 @@ Verbatim: with triple inside
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1379,6 +1395,7 @@ Verbatim: newline closes
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))))
 
 
@@ -1393,9 +1410,11 @@ Verbatim: multiple
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end))))
 
 ===============================================================================
@@ -1409,6 +1428,7 @@ Raw inline
   (paragraph
     (raw_inline
       (raw_inline_marker_begin)
+      (content)
       (raw_inline_marker_end)
       (raw_inline_attribute
         (language)))))
@@ -1425,6 +1445,7 @@ $`1 + 2`
     (math
       (math_marker)
       (math_marker_begin)
+      (content)
       (math_marker_end))))
 
 ===============================================================================
@@ -2424,6 +2445,7 @@ x * x*
   (paragraph
     (verbatim
       (verbatim_marker_begin)
+      (content)
       (verbatim_marker_end)))
   (paragraph)
   (paragraph))

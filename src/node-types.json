@@ -2522,6 +2522,10 @@
       "required": true,
       "types": [
         {
+          "type": "content",
+          "named": true
+        },
+        {
           "type": "math_marker",
           "named": true
         },
@@ -2713,6 +2717,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "content",
+          "named": true
+        },
         {
           "type": "raw_inline_attribute",
           "named": true
@@ -3691,6 +3699,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "content",
+          "named": true
+        },
         {
           "type": "verbatim_marker_begin",
           "named": true

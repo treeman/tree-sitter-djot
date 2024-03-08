@@ -2,8 +2,11 @@
 #include <assert.h>
 #include <stdio.h>
 
-// NOTE maybe we should never use asserts?
-// Issue ERROR token instead.
+// FIXME
+// - Issue ERROR token instead of asserts
+// - When next tree-sitter version comes out:
+//   - Use tree-sitter predefined array instead of our own stack impl
+//   - Use tr_ allocators
 
 // Maybe we should implement a growable stack or something,
 // but this is probably fine.
