@@ -1,3 +1,5 @@
+; NOTE might want to use @markup.strong etc instead...?
+
 [
  (heading1)
  (heading2)
@@ -136,13 +138,16 @@
 
 ; TODO rework links
 ; Maybe we could also detect if a link reference exists or not...?
+; [link_text][]
+; [link_text][link_label]
+; [link_text](inline_link_destination)
+; ![image_description][]
+; ![image_description][link_label]
+; ![image_description](inline_link_destination)
 [
  (link_text)
  (image_description)
 ] @string
-[
- (link_label)
-] @label
 ; These aren't highlighted very nicely
 (inline_link_destination ["(" ")"] @punctuation.delimiter)
 (link_label ["[" "]"] @punctuation.delimiter)
@@ -158,6 +163,11 @@
   (inline_link_destination)
   (link_destination)
 ] @text.uri
+
+; This always errors out...?
+; Should try mark invalid references with @exception or something
+; ((link_label) @label (#is-not? local))
+((link_label) @label)
 
 [
  (paragraph)

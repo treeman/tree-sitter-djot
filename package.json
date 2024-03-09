@@ -4,7 +4,10 @@
   "description": "",
   "main": "bindings/node",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "check-formatted": "prettier --check grammar.js",
+    "build-wasm": "tree-sitter build-wasm"
   },
   "author": "",
   "license": "ISC",
@@ -12,7 +15,7 @@
     "nan": "^2.18.0"
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.20.8"
+    "tree-sitter-cli": "^0.21"
   },
   "tree-sitter": [
     {
@@ -20,6 +23,7 @@
       "file-types": [
         "dj"
       ],
+      "injection-regex": "^djot$",
       "highlights": [
         "queries/highlights.scm"
       ]

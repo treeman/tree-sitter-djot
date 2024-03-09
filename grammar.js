@@ -54,48 +54,90 @@ module.exports = grammar({
     heading1: ($) =>
       seq(
         alias($._heading1_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading1_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading1_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
     heading2: ($) =>
       seq(
         alias($._heading2_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading2_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading2_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
     heading3: ($) =>
       seq(
         alias($._heading3_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading3_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading3_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
     heading4: ($) =>
       seq(
         alias($._heading4_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading4_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading4_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
     heading5: ($) =>
       seq(
         alias($._heading5_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading5_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading5_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
     heading6: ($) =>
       seq(
         alias($._heading6_begin, $.marker),
-        $._inline_line,
-        repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line)),
+        alias(
+          seq(
+            $._inline_line,
+            repeat(
+              seq(alias($._heading6_continuation, $.marker), $._inline_line)
+            )
+          ),
+          $.content
+        ),
         $._block_close,
         optional($._eof_or_blankline)
       ),
@@ -313,7 +355,7 @@ module.exports = grammar({
     table_caption: ($) =>
       seq(
         alias($._table_caption_begin, $.marker),
-        repeat1($._inline_line),
+        alias(repeat1($._inline_line), $.content),
         choice($._table_caption_end, "\0")
       ),
 
@@ -330,7 +372,7 @@ module.exports = grammar({
       seq(
         $.div_marker_begin,
         $._newline,
-        repeat($._block),
+        alias(repeat($._block), $.content),
         $._block_close,
         optional(alias($._div_end, $.div_marker_end))
       ),
@@ -371,8 +413,15 @@ module.exports = grammar({
     block_quote: ($) =>
       seq(
         alias($._block_quote_begin, $.block_quote_marker),
-        $._block_without_standalone_newline,
-        repeat(seq($._block_quote_prefix, $._block_without_standalone_newline)),
+        alias(
+          seq(
+            $._block_without_standalone_newline,
+            repeat(
+              seq($._block_quote_prefix, $._block_without_standalone_newline)
+            )
+          ),
+          $.content
+        ),
         $._block_close
       ),
     _block_quote_prefix: ($) =>
@@ -395,14 +444,17 @@ module.exports = grammar({
     block_attribute: ($) =>
       seq(
         "{",
-        repeat(
-          choice(
-            $.class,
-            $.identifier,
-            $.key_value,
-            alias($._comment_no_newline, $.comment),
-            $._whitespace1
-          )
+        alias(
+          repeat(
+            choice(
+              $.class,
+              $.identifier,
+              $.key_value,
+              alias($._comment_no_newline, $.comment),
+              $._whitespace1
+            )
+          ),
+          $.args
         ),
         "}"
       ),
@@ -545,23 +597,28 @@ module.exports = grammar({
     inline_attribute: ($) =>
       seq(
         token.immediate("{"),
-        repeat(
-          choice(
-            $.class,
-            $.identifier,
-            $.key_value,
-            alias($._comment_with_newline, $.comment),
-            $._whitespace1,
-            $._newline
-          )
+        alias(
+          repeat(
+            choice(
+              $.class,
+              $.identifier,
+              $.key_value,
+              alias($._comment_with_newline, $.comment),
+              $._whitespace1,
+              $._newline
+            )
+          ),
+          $.args
         ),
         "}"
       ),
 
     span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
-    _comment_with_newline: (_) => seq("%", /[^%]+/, "%"),
-    _comment_no_newline: (_) => seq("%", /[^%\n]+/, "%"),
+    _comment_with_newline: ($) =>
+      seq("%", $._whitespace, alias(/[^%]+/, $.content), "%"),
+    _comment_no_newline: ($) =>
+      seq("%", $._whitespace, alias(/[^%\n]+/, $.content), "%"),
 
     raw_inline: ($) =>
       seq(
