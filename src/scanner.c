@@ -776,6 +776,7 @@ static bool parse_eof_or_blankline(Scanner *s, TSLexer *lexer) {
     return false;
   }
 
+  // FIXME is this better?
   lexer->mark_end(lexer);
   lexer->result_symbol = EOF_OR_BLANKLINE;
   return true;
