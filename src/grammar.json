@@ -2833,26 +2833,24 @@
       ]
     },
     "symbol": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": ":"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
+      "type": "TOKEN",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": ":"
+          },
+          {
             "type": "PATTERN",
             "value": "[^:\\s]+"
           },
-          "named": true,
-          "value": "content"
-        },
-        {
-          "type": "STRING",
-          "value": ":"
-        }
-      ]
+          {
+            "type": "STRING",
+            "value": ":"
+          }
+        ]
+      }
     },
     "superscript": {
       "type": "SEQ",
@@ -3495,10 +3493,6 @@
           {
             "type": "STRING",
             "value": "$"
-          },
-          {
-            "type": "STRING",
-            "value": ":"
           }
         ]
       }

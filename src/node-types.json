@@ -2012,21 +2012,6 @@
     }
   },
   {
-    "type": "symbol",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "table",
     "named": true,
     "fields": {},
@@ -2670,6 +2655,10 @@
   },
   {
     "type": "straight_quote",
+    "named": true
+  },
+  {
+    "type": "symbol",
     "named": true
   },
   {

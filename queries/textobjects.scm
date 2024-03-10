@@ -38,7 +38,7 @@
 (highlighted (content) @attribute.inner) @attribute.outer
 (insert (content) @attribute.inner) @attribute.outer
 (delete (content) @attribute.inner) @attribute.outer
-(symbol (content) @attribute.inner) @attribute.outer
+(symbol) @attribute.outer
 (superscript (content) @attribute.inner) @attribute.outer
 (subscript (content) @attribute.inner) @attribute.outer
 
