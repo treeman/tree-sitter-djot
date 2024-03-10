@@ -1,3 +1,10 @@
+; The markup doesn't contain elements like "classes" or "functions".
+; These are used to provide a reasonable treesitter based jump and
+; select experience.
+; For instance "change inner function" allows us to replace an
+; entire block quote, leaving the ">" prefix.
+; The choices are a bit subjective though.
+
 ; Classes, the highest level
 (thematic_break) @class.outer
 (heading1 (content) @class.inner) @class.outer

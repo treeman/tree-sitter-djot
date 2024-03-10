@@ -1344,13 +1344,13 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (parse_block_quote(s, lexer, valid_symbols)) {
     return true;
   }
-  if (parse_heading(s, lexer, valid_symbols)) {
-    return true;
-  }
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
   if (parse_footnote_end(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_heading(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -1736,8 +1736,8 @@ static void dump_valid_symbols(const bool *valid_symbols) {
     case BLOCK_QUOTE_BEGIN:
     case BLOCK_QUOTE_CONTINUATION:
     case CLOSE_PARAGRAPH:
-    // case FOOTNOTE_BEGIN:
-    // case FOOTNOTE_END:
+    case FOOTNOTE_BEGIN:
+    case FOOTNOTE_END:
     case NEWLINE:
     case EOF_OR_BLANKLINE:
     case TABLE_CAPTION_BEGIN:
