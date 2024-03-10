@@ -185,7 +185,8 @@ stop
 (document
   (div
     (div_marker_begin)
-    (heading4 (marker) (content))
+    (content
+      (heading4 (marker) (content)))
     (div_marker_end))
   (paragraph))
 
@@ -230,7 +231,8 @@ Block quote: oneline
 (document
   (block_quote
     (block_quote_marker)
-    (paragraph)))
+    (content
+      (paragraph))))
 
 ===============================================================================
 Block quote: long
@@ -244,10 +246,11 @@ Block quote: long
 (document
   (block_quote
     (block_quote_marker)
-    (paragraph)
-    (block_quote_marker)
-    (paragraph
-      (block_quote_marker))))
+    (content
+      (paragraph)
+      (block_quote_marker)
+      (paragraph
+        (block_quote_marker)))))
 
 ===============================================================================
 Block quote: lazy
@@ -260,7 +263,8 @@ This is included
 (document
   (block_quote
     (block_quote_marker)
-    (paragraph)))
+    (content
+      (paragraph))))
 
 ===============================================================================
 Block quote: multilevel close nesting
@@ -275,13 +279,16 @@ c
 (document
   (block_quote
     (block_quote_marker)
-    (block_quote
-      (block_quote_marker)
+    (content
       (block_quote
         (block_quote_marker)
-        (paragraph)))
-    (block_quote_marker)
-    (paragraph))
+        (content
+          (block_quote
+            (block_quote_marker)
+            (content
+              (paragraph)))))
+      (block_quote_marker)
+      (paragraph)))
   (paragraph))
 
 ===============================================================================
@@ -296,12 +303,14 @@ Block quote: multilevel nesting with space
 (document
   (block_quote
     (block_quote_marker)
-    (block_quote
+    (content
+      (block_quote
+        (block_quote_marker)
+        (content
+          (paragraph)))
       (block_quote_marker)
-      (paragraph))
-    (block_quote_marker)
-    (paragraph
-      (block_quote_marker))))
+      (paragraph
+        (block_quote_marker)))))
 
 ===============================================================================
 Block quote: contain code block
@@ -314,11 +323,12 @@ Block quote: contain code block
 (document
   (block_quote
     (block_quote_marker)
-    (code_block
-      (code_block_marker_begin)
-      (language)
-      (code
-        (block_quote_marker)))))
+    (content
+      (code_block
+        (code_block_marker_begin)
+        (language)
+        (code
+          (block_quote_marker))))))
 
 ===============================================================================
 Code block: without langugae
@@ -620,7 +630,8 @@ Paragraph
 
 (document
   (block_attribute
-    (class))
+    (args
+      (class)))
   (paragraph))
 
 ===============================================================================
@@ -633,7 +644,8 @@ Paragraph
 
 (document
   (block_attribute
-    (class))
+    (args
+      (class)))
   (paragraph))
 
 ===============================================================================
@@ -646,7 +658,8 @@ Paragraph
 
 (document
   (block_attribute
-    (identifier))
+    (args
+      (identifier)))
   (paragraph))
 
 ===============================================================================
@@ -659,9 +672,10 @@ Paragraph
 
 (document
   (block_attribute
-    (key_value
-      (key)
-      (value)))
+    (args
+      (key_value
+        (key)
+        (value))))
   (paragraph))
 
 ===============================================================================
@@ -674,9 +688,10 @@ Paragraph
 
 (document
   (block_attribute
-    (key_value
-      (key)
-      (value)))
+    (args
+      (key_value
+        (key)
+        (value))))
   (paragraph))
 
 ===============================================================================
@@ -689,12 +704,13 @@ Paragraph
 
 (document
   (block_attribute
-    (class)
-    (class)
-    (identifier)
-    (key_value
-      (key)
-      (value)))
+    (args
+      (class)
+      (class)
+      (identifier)
+      (key_value
+        (key)
+        (value))))
   (paragraph))
 
 ===============================================================================
@@ -707,7 +723,8 @@ Paragraph
 
 (document
   (block_attribute
-    (comment))
+    (args
+      (comment (content))))
   (paragraph))
 
 ===============================================================================
@@ -720,12 +737,13 @@ text{.one .two #id author="with spaces"}
 (document
   (paragraph
     (inline_attribute
-      (class)
-      (class)
-      (identifier)
-      (key_value
-        (key)
-        (value)))))
+      (args
+        (class)
+        (class)
+        (identifier)
+        (key_value
+          (key)
+          (value))))))
 
 ===============================================================================
 Inline attribute: casing
@@ -737,8 +755,9 @@ text{.snake_case .cebab-case}
 (document
   (paragraph
     (inline_attribute
-      (class)
-      (class))))
+      (args
+        (class)
+        (class)))))
 
 ===============================================================================
 Inline attribute: key casing
@@ -750,12 +769,13 @@ text{snake_case=2 kebab-case=3}
 (document
   (paragraph
     (inline_attribute
-      (key_value
-        (key)
-        (value))
-      (key_value
-        (key)
-        (value)))))
+      (args
+        (key_value
+          (key)
+          (value))
+        (key_value
+          (key)
+          (value))))))
 
 ===============================================================================
 Inline attribute: surrounding spaces
@@ -767,7 +787,8 @@ text{ .class }
 (document
   (paragraph
     (inline_attribute
-      (class))))
+      (args
+        (class)))))
 
 ===============================================================================
 Inline attribute: with newlines
@@ -781,9 +802,10 @@ text{.one
 (document
   (paragraph
     (inline_attribute
-      (class)
-      (class)
-      (identifier))))
+      (args
+        (class)
+        (class)
+        (identifier)))))
 
 ===============================================================================
 Inline attribute: comment
@@ -797,7 +819,9 @@ some text here
 (document
   (paragraph
     (inline_attribute
-      (comment))))
+      (args
+        (comment
+          (content))))))
 
 ===============================================================================
 Span
@@ -811,8 +835,9 @@ One [two three]{.class
   (paragraph
     (span
       (inline_attribute
-        (class)
-        (identifier)))))
+        (args
+          (class)
+          (identifier))))))
 
 ===============================================================================
 Autolink
@@ -1118,7 +1143,8 @@ Inside
 (document
   (div
     (div_marker_begin)
-    (paragraph)
+    (content
+      (paragraph))
     (div_marker_end)))
 
 ===============================================================================
@@ -1135,7 +1161,8 @@ Inside
   (div
     (div_marker_begin
       (class_name))
-    (paragraph)
+    (content
+      (paragraph))
     (div_marker_end)))
 
 ===============================================================================
@@ -1152,7 +1179,8 @@ Inside
   (div
     (div_marker_begin
       (class_name))
-    (paragraph)
+    (content
+      (paragraph))
     (div_marker_end)))
 
 ===============================================================================
@@ -1169,7 +1197,8 @@ Inside
   (div
     (div_marker_begin
       (class_name))
-    (paragraph)
+    (content
+      (paragraph))
     (div_marker_end)))
 
 ===============================================================================
@@ -1184,7 +1213,8 @@ Inside
 (document
   (div
     (div_marker_begin)
-    (paragraph)
+    (content
+      (paragraph))
     (div_marker_end)))
 
 
@@ -1199,7 +1229,8 @@ Inside
 (document
   (div
     (div_marker_begin)
-    (paragraph)))
+    (content
+      (paragraph))))
 
 ===============================================================================
 Div: nested
@@ -1218,12 +1249,14 @@ Div: nested
 (document
   (div
     (div_marker_begin)
-    (paragraph)
-    (div
-      (div_marker_begin)
+    (content
       (paragraph)
-      (div_marker_end))
-    (paragraph)
+      (div
+        (div_marker_begin)
+        (content
+          (paragraph))
+        (div_marker_end))
+      (paragraph))
     (div_marker_end)))
 
 ===============================================================================
@@ -1242,10 +1275,12 @@ Div: close nested div
 (document
   (div
     (div_marker_begin)
-    (paragraph)
-    (div
-      (div_marker_begin)
-      (paragraph))
+    (content
+      (paragraph)
+      (div
+        (div_marker_begin)
+        (content
+          (paragraph))))
     (div_marker_end)))
 
 ===============================================================================

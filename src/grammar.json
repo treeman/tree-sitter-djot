@@ -1922,29 +1922,8 @@
         {
           "type": "ALIAS",
           "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_block_without_standalone_newline"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "_block_quote_prefix"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_block_without_standalone_newline"
-                    }
-                  ]
-                }
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "_block_quote_content"
           },
           "named": true,
           "value": "content"
@@ -1952,6 +1931,31 @@
         {
           "type": "SYMBOL",
           "name": "_block_close"
+        }
+      ]
+    },
+    "_block_quote_content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_block_without_standalone_newline"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_block_quote_prefix"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_block_without_standalone_newline"
+              }
+            ]
+          }
         }
       ]
     },
