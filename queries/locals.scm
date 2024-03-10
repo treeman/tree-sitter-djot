@@ -1,6 +1,7 @@
 ; Not sure if this is needed?
 (document) @local.scope
 
+; FIXME no idea if these work
 (link_reference_definition (link_label) @local.definition)
 (footnote (reference_label) @local.definition)
 
