@@ -37,7 +37,7 @@
 (table_row "|" @punctuation.special)
 (table_separator) @punctuation.special
 (table_caption (marker) @punctuation.special)
-(table_caption) @tag
+(table_caption) @markup.caption
 
 [
  (list_marker_dash)
@@ -135,28 +135,15 @@
   (hard_line_break)
 ] @string.escape
 
-
-; TODO rework links
-; Maybe we could also detect if a link reference exists or not...?
-; [link_text][]
-; [link_text][link_label]
-; [link_text](inline_link_destination)
-; ![image_description][]
-; ![image_description][link_label]
-; ![image_description](inline_link_destination)
-[
- (link_text)
- (image_description)
-] @markup.link.label
-; These aren't highlighted very nicely
 (inline_link_destination ["(" ")"] @punctuation.bracket)
 (link_label ["[" "]"] @punctuation.bracket)
 (link_text ["[" "]"] @punctuation.bracket)
 (collapsed_reference_link "[]" @punctuation.bracket)
-(collapsed_reference_link "[]" @punctuation.bracket)
+(collapsed_reference_image "[]" @punctuation.bracket)
 (image_description ["![" "]"] @punctuation.bracket)
 (link_reference_definition ["[" "]"] @punctuation.bracket)
 (link_reference_definition ":" @punctuation.special)
+(autolink ["<" ">"] @punctuation.bracket)
 
 ; Not usually how it's done, but this allows us to differentiate
 ; how to color `text` in [text][myref] and [text][].
@@ -165,7 +152,8 @@
 (collapsed_reference_link (link_text) @markup.link.label)
 (collapsed_reference_link (link_text) @markup.link.reference)
 (inline_link (link_text) @markup.link.label)
-
+(full_reference_image (link_label) @markup.link.reference)
+(image_description) @markup.link.label
 (link_reference_definition (link_label) @markup.link.definition)
 
 [
@@ -180,9 +168,12 @@
 ; ((link_label) @label (#is-not? local))
 ; ((link_label) @label)
 
-(footnote (reference_label) @label)
-(footnote_marker_begin) @punctuation.delimiter
-(footnote_marker_end) @punctuation.delimiter
+(footnote (reference_label) @markup.footnote.definition) @markup.footnote
+(footnote_reference (reference_label) @markup.footnote.reference)
+[
+  (footnote_marker_begin)
+  (footnote_marker_end)
+] @punctuation.bracket
 
 [
  (paragraph)

@@ -27,6 +27,11 @@
     }
   },
   {
+    "type": "autolink",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "block_attribute",
     "named": true,
     "fields": {},
@@ -2442,11 +2447,19 @@
     "named": false
   },
   {
+    "type": "<",
+    "named": false
+  },
+  {
     "type": "=",
     "named": false
   },
   {
     "type": "=}",
+    "named": false
+  },
+  {
+    "type": ">",
     "named": false
   },
   {
@@ -2480,10 +2493,6 @@
   {
     "type": "_",
     "named": false
-  },
-  {
-    "type": "autolink",
-    "named": true
   },
   {
     "type": "backslash_escape",

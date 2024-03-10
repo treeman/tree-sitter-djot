@@ -23,7 +23,7 @@
       "file-types": [
         "dj"
       ],
-      "injection-regex": "^djot$",
+      "injection-regex": "djot",
       "highlights": [
         "queries/highlights.scm"
       ]

@@ -1738,8 +1738,8 @@
       ]
     },
     "class_name": {
-      "type": "PATTERN",
-      "value": "[\\w_-]+"
+      "type": "SYMBOL",
+      "name": "_id"
     },
     "code_block": {
       "type": "SEQ",
@@ -2026,8 +2026,8 @@
         {
           "type": "ALIAS",
           "content": {
-            "type": "PATTERN",
-            "value": "\\w+"
+            "type": "SYMBOL",
+            "name": "_inline"
           },
           "named": true,
           "value": "link_label"
@@ -2164,8 +2164,8 @@
       ]
     },
     "key": {
-      "type": "PATTERN",
-      "value": "[\\w_-]+"
+      "type": "SYMBOL",
+      "name": "_id"
     },
     "value": {
       "type": "CHOICE",
@@ -2576,24 +2576,21 @@
       "value": "\\\\[^\\\\\\n]"
     },
     "autolink": {
-      "type": "TOKEN",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "<"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[^>\\s]+"
-          },
-          {
-            "type": "STRING",
-            "value": ">"
-          }
-        ]
-      }
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[^>\\s]+"
+        },
+        {
+          "type": "STRING",
+          "value": ">"
+        }
+      ]
     },
     "emphasis": {
       "type": "SEQ",
@@ -2939,8 +2936,12 @@
       ]
     },
     "reference_label": {
+      "type": "SYMBOL",
+      "name": "_id"
+    },
+    "_id": {
       "type": "PATTERN",
-      "value": "\\w+"
+      "value": "[\\w_-]+"
     },
     "_image": {
       "type": "CHOICE",
@@ -3471,6 +3472,10 @@
           },
           {
             "type": "STRING",
+            "value": "<"
+          },
+          {
+            "type": "STRING",
             "value": "$"
           }
         ]
@@ -3535,6 +3540,12 @@
       "_symbol_fallback"
     ],
     [
+      "link_text",
+      "span",
+      "_symbol_fallback"
+    ],
+    [
+      "link_reference_definition",
       "link_text",
       "span",
       "_symbol_fallback"
