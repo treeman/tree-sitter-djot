@@ -795,6 +795,33 @@
       "required": true,
       "types": [
         {
+          "type": "footnote_content",
+          "named": true
+        },
+        {
+          "type": "footnote_marker_begin",
+          "named": true
+        },
+        {
+          "type": "footnote_marker_end",
+          "named": true
+        },
+        {
+          "type": "reference_label",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "footnote_content",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
           "type": "block_attribute",
           "named": true
         },
@@ -812,14 +839,6 @@
         },
         {
           "type": "footnote",
-          "named": true
-        },
-        {
-          "type": "footnote_marker_begin",
-          "named": true
-        },
-        {
-          "type": "footnote_marker_end",
           "named": true
         },
         {
@@ -860,10 +879,6 @@
         },
         {
           "type": "raw_block",
-          "named": true
-        },
-        {
-          "type": "reference_label",
           "named": true
         },
         {

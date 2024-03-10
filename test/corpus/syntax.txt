@@ -125,7 +125,6 @@ A paragraph
 (document
   (heading1
     (marker)
-    (content)
     (content
       (marker)
       (marker)))
@@ -145,7 +144,6 @@ A paragraph
 (document
   (heading1
     (marker)
-    (content)
     (content
       (marker)
       (marker)))
@@ -165,7 +163,6 @@ A paragraph
 (document
   (heading2
     (marker)
-    (content)
     (content
       (marker)
       (marker)))
@@ -2385,7 +2382,8 @@ Footnote: simple
     (footnote_marker_begin)
     (reference_label)
     (footnote_marker_end)
-    (paragraph)))
+    (footnote_content
+      (paragraph))))
 
 ===============================================================================
 Footnote: multiline
@@ -2402,8 +2400,9 @@ that continues
     (footnote_marker_begin)
     (reference_label)
     (footnote_marker_end)
-    (paragraph)
-    (paragraph)))
+    (footnote_content
+      (paragraph)
+      (paragraph))))
 
 ===============================================================================
 Footnote: With block quote
@@ -2419,11 +2418,12 @@ Footnote: With block quote
     (footnote_marker_begin)
     (reference_label)
     (footnote_marker_end)
-    (paragraph)
-    (block_quote
-      (block_quote_marker)
-      (content
-        (paragraph)))))
+    (footnote_content
+      (paragraph)
+      (block_quote
+        (block_quote_marker)
+        (content
+          (paragraph))))))
 
 ===============================================================================
 Paragraph: broken things

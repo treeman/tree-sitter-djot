@@ -38,8 +38,9 @@ module.exports = grammar({
         $.thematic_break,
         $.block_quote,
         $.link_reference_definition,
+        // NOTE Maybe the block attribute should be included inside all blocks?
         $.block_attribute,
-        $.paragraph
+        $._paragraph
       ),
 
     _heading: ($) =>
@@ -54,92 +55,74 @@ module.exports = grammar({
     heading1: ($) =>
       seq(
         alias($._heading1_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading1_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading1_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading1_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading1_continuation, $.marker), $._inline_line))
       ),
     heading2: ($) =>
       seq(
         alias($._heading2_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading2_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading2_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading2_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading2_continuation, $.marker), $._inline_line))
       ),
     heading3: ($) =>
       seq(
         alias($._heading3_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading3_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading5_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading3_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading3_continuation, $.marker), $._inline_line))
       ),
     heading4: ($) =>
       seq(
         alias($._heading4_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading4_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading5_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading4_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading4_continuation, $.marker), $._inline_line))
       ),
     heading5: ($) =>
       seq(
         alias($._heading5_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading5_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading5_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading5_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading5_continuation, $.marker), $._inline_line))
       ),
     heading6: ($) =>
       seq(
         alias($._heading6_begin, $.marker),
-        alias(
-          seq(
-            $._inline_line,
-            repeat(
-              seq(alias($._heading6_continuation, $.marker), $._inline_line)
-            )
-          ),
-          $.content
-        ),
+        alias($._heading6_content, $.content),
         $._block_close,
         optional($._eof_or_blankline)
+      ),
+    _heading6_content: ($) =>
+      seq(
+        $._inline_line,
+        repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line))
       ),
 
     list: ($) =>
@@ -197,7 +180,8 @@ module.exports = grammar({
     _list_item_definition: ($) =>
       seq(
         $.list_marker_definition,
-        alias($.paragraph, $.term),
+        alias($._paragraph_content, $.term),
+        choice($._eof_or_blankline, $._close_paragraph),
         alias(optional(repeat($._block)), $.definition),
         $._list_item_end
       ),
@@ -312,6 +296,7 @@ module.exports = grammar({
     _list_item_upper_roman_parens: ($) =>
       seq($.list_marker_upper_roman_parens, $._list_item_content),
 
+    // FIXME I want to capture this too
     _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
     table: ($) =>
@@ -364,9 +349,10 @@ module.exports = grammar({
         alias($._footnote_begin, $.footnote_marker_begin),
         $.reference_label,
         alias("]:", $.footnote_marker_end),
-        repeat1($._block),
+        $.footnote_content,
         $._footnote_end
       ),
+    footnote_content: ($) => repeat1($._block),
 
     div: ($) =>
       seq(
@@ -410,7 +396,6 @@ module.exports = grammar({
     thematic_break: ($) =>
       choice($._thematic_break_dash, $._thematic_break_star),
 
-    // FIXME doesn't parse multiple paragraphs into one content?
     block_quote: ($) =>
       seq(
         alias($._block_quote_begin, $.block_quote_marker),
@@ -462,17 +447,15 @@ module.exports = grammar({
     key: (_) => /[\w_-]+/,
     value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
 
-    paragraph: ($) =>
+    _paragraph: ($) =>
       seq(
-        repeat1(
-          seq(
-            optional($._block_quote_prefix),
-            $._inline,
-            choice($._newline, "\0")
-          )
-        ),
+        // Blankline is split out from paragraph to enable textobject
+        // to not select newline up to following text
+        alias($._paragraph_content, $.paragraph),
         choice($._eof_or_blankline, $._close_paragraph)
       ),
+    _paragraph_content: ($) =>
+      repeat1(seq(optional($._block_quote_prefix), $._inline_line)),
 
     _one_or_two_newlines: ($) =>
       prec.left(choice("\0", seq($._newline, $._newline), $._newline)),

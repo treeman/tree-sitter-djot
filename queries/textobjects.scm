@@ -9,15 +9,15 @@
 
 ; Functions, the next level
 (div (content) @function.inner) @function.outer
-; FIXME inner deletes following newlines as well, not super nice
 (block_quote (content) @function.inner) @function.outer
 (code_block (code) @function.inner) @function.outer
 (raw_block (content) @function.inner) @function.outer
 ; Inner selects current list item, outer selects whole list
+; TODO I want a way to select list item content, without the marker
 (list (_) @function.inner) @function.outer
 ; Inner selects row, outer selects whole table
-; FIXME outer delete removes following newlines as well
 (table (_) @function.inner) @function.outer
+(footnote (footnote_content) @function.inner) @function.outer
 
 ; Blocks
 (paragraph) @block.inner
@@ -47,8 +47,6 @@
 ] @parameter.inner
 
 ; Statements
-; FIXME this deletes following newlines as well
-(footnote (_) @statement.inner) @statement.outer
 (link_reference_definition (_) @statement.inner) @statement.outer
 
 ; Comments

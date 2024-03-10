@@ -776,7 +776,6 @@ static bool parse_eof_or_blankline(Scanner *s, TSLexer *lexer) {
     return false;
   }
 
-  // FIXME is this better?
   lexer->mark_end(lexer);
   lexer->result_symbol = EOF_OR_BLANKLINE;
   return true;
@@ -796,8 +795,23 @@ static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
   return false;
 }
 
-static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
+static bool close_paragraph(Scanner *s, TSLexer *lexer) {
+  // Workaround for not including the following blankline when closing a
+  // paragraph inside a block.
+  // I'm not 100% sure this works all the time, but seems ok?
+  Block *top = peek_block(s);
+  if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
+    return true;
+  }
   if (scan_containing_block_closing_marker(s, lexer)) {
+    return true;
+  }
+
+  return false;
+}
+
+static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
+  if (close_paragraph(s, lexer)) {
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
   }
