@@ -75,9 +75,10 @@
 
 (emphasis) @text.emphasis
 (strong) @text.strong
-; FIXME match end _} tokens, can contain arbitrary many leading blanklines...
-(emphasis ["_" "{_"] @punctuation.delimiter)
-(strong ["*" "{*"] @punctuation.delimiter)
+(emphasis (emphasis_begin) @punctuation.delimiter)
+(emphasis (emphasis_end) @punctuation.delimiter)
+(strong (strong_begin) @punctuation.delimiter)
+(strong (strong_end) @punctuation.delimiter)
 
 (highlighted) @text.note
 (highlighted ["{=" "=}"] @punctuation.delimiter)

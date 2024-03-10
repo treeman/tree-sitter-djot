@@ -856,18 +856,18 @@ With _emphasis_ here
 
 (document
   (paragraph
-    (emphasis)))
+    (emphasis (emphasis_begin) (emphasis_end))))
 
 ===============================================================================
 Strong
 ===============================================================================
-With *emphasis* here
+With *strong* here
 
 -------------------------------------------------------------------------------
 
 (document
   (paragraph
-    (strong)))
+    (strong (strong_begin) (strong_end))))
 
 ===============================================================================
 Emphasis and strong
@@ -880,11 +880,12 @@ With *_emphasis_ strong* here
 
 (document
   (paragraph
-    (emphasis
-      (strong)))
+    (emphasis (emphasis_begin) (emphasis_end)
+      (strong (strong_begin) (strong_end))))
   (paragraph
     (strong
-      (emphasis))))
+ (strong_begin) (strong_end)
+      (emphasis) (emphasis_begin) (emphasis_end))))
 
 ===============================================================================
 Emphasis: nested
@@ -896,7 +897,8 @@ With __nested_ emphasis_
 (document
   (paragraph
     (emphasis
-      (emphasis))))
+ (emphasis_begin) (emphasis_end)
+      (emphasis) (emphasis_begin) (emphasis_end))))
 
 ===============================================================================
 Emphasis: forced despite spaces
@@ -912,10 +914,10 @@ _yes _}
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph (emphasis))
-  (paragraph (emphasis))
-  (paragraph (emphasis))
-  (paragraph (emphasis)))
+  (paragraph (emphasis) (emphasis_begin) (emphasis_end))
+  (paragraph (emphasis) (emphasis_begin) (emphasis_end))
+  (paragraph (emphasis) (emphasis_begin) (emphasis_end))
+  (paragraph (emphasis) (emphasis_begin) (emphasis_end)))
 
 ===============================================================================
 Strong: forced despite spaces
@@ -931,10 +933,10 @@ Strong: forced despite spaces
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph (strong))
-  (paragraph (strong))
-  (paragraph (strong))
-  (paragraph (strong)))
+  (paragraph (strong (strong_begin) (strong_end)))
+  (paragraph (strong (strong_begin) (strong_end)))
+  (paragraph (strong (strong_begin) (strong_end)))
+  (paragraph (strong (strong_begin) (strong_end))))
 
 ===============================================================================
 Subscript
@@ -1350,7 +1352,7 @@ No \{+insert\*}
   (paragraph (backslash_escape) (backslash_escape))
   (paragraph (backslash_escape))
   (paragraph (backslash_escape) (backslash_escape) (backslash_escape))
-  (paragraph (emphasis (backslash_escape)))
+  (paragraph (emphasis (emphasis_begin) (emphasis_end) (backslash_escape)))
   (paragraph (backslash_escape) (backslash_escape))
   (paragraph (backslash_escape)))
 
@@ -2059,12 +2061,14 @@ outer
   (list
     (list_item
       (list_marker_decimal_period)
-      (paragraph)
-      (list
-        (list_item
-          (list_marker_decimal_period)
-          (paragraph)))
-    (paragraph)))
+      (list_item_content
+        (paragraph)
+        (list
+          (list_item
+            (list_marker_decimal_period)
+            (list_item_content
+              (paragraph))))
+      (paragraph))))
   (paragraph))
 
 ===============================================================================
@@ -2081,19 +2085,23 @@ i) x
   (list
     (list_item
       (list_marker_decimal_period)
-      (paragraph)))
+      (list_item_content
+        (paragraph))))
   (list
     (list_item
       (list_marker_decimal_paren)
-      (paragraph)))
+      (list_item_content
+        (paragraph))))
   (list
     (list_item
       (list_marker_lower_roman_paren)
-      (paragraph)))
+      (list_item_content
+        (paragraph))))
   (list
     (list_item
       (list_marker_lower_alpha_parens)
-      (paragraph))))
+      (list_item_content
+        (paragraph)))))
 
 ===============================================================================
 List: task
@@ -2108,11 +2116,13 @@ List: task
     (list_item
       (list_marker_task
         (unchecked))
-      (paragraph))
+      (list_item_content
+        (paragraph)))
     (list_item
       (list_marker_task
         (checked))
-      (paragraph))))
+      (list_item_content
+        (paragraph)))))
 
 ===============================================================================
 List: task mix multiple styles
@@ -2128,15 +2138,18 @@ List: task mix multiple styles
     (list_item
       (list_marker_task
         (unchecked))
-      (paragraph))
+      (list_item_content
+        (paragraph)))
     (list_item
       (list_marker_task
         (unchecked))
-      (paragraph))
+      (list_item_content
+        (paragraph)))
     (list_item
       (list_marker_task
         (unchecked))
-      (paragraph))))
+      (list_item_content
+        (paragraph)))))
 
 ===============================================================================
 List: double dash
@@ -2149,7 +2162,8 @@ List: double dash
   (list
     (list_item
       (list_marker_dash)
-      (paragraph))))
+      (list_item_content
+        (paragraph)))))
 
 ===============================================================================
 Table: single row
@@ -2305,8 +2319,8 @@ Table: with inline styling
 (document
   (table
     (table_row
-      (table_cell (emphasis))
-      (table_cell (strong)))))
+      (table_cell (emphasis (emphasis_begin) (content) (emphasis_end)))
+      (table_cell (strong (strong_begin) (content) (strong_end))))))
 
 ===============================================================================
 Table: with caption
@@ -2326,7 +2340,7 @@ Next paragraph
     (table_caption
       (marker)
       (content
-        (emphasis))))
+        (emphasis (emphasis_begin) (content) (emphasis_end)))))
   (paragraph))
 
 ===============================================================================
@@ -2346,7 +2360,7 @@ Next paragraph
     (table_caption
       (marker)
       (content
-        (emphasis))))
+        (emphasis (emphasis_begin) (content) (emphasis_end)))))
   (paragraph))
 
 ===============================================================================

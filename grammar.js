@@ -6,8 +6,8 @@ module.exports = grammar({
   conflicts: ($) => [
     [$._table_content],
     [$._inline_no_surrounding_spaces],
-    [$.emphasis, $._symbol_fallback],
-    [$.strong, $._symbol_fallback],
+    [$.emphasis_begin, $._symbol_fallback],
+    [$.strong_begin, $._symbol_fallback],
     [$.highlighted, $._symbol_fallback],
     [$.superscript, $._symbol_fallback],
     [$.subscript, $._symbol_fallback],
@@ -154,19 +154,19 @@ module.exports = grammar({
       ),
     _list_dash: ($) =>
       seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
-    _list_item_dash: ($) => seq($.list_marker_dash, $._list_item_content),
+    _list_item_dash: ($) => seq($.list_marker_dash, $.list_item_content),
 
     _list_plus: ($) =>
       seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
-    _list_item_plus: ($) => seq($.list_marker_plus, $._list_item_content),
+    _list_item_plus: ($) => seq($.list_marker_plus, $.list_item_content),
 
     _list_star: ($) =>
       seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
-    _list_item_star: ($) => seq($.list_marker_star, $._list_item_content),
+    _list_item_star: ($) => seq($.list_marker_star, $.list_item_content),
 
     _list_task: ($) =>
       seq(repeat1(alias($._list_item_task, $.list_item)), $._block_close),
-    _list_item_task: ($) => seq($.list_marker_task, $._list_item_content),
+    _list_item_task: ($) => seq($.list_marker_task, $.list_item_content),
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
@@ -192,21 +192,21 @@ module.exports = grammar({
         $._block_close
       ),
     _list_item_decimal_period: ($) =>
-      seq($.list_marker_decimal_period, $._list_item_content),
+      seq($.list_marker_decimal_period, $.list_item_content),
     _list_decimal_paren: ($) =>
       seq(
         repeat1(alias($._list_item_decimal_paren, $.list_item)),
         $._block_close
       ),
     _list_item_decimal_paren: ($) =>
-      seq($.list_marker_decimal_paren, $._list_item_content),
+      seq($.list_marker_decimal_paren, $.list_item_content),
     _list_decimal_parens: ($) =>
       seq(
         repeat1(alias($._list_item_decimal_parens, $.list_item)),
         $._block_close
       ),
     _list_item_decimal_parens: ($) =>
-      seq($.list_marker_decimal_parens, $._list_item_content),
+      seq($.list_marker_decimal_parens, $.list_item_content),
 
     _list_lower_alpha_period: ($) =>
       seq(
@@ -214,21 +214,21 @@ module.exports = grammar({
         $._block_close
       ),
     _list_item_lower_alpha_period: ($) =>
-      seq($.list_marker_lower_alpha_period, $._list_item_content),
+      seq($.list_marker_lower_alpha_period, $.list_item_content),
     _list_lower_alpha_paren: ($) =>
       seq(
         repeat1(alias($._list_item_lower_alpha_paren, $.list_item)),
         $._block_close
       ),
     _list_item_lower_alpha_paren: ($) =>
-      seq($.list_marker_lower_alpha_paren, $._list_item_content),
+      seq($.list_marker_lower_alpha_paren, $.list_item_content),
     _list_lower_alpha_parens: ($) =>
       seq(
         repeat1(alias($._list_item_lower_alpha_parens, $.list_item)),
         $._block_close
       ),
     _list_item_lower_alpha_parens: ($) =>
-      seq($.list_marker_lower_alpha_parens, $._list_item_content),
+      seq($.list_marker_lower_alpha_parens, $.list_item_content),
 
     _list_upper_alpha_period: ($) =>
       seq(
@@ -236,21 +236,21 @@ module.exports = grammar({
         $._block_close
       ),
     _list_item_upper_alpha_period: ($) =>
-      seq($.list_marker_upper_alpha_period, $._list_item_content),
+      seq($.list_marker_upper_alpha_period, $.list_item_content),
     _list_upper_alpha_paren: ($) =>
       seq(
         repeat1(alias($._list_item_upper_alpha_paren, $.list_item)),
         $._block_close
       ),
     _list_item_upper_alpha_paren: ($) =>
-      seq($.list_marker_upper_alpha_paren, $._list_item_content),
+      seq($.list_marker_upper_alpha_paren, $.list_item_content),
     _list_upper_alpha_parens: ($) =>
       seq(
         repeat1(alias($._list_item_upper_alpha_parens, $.list_item)),
         $._block_close
       ),
     _list_item_upper_alpha_parens: ($) =>
-      seq($.list_marker_upper_alpha_parens, $._list_item_content),
+      seq($.list_marker_upper_alpha_parens, $.list_item_content),
 
     _list_lower_roman_period: ($) =>
       seq(
@@ -258,21 +258,21 @@ module.exports = grammar({
         $._block_close
       ),
     _list_item_lower_roman_period: ($) =>
-      seq($.list_marker_lower_roman_period, $._list_item_content),
+      seq($.list_marker_lower_roman_period, $.list_item_content),
     _list_lower_roman_paren: ($) =>
       seq(
         repeat1(alias($._list_item_lower_roman_paren, $.list_item)),
         $._block_close
       ),
     _list_item_lower_roman_paren: ($) =>
-      seq($.list_marker_lower_roman_paren, $._list_item_content),
+      seq($.list_marker_lower_roman_paren, $.list_item_content),
     _list_lower_roman_parens: ($) =>
       seq(
         repeat1(alias($._list_item_lower_roman_parens, $.list_item)),
         $._block_close
       ),
     _list_item_lower_roman_parens: ($) =>
-      seq($.list_marker_lower_roman_parens, $._list_item_content),
+      seq($.list_marker_lower_roman_parens, $.list_item_content),
 
     _list_upper_roman_period: ($) =>
       seq(
@@ -280,24 +280,23 @@ module.exports = grammar({
         $._block_close
       ),
     _list_item_upper_roman_period: ($) =>
-      seq($.list_marker_upper_roman_period, $._list_item_content),
+      seq($.list_marker_upper_roman_period, $.list_item_content),
     _list_upper_roman_paren: ($) =>
       seq(
         repeat1(alias($._list_item_upper_roman_paren, $.list_item)),
         $._block_close
       ),
     _list_item_upper_roman_paren: ($) =>
-      seq($.list_marker_upper_roman_paren, $._list_item_content),
+      seq($.list_marker_upper_roman_paren, $.list_item_content),
     _list_upper_roman_parens: ($) =>
       seq(
         repeat1(alias($._list_item_upper_roman_parens, $.list_item)),
         $._block_close
       ),
     _list_item_upper_roman_parens: ($) =>
-      seq($.list_marker_upper_roman_parens, $._list_item_content),
+      seq($.list_marker_upper_roman_parens, $.list_item_content),
 
-    // FIXME I want to capture this too
-    _list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
+    list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
 
     table: ($) =>
       prec.right(
@@ -521,27 +520,34 @@ module.exports = grammar({
     // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
     emphasis: ($) =>
       seq(
-        choice(seq("{_", repeat(" ")), "_"),
-        $._inline_no_surrounding_spaces,
-        choice(token(seq(repeat(" "), "_}")), "_")
+        $.emphasis_begin,
+        alias($._inline_no_surrounding_spaces, $.content),
+        $.emphasis_end
       ),
+    // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
+    emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
+    emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
 
     strong: ($) =>
       seq(
-        choice(seq("{*", repeat(" ")), "*"),
-        $._inline_no_surrounding_spaces,
-        choice(token(seq(repeat(" "), "*}")), "*")
+        $.strong_begin,
+        alias($._inline_no_surrounding_spaces, $.content),
+        $.strong_end
       ),
+    strong_begin: (_) => choice(seq("{*", repeat(" ")), "*"),
+    strong_end: (_) => choice(token(seq(repeat(" "), "*}")), "*"),
 
-    highlighted: ($) => seq("{=", $._inline, "=}"),
-    insert: ($) => seq("{+", $._inline, "+}"),
-    delete: ($) => seq("{-", $._inline, "-}"),
-    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
+    highlighted: ($) => seq("{=", alias($._inline, $.content), "=}"),
+    insert: ($) => seq("{+", alias($._inline, $.content), "+}"),
+    delete: ($) => seq("{-", alias($._inline, $.content), "-}"),
+    symbol: ($) => seq(":", alias(/[^:\s]+/, $.content), ":"),
 
     // The syntax description isn't clear about if non-bracket can contain surrounding spaces?
     // The live playground suggests that yes they can.
-    superscript: ($) => seq(choice("{^", "^"), $._inline, choice("^}", "^")),
-    subscript: ($) => seq(choice("{~", "~"), $._inline, choice("~}", "~")),
+    superscript: ($) =>
+      seq(choice("{^", "^"), alias($._inline, $.content), choice("^}", "^")),
+    subscript: ($) =>
+      seq(choice("{~", "~"), alias($._inline, $.content), choice("~}", "~")),
 
     footnote_reference: ($) =>
       seq(
@@ -643,7 +649,8 @@ module.exports = grammar({
           "{~",
           "|",
           "~",
-          "$"
+          "$",
+          ":"
         )
       ),
     _text: (_) => /\S/,
