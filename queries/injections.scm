@@ -16,3 +16,7 @@
   (content) @injection.content
   (raw_inline_attribute
     (language) @injection.language))
+
+(frontmatter
+  (frontmatter_content) @injection.content
+  (#set! injection.language "toml"))

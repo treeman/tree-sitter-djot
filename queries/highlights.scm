@@ -1,5 +1,3 @@
-; NOTE might want to use @markup.strong etc instead...?
-
 (heading1) @markup.heading.1
 (heading2) @markup.heading.2
 (heading3) @markup.heading.3
@@ -174,6 +172,10 @@
   (footnote_marker_begin)
   (footnote_marker_end)
 ] @punctuation.bracket
+
+(todo) @markup.todo
+(note) @markup.note
+(fixme) @markup.fixme
 
 [
  (paragraph)

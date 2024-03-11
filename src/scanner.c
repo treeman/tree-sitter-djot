@@ -19,6 +19,8 @@ typedef enum {
   EOF_OR_BLANKLINE,
   NEWLINE,
 
+  FRONTMATTER_MARKER,
+
   HEADING1_BEGIN,
   HEADING1_CONTINUATION,
   HEADING2_BEGIN,
@@ -873,7 +875,11 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
 static bool parse_list_marker_or_thematic_break(
     Scanner *s, TSLexer *lexer, const bool *valid_symbols, char marker,
     TokenType marker_type, BlockType list_type, TokenType thematic_break_type) {
-  if (!valid_symbols[marker_type] && !valid_symbols[thematic_break_type] &&
+  // This is a bit ugly to do here, but eh, refactoring will look very ugly.
+  bool check_frontmatter = valid_symbols[FRONTMATTER_MARKER] && marker == '-';
+
+  if (!check_frontmatter && !valid_symbols[marker_type] &&
+      !valid_symbols[thematic_break_type] &&
       !valid_symbols[LIST_MARKER_TASK_BEGIN]) {
     return false;
   }
@@ -892,14 +898,26 @@ static bool parse_list_marker_or_thematic_break(
 
   // We have now checked the two first characters.
   uint32_t marker_count = lexer->lookahead == marker ? 2 : 1;
-  bool can_be_thematic_break = marker_count == 2 || lexer->lookahead == ' ';
+
+  bool can_be_thematic_break = valid_symbols[thematic_break_type] &&
+                               (marker_count == 2 || lexer->lookahead == ' ');
 
   // Advance once more so we can check '['
   lexer->advance(lexer, false);
   bool can_be_task = can_be_list_marker && lexer->lookahead == '[';
 
+  // Check frontmatter, if possible
+  if (check_frontmatter) {
+    marker_count += consume_chars(s, lexer, marker);
+    if (marker_count >= 3) {
+      lexer->result_symbol = FRONTMATTER_MARKER;
+      lexer->mark_end(lexer);
+      return true;
+    }
+  }
+
   // Now check the entire line, if possible.
-  if (valid_symbols[thematic_break_type] && can_be_thematic_break) {
+  if (can_be_thematic_break) {
     marker_count += consume_line_with_char_or_whitespace(s, lexer, marker);
     if (marker_count >= 3) {
       lexer->result_symbol = thematic_break_type;
@@ -1530,6 +1548,9 @@ static char *token_type_s(TokenType t) {
   case NEWLINE:
     return "NEWLINE";
 
+  case FRONTMATTER_MARKER:
+    return "FRONTMATTER_MARKER";
+
   case HEADING1_BEGIN:
     return "HEADING1_BEGIN";
   case HEADING1_CONTINUATION:
@@ -1732,16 +1753,18 @@ static void dump_valid_symbols(const bool *valid_symbols) {
   printf("# valid_symbols (shortened):\n");
   for (int i = 0; i <= IGNORED; ++i) {
     switch (i) {
-    case BLOCK_CLOSE:
-    case BLOCK_QUOTE_BEGIN:
-    case BLOCK_QUOTE_CONTINUATION:
-    case CLOSE_PARAGRAPH:
-    case FOOTNOTE_BEGIN:
-    case FOOTNOTE_END:
-    case NEWLINE:
-    case EOF_OR_BLANKLINE:
-    case TABLE_CAPTION_BEGIN:
-    case TABLE_CAPTION_END:
+    // case BLOCK_CLOSE:
+    // case BLOCK_QUOTE_BEGIN:
+    // case BLOCK_QUOTE_CONTINUATION:
+    // case CLOSE_PARAGRAPH:
+    // case FOOTNOTE_BEGIN:
+    // case FOOTNOTE_END:
+    // case NEWLINE:
+    // case EOF_OR_BLANKLINE:
+    // case TABLE_CAPTION_BEGIN:
+    // case TABLE_CAPTION_END:
+    case FRONTMATTER_MARKER:
+    case THEMATIC_BREAK_DASH:
       if (valid_symbols[i]) {
         printf("%s\n", token_type_s(i));
       }

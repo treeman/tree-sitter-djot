@@ -2,10 +2,64 @@
   "name": "djot",
   "rules": {
     "document": {
-      "type": "REPEAT",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "frontmatter"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_block"
+          }
+        }
+      ]
+    },
+    "frontmatter": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "frontmatter_marker"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "frontmatter_content"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "frontmatter_marker"
+        }
+      ]
+    },
+    "frontmatter_marker": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_frontmatter_marker"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_newline"
+        }
+      ]
+    },
+    "frontmatter_content": {
+      "type": "REPEAT1",
       "content": {
         "type": "SYMBOL",
-        "name": "_block"
+        "name": "_line"
       }
     },
     "_block": {
@@ -2391,6 +2445,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "_todo_highlights"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "_symbol_fallback"
                 },
                 {
@@ -3400,6 +3458,35 @@
         }
       ]
     },
+    "_todo_highlights": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "todo"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "note"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "fixme"
+        }
+      ]
+    },
+    "todo": {
+      "type": "STRING",
+      "value": "TODO"
+    },
+    "note": {
+      "type": "STRING",
+      "value": "NOTE"
+    },
+    "fixme": {
+      "type": "STRING",
+      "value": "FIXME"
+    },
     "_symbol_fallback": {
       "type": "PREC_DYNAMIC",
       "value": -100,
@@ -3568,6 +3655,10 @@
     {
       "type": "SYMBOL",
       "name": "_newline"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_frontmatter_marker"
     },
     {
       "type": "SYMBOL",
