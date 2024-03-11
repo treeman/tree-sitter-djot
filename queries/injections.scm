@@ -18,5 +18,5 @@
     (language) @injection.language))
 
 (frontmatter
-  (frontmatter_content) @injection.content
-  (#set! injection.language "toml"))
+  (language) @injection.language
+  (frontmatter_content) @injection.content)

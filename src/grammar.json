@@ -34,20 +34,31 @@
         },
         {
           "type": "SYMBOL",
+          "name": "_whitespace"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "language"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_newline"
+        },
+        {
+          "type": "SYMBOL",
           "name": "frontmatter_content"
         },
         {
           "type": "SYMBOL",
           "name": "frontmatter_marker"
-        }
-      ]
-    },
-    "frontmatter_marker": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_frontmatter_marker"
         },
         {
           "type": "SYMBOL",
@@ -3658,7 +3669,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_frontmatter_marker"
+      "name": "frontmatter_marker"
     },
     {
       "type": "SYMBOL",

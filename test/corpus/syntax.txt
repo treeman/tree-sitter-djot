@@ -2592,3 +2592,22 @@ x
     (frontmatter_content)
     (frontmatter_marker))
   (paragraph))
+
+===============================================================================
+Frontmatter
+===============================================================================
+---toml
+key: Some value
+---
+
+x
+
+-------------------------------------------------------------------------------
+
+(document
+  (frontmatter
+    (frontmatter_marker)
+    (language)
+    (frontmatter_content)
+    (frontmatter_marker))
+  (paragraph))

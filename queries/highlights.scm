@@ -15,6 +15,7 @@
 [
   (code_block)
   (raw_block)
+  (frontmatter)
 ] @markup.raw
 [
   (code_block_marker_begin)
@@ -198,6 +199,7 @@
  (class_name)
  (identifier)
  (key_value)
+ (frontmatter)
 ] @nospell
 (full_reference_link (link_label) @nospell)
 (full_reference_image (link_label) @nospell)

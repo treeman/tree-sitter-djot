@@ -27,9 +27,17 @@ module.exports = grammar({
 
   rules: {
     document: ($) => seq(optional($.frontmatter), repeat($._block)),
+
     frontmatter: ($) =>
-      seq($.frontmatter_marker, $.frontmatter_content, $.frontmatter_marker),
-    frontmatter_marker: ($) => seq($._frontmatter_marker, $._newline),
+      seq(
+        $.frontmatter_marker,
+        $._whitespace,
+        optional($.language),
+        $._newline,
+        $.frontmatter_content,
+        $.frontmatter_marker,
+        $._newline
+      ),
     frontmatter_content: ($) => repeat1($._line),
 
     // Every block contains a newline.
@@ -684,7 +692,7 @@ module.exports = grammar({
     $._newline,
 
     // Special
-    $._frontmatter_marker,
+    $.frontmatter_marker,
 
     // Blocks
     $._heading1_begin,

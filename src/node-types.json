@@ -761,17 +761,16 @@
         {
           "type": "frontmatter_marker",
           "named": true
+        },
+        {
+          "type": "language",
+          "named": true
         }
       ]
     }
   },
   {
     "type": "frontmatter_content",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "frontmatter_marker",
     "named": true,
     "fields": {}
   },
@@ -2669,6 +2668,10 @@
   },
   {
     "type": "footnote_marker_end",
+    "named": true
+  },
+  {
+    "type": "frontmatter_marker",
     "named": true
   },
   {
