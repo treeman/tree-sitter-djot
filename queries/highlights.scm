@@ -70,6 +70,8 @@
  (straight_quote)
  ] @string.special
 
+(frontmatter_marker) @punctuation.delimiter
+
 (emphasis) @markup.italic
 (strong) @markup.strong
 (emphasis (emphasis_begin) @punctuation.delimiter)
