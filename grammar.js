@@ -1,10 +1,6 @@
 module.exports = grammar({
   name: "djot",
 
-  // TODO
-  // - Add FIXME TODO NOTE as special things
-  // - Add yaml prematter (should probably switch to toml...)
-
   extras: (_) => ["\r"],
 
   conflicts: ($) => [
