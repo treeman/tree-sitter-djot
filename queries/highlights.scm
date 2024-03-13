@@ -1,5 +1,3 @@
-; NOTE might want to use @markup.strong etc instead...?
-
 (heading1) @markup.heading.1
 (heading2) @markup.heading.2
 (heading3) @markup.heading.3
@@ -17,6 +15,7 @@
 [
   (code_block)
   (raw_block)
+  (frontmatter)
 ] @markup.raw
 [
   (code_block_marker_begin)
@@ -71,6 +70,8 @@
  (em_dash)
  (straight_quote)
  ] @string.special
+
+(frontmatter_marker) @punctuation.delimiter
 
 (emphasis) @markup.italic
 (strong) @markup.strong
@@ -175,6 +176,10 @@
   (footnote_marker_end)
 ] @punctuation.bracket
 
+(todo) @markup.todo
+(note) @markup.note
+(fixme) @markup.fixme
+
 [
  (paragraph)
  (comment)
@@ -194,6 +199,7 @@
  (class_name)
  (identifier)
  (key_value)
+ (frontmatter)
 ] @nospell
 (full_reference_link (link_label) @nospell)
 (full_reference_image (link_label) @nospell)

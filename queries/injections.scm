@@ -16,3 +16,7 @@
   (content) @injection.content
   (raw_inline_attribute
     (language) @injection.language))
+
+(frontmatter
+  (language) @injection.language
+  (frontmatter_content) @injection.content)

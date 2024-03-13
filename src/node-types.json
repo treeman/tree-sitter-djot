@@ -227,6 +227,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote",
           "named": true
         },
@@ -307,6 +311,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "paragraph",
           "named": true
         },
@@ -348,6 +356,10 @@
         },
         {
           "type": "thematic_break",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -515,6 +527,10 @@
         },
         {
           "type": "footnote",
+          "named": true
+        },
+        {
+          "type": "frontmatter",
           "named": true
         },
         {
@@ -729,6 +745,34 @@
         }
       ]
     }
+  },
+  {
+    "type": "frontmatter",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "frontmatter_content",
+          "named": true
+        },
+        {
+          "type": "frontmatter_marker",
+          "named": true
+        },
+        {
+          "type": "language",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "frontmatter_content",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "full_reference_image",
@@ -947,6 +991,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -987,6 +1035,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -1012,6 +1064,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -1163,6 +1219,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -1203,6 +1263,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -1228,6 +1292,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -1301,6 +1369,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -1341,6 +1413,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -1366,6 +1442,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -1667,6 +1747,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -1707,6 +1791,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -1732,6 +1820,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -1879,6 +1971,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -1919,6 +2015,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -1944,6 +2044,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -2107,6 +2211,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -2147,6 +2255,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -2172,6 +2284,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -2287,6 +2403,10 @@
           "named": true
         },
         {
+          "type": "fixme",
+          "named": true
+        },
+        {
           "type": "footnote_reference",
           "named": true
         },
@@ -2327,6 +2447,10 @@
           "named": true
         },
         {
+          "type": "note",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
@@ -2352,6 +2476,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "todo",
           "named": true
         },
         {
@@ -2531,11 +2659,19 @@
     "named": true
   },
   {
+    "type": "fixme",
+    "named": true
+  },
+  {
     "type": "footnote_marker_begin",
     "named": true
   },
   {
     "type": "footnote_marker_end",
+    "named": true
+  },
+  {
+    "type": "frontmatter_marker",
     "named": true
   },
   {
@@ -2647,6 +2783,10 @@
     "named": true
   },
   {
+    "type": "note",
+    "named": true
+  },
+  {
     "type": "raw_block_marker_begin",
     "named": true
   },
@@ -2672,6 +2812,10 @@
   },
   {
     "type": "table_cell_alignment",
+    "named": true
+  },
+  {
+    "type": "todo",
     "named": true
   },
   {
