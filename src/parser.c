@@ -1,7 +1,6 @@
 #include "tree_sitter/parser.h"
 
 #if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
@@ -4130,7 +4129,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
   switch (state) {
     case 0:
       if (eof) ADVANCE(165);
-      if (!eof && lookahead == 0) ADVANCE(182);
+      if (!eof && (lookahead == 0)) ADVANCE(182);
       if (lookahead == '\t') ADVANCE(213);
       if (lookahead == '\r') SKIP(162)
       if (lookahead == ' ') ADVANCE(167);
@@ -4166,7 +4165,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
           (lookahead < '\n' || '\f' < lookahead)) ADVANCE(312);
       END_STATE();
     case 1:
-      if (!eof && lookahead == 0) ADVANCE(182);
+      if (!eof && (lookahead == 0)) ADVANCE(182);
       if (lookahead == '\r') SKIP(2)
       if (lookahead == '!') ADVANCE(317);
       if (lookahead == '$') ADVANCE(310);
@@ -4189,7 +4188,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
           (lookahead < '\n' || '\f' < lookahead)) ADVANCE(312);
       END_STATE();
     case 2:
-      if (!eof && lookahead == 0) ADVANCE(182);
+      if (!eof && (lookahead == 0)) ADVANCE(182);
       if (lookahead == '\r') SKIP(2)
       if (lookahead == '!') ADVANCE(317);
       if (lookahead == '$') ADVANCE(310);
@@ -7517,7 +7516,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 162:
       if (eof) ADVANCE(165);
-      if (!eof && lookahead == 0) ADVANCE(182);
+      if (!eof && (lookahead == 0)) ADVANCE(182);
       if (lookahead == '\r') SKIP(162)
       if (lookahead == ' ') ADVANCE(170);
       if (lookahead == '!') ADVANCE(317);
@@ -98747,10 +98746,12 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *, char *);
 void tree_sitter_djot_external_scanner_deserialize(void *, const char *, unsigned);
 
 #ifdef _WIN32
-#define extern __declspec(dllexport)
+#define TS_PUBLIC __declspec(dllexport)
+#else
+#define TS_PUBLIC __attribute__((visibility("default")))
 #endif
 
-extern const TSLanguage *tree_sitter_djot(void) {
+TS_PUBLIC const TSLanguage *tree_sitter_djot() {
   static const TSLanguage language = {
     .version = LANGUAGE_VERSION,
     .symbol_count = SYMBOL_COUNT,

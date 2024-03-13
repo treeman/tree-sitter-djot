@@ -1,12 +1,8 @@
+#include "tree_sitter/alloc.h"
+#include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
 #include <assert.h>
 #include <stdio.h>
-
-// FIXME
-// - Issue ERROR token instead of asserts
-// - When next tree-sitter version comes out:
-//   - Use tree-sitter predefined array instead of our own stack impl
-//   - Use tr_ allocators
 
 // Maybe we should implement a growable stack or something,
 // but this is probably fine.
@@ -119,10 +115,7 @@ typedef struct {
 } Block;
 
 typedef struct {
-  struct {
-    size_t size;
-    Block *items[STACK_SIZE];
-  } open_blocks;
+  Array(Block *) * open_blocks;
 
   // How many $._close_block we should output right now?
   uint8_t blocks_to_close;
@@ -259,27 +252,26 @@ static Block *create_block(BlockType type, uint8_t level) {
 }
 
 static void push_block(Scanner *s, BlockType type, uint8_t level) {
-  s->open_blocks.items[s->open_blocks.size++] = create_block(type, level);
+  array_push(s->open_blocks, create_block(type, level));
 }
 
 static void pop_block(Scanner *s) {
-  if (s->open_blocks.size > 0) {
-    free(s->open_blocks.items[--s->open_blocks.size]);
+  if (s->open_blocks->size > 0) {
+    ts_free(array_pop(s->open_blocks));
     if (s->blocks_to_close > 0) {
       --s->blocks_to_close;
     }
-  } else {
-    assert(false);
   }
 }
 
-static bool any_block(Scanner *s) { return s->open_blocks.size > 0; }
+// static bool any_block(Scanner *s) { return s->open_blocks.size > 0; }
+static bool any_block(Scanner *s) { return s->open_blocks->size > 0; }
 
 static Block *peek_block(Scanner *s) {
-  if (s->open_blocks.size == 0) {
-    return NULL;
+  if (s->open_blocks->size > 0) {
+    return *array_back(s->open_blocks);
   } else {
-    return s->open_blocks.items[s->open_blocks.size - 1];
+    return NULL;
   }
 }
 
@@ -308,18 +300,18 @@ static bool output_delayed_token(Scanner *s, TSLexer *lexer,
 // If it cannot be found, returns 0.
 static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
                                         uint8_t level) {
-  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
-    Block *b = s->open_blocks.items[i];
+  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
+    Block *b = *array_get(s->open_blocks, i);
     if (b->type == type && b->level == level) {
-      return s->open_blocks.size - i;
+      return s->open_blocks->size - i;
     }
   }
   return 0;
 }
 
 static Block *find_block(Scanner *s, BlockType type) {
-  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
-    Block *b = s->open_blocks.items[i];
+  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
+    Block *b = *array_get(s->open_blocks, i);
     if (b->type == type) {
       return b;
     }
@@ -328,8 +320,8 @@ static Block *find_block(Scanner *s, BlockType type) {
 }
 
 static Block *get_open_list(Scanner *s) {
-  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
-    Block *b = s->open_blocks.items[i];
+  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
+    Block *b = *array_get(s->open_blocks, i);
     if (is_list(b->type)) {
       return b;
     }
@@ -343,7 +335,7 @@ static bool has_open_list(Scanner *s) { return get_open_list(s) != NULL; }
 // This call will only emit a single BLOCK_CLOSE token,
 // the other are emitted in `parse_block_close`.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
-  // assert(s->blocks_to_close == 0);
+  assert(s->open_blocks->size > 0);
   pop_block(s);
   s->blocks_to_close = s->blocks_to_close + count - 1;
   lexer->result_symbol = BLOCK_CLOSE;
@@ -364,7 +356,7 @@ static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
 }
 
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
-  if (s->open_blocks.size == 0) {
+  if (s->open_blocks->size == 0) {
     return false;
   }
 
@@ -397,7 +389,7 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
 
 static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
                                   TokenType ordered_list_marker) {
-  if (s->open_blocks.size == 0) {
+  if (s->open_blocks->size == 0) {
     return false;
   }
 
@@ -451,7 +443,7 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
     return false;
   }
 
-  if (s->open_blocks.size > 0) {
+  if (s->open_blocks->size > 0) {
     // Code blocks can't contain other blocks, so we only look at the top.
     Block *top = peek_block(s);
     if (top->type == CODE_BLOCK) {
@@ -1455,7 +1447,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 }
 
 void init(Scanner *s) {
-  s->open_blocks.size = 0;
+  array_init(s->open_blocks);
   s->blocks_to_close = 0;
   s->delayed_token = IGNORED;
   s->delayed_token_width = 0;
@@ -1465,17 +1457,19 @@ void init(Scanner *s) {
 }
 
 void *tree_sitter_djot_external_scanner_create() {
-  Scanner *s = (Scanner *)malloc(sizeof(Scanner));
+  Scanner *s = (Scanner *)ts_malloc(sizeof(Scanner));
+  s->open_blocks = ts_malloc(sizeof(Array(Block *)));
   init(s);
   return s;
 }
 
 void tree_sitter_djot_external_scanner_destroy(void *payload) {
   Scanner *s = (Scanner *)payload;
-  for (size_t i = 0; i < s->open_blocks.size; i++) {
-    free(s->open_blocks.items[i]);
+  for (size_t i = 0; i < s->open_blocks->size; ++i) {
+    ts_free(array_get(s->open_blocks, i));
   }
-  free(s);
+  array_delete(s->open_blocks);
+  ts_free(s);
 }
 
 unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
@@ -1489,8 +1483,8 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->block_quote_level;
   buffer[size++] = (char)s->whitespace;
 
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
-    Block *b = s->open_blocks.items[i];
+  for (size_t i = 0; i < s->open_blocks->size; ++i) {
+    Block *b = *array_get(s->open_blocks, i);
     buffer[size++] = (char)b->type;
     buffer[size++] = (char)b->level;
   }
@@ -1511,13 +1505,11 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     s->block_quote_level = (uint8_t)buffer[size++];
     s->whitespace = (uint8_t)buffer[size++];
 
-    size_t blocks = 0;
     while (size < length) {
       BlockType type = (BlockType)buffer[size++];
       uint8_t level = (uint8_t)buffer[size++];
-      s->open_blocks.items[blocks++] = create_block(type, level);
+      array_push(s->open_blocks, create_block(type, level));
     }
-    s->open_blocks.size = blocks;
   }
 }
 
@@ -1695,9 +1687,9 @@ static char *block_type_s(BlockType t) {
 }
 
 static void dump_scanner(Scanner *s) {
-  printf("--- Open blocks: %zu (last -> first)\n", s->open_blocks.size);
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
-    Block *b = s->open_blocks.items[i];
+  printf("--- Open blocks: %u (last -> first)\n", s->open_blocks->size);
+  for (size_t i = 0; i < s->open_blocks->size; ++i) {
+    Block *b = *array_get(s->open_blocks, i);
     printf("  %d %s\n", b->level, block_type_s(b->type));
   }
   printf("---\n");
