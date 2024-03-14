@@ -4,10 +4,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-// Maybe we should implement a growable stack or something,
-// but this is probably fine.
-#define STACK_SIZE 512
-
 // #define DEBUG
 
 typedef enum {
@@ -119,7 +115,7 @@ typedef struct {
 typedef struct {
   Array(Block *) * open_blocks;
 
-  // How many $._close_block we should output right now?
+  // How many BLOCK_CLOSE we should output right now?
   uint8_t blocks_to_close;
 
   // Delayed output of a token, used to first output closing token(s)
@@ -221,7 +217,7 @@ static BlockType list_marker_to_block(TokenType type) {
   }
 }
 
-static uint8_t consume_chars(Scanner *s, TSLexer *lexer, char c) {
+static uint8_t consume_chars(TSLexer *lexer, char c) {
   uint8_t count = 0;
   while (lexer->lookahead == c) {
     lexer->advance(lexer, false);
@@ -230,7 +226,7 @@ static uint8_t consume_chars(Scanner *s, TSLexer *lexer, char c) {
   return count;
 }
 
-static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
+static uint8_t consume_whitespace(TSLexer *lexer) {
   uint8_t indent = 0;
   for (;;) {
     if (lexer->lookahead == ' ') {
@@ -247,7 +243,7 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
 }
 
 static Block *create_block(BlockType type, uint8_t level) {
-  Block *b = malloc(sizeof(Block));
+  Block *b = ts_malloc(sizeof(Block));
   b->type = type;
   b->level = level;
   return b;
@@ -257,7 +253,7 @@ static void push_block(Scanner *s, BlockType type, uint8_t level) {
   array_push(s->open_blocks, create_block(type, level));
 }
 
-static void pop_block(Scanner *s) {
+static void remove_block(Scanner *s) {
   if (s->open_blocks->size > 0) {
     ts_free(array_pop(s->open_blocks));
     if (s->blocks_to_close > 0) {
@@ -284,17 +280,17 @@ void set_delayed_token(Scanner *s, TokenType token, uint8_t token_width) {
 
 static bool output_delayed_token(Scanner *s, TSLexer *lexer,
                                  const bool *valid_symbols) {
-  if (s->delayed_token != IGNORED) {
-    lexer->result_symbol = s->delayed_token;
-    s->delayed_token = IGNORED;
-    while (s->delayed_token_width--) {
-      lexer->advance(lexer, false);
-    }
-    lexer->mark_end(lexer);
-    return true;
-  } else {
+  if (s->delayed_token == IGNORED || !valid_symbols[s->delayed_token]) {
     return false;
   }
+
+  lexer->result_symbol = s->delayed_token;
+  s->delayed_token = IGNORED;
+  while (s->delayed_token_width--) {
+    lexer->advance(lexer, false);
+  }
+  lexer->mark_end(lexer);
+  return true;
 }
 
 // How many blocks from the top of the stack can we find a matching block?
@@ -338,7 +334,7 @@ static bool has_open_list(Scanner *s) { return get_open_list(s) != NULL; }
 // the other are emitted in `parse_block_close`.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
   assert(s->open_blocks->size > 0);
-  pop_block(s);
+  remove_block(s);
   s->blocks_to_close = s->blocks_to_close + count - 1;
   lexer->result_symbol = BLOCK_CLOSE;
 }
@@ -365,12 +361,12 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   // If we reach eof with open blocks, we should close them all.
   if (lexer->eof(lexer)) {
     lexer->result_symbol = BLOCK_CLOSE;
-    pop_block(s);
+    remove_block(s);
     return true;
   }
   if (s->blocks_to_close > 0) {
     lexer->result_symbol = BLOCK_CLOSE;
-    pop_block(s);
+    remove_block(s);
     return true;
   }
   return false;
@@ -382,7 +378,7 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
     BlockType to_open = list_marker_to_block(list_marker);
     if (list->type != to_open) {
       lexer->result_symbol = BLOCK_CLOSE;
-      pop_block(s);
+      remove_block(s);
       return true;
     }
   }
@@ -404,7 +400,7 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
   if (non_newline && list && list != top) {
     if (s->whitespace < list->level) {
       lexer->result_symbol = BLOCK_CLOSE;
-      pop_block(s);
+      remove_block(s);
       return true;
     }
   }
@@ -426,7 +422,7 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
 
 static bool scan_div_marker(Scanner *s, TSLexer *lexer, uint8_t *colons,
                             size_t *from_top) {
-  *colons = consume_chars(s, lexer, ':');
+  *colons = consume_chars(lexer, ':');
   if (*colons < 3) {
     return false;
   }
@@ -509,7 +505,7 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       break;
     } else if (lexer->lookahead == '`') {
       // If we find a `, we need to count them to see if we should stop.
-      uint8_t current = consume_chars(s, lexer, '`');
+      uint8_t current = consume_chars(lexer, '`');
       if (current == s->verbatim_tick_count) {
         // We found a matching number of `
         // We need to return VERBATIM_CONTENT then VERBATIM_END in the next
@@ -536,7 +532,7 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
 
 static bool parse_backtick(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
-  uint8_t ticks = consume_chars(s, lexer, '`');
+  uint8_t ticks = consume_chars(lexer, '`');
   if (ticks == 0) {
     return false;
   }
@@ -900,7 +896,7 @@ static bool parse_list_marker_or_thematic_break(
 
   // Check frontmatter, if possible
   if (check_frontmatter) {
-    marker_count += consume_chars(s, lexer, marker);
+    marker_count += consume_chars(lexer, marker);
     if (marker_count >= 3) {
       lexer->result_symbol = FRONTMATTER_MARKER;
       lexer->mark_end(lexer);
@@ -1023,7 +1019,7 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 
   // We consume a colon in the start of the function.
-  uint8_t colons = consume_chars(s, lexer, ':') + 1;
+  uint8_t colons = consume_chars(lexer, ':') + 1;
   if (colons < 3) {
     return false;
   }
@@ -1031,9 +1027,8 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   size_t from_top = number_of_blocks_from_top(s, DIV, colons);
 
   if (from_top > 0) {
-    // The div we want to close is not the top, close the open blocks until
-    // this div.
-    close_blocks_with_final_token(s, lexer, from_top, DIV_END, 3);
+    // Found a div we should close.
+    close_blocks_with_final_token(s, lexer, from_top, DIV_END, colons);
     return true;
   } else {
     // We can consume the colons as we start a new div now.
@@ -1085,7 +1080,7 @@ static TokenType heading_continuation_token(uint8_t level) {
 static bool parse_heading(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
   // It's fine to always consume, since this only parses '#'
-  uint8_t hash_count = consume_chars(s, lexer, '#');
+  uint8_t hash_count = consume_chars(lexer, '#');
 
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
@@ -1129,7 +1124,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     if (valid_symbols[BLOCK_CLOSE] &&
         (scan_eof_or_blankline(s, lexer) ||
          scan_containing_block_closing_marker(s, lexer))) {
-      pop_block(s);
+      remove_block(s);
       lexer->result_symbol = BLOCK_CLOSE;
       return true;
     }
@@ -1280,7 +1275,7 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  pop_block(s);
+  remove_block(s);
   lexer->result_symbol = FOOTNOTE_END;
   return true;
 }
@@ -1314,7 +1309,7 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
     return false;
   }
 
-  pop_block(s);
+  remove_block(s);
   lexer->result_symbol = TABLE_CAPTION_END;
   return true;
 }
@@ -1334,7 +1329,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we mark it again to make it consume.
   // I found it easier to opt-in to consume tokens.
   lexer->mark_end(lexer);
-  s->whitespace = consume_whitespace(s, lexer);
+  s->whitespace = consume_whitespace(lexer);
   bool is_newline = lexer->lookahead == '\n';
 
   if (is_newline) {

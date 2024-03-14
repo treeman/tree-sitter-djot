@@ -80,7 +80,6 @@
 (strong (strong_begin) @punctuation.delimiter)
 (strong (strong_end) @punctuation.delimiter)
 
-; TODO use @markup.highlighted, delete, insert, super, sub instead and add them to our highlighting?
 (highlighted) @markup.highlighted
 (highlighted ["{=" "=}"] @punctuation.delimiter)
 
