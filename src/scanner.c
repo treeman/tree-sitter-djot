@@ -133,13 +133,6 @@ typedef struct {
   uint8_t whitespace;
 } Scanner;
 
-static void dump_scanner(Scanner *s);
-static void dump(Scanner *s, TSLexer *lexer);
-static void dump_valid_symbols(const bool *valid_symbols);
-
-static char *token_type_s(TokenType t);
-static char *block_type_s(BlockType t);
-
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 
 static bool is_list(BlockType type) {
@@ -326,8 +319,6 @@ static Block *get_open_list(Scanner *s) {
   }
   return NULL;
 }
-
-static bool has_open_list(Scanner *s) { return get_open_list(s) != NULL; }
 
 // Mark that we should close `count` blocks.
 // This call will only emit a single BLOCK_CLOSE token,
@@ -609,6 +600,8 @@ static bool matches_ordered_list(OrderedListType type, char c) {
     return is_lower_roman(c);
   case UPPER_ROMAN:
     return is_upper_roman(c);
+  default:
+    return false;
   }
 }
 
@@ -629,11 +622,6 @@ static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
 
 static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
                                    OrderedListType *res) {
-  // How to decide between alpha and roman?
-  // For now just prefer roman (starting with i seems a bit weird for alpha?)
-  bool first_lower_alpha = is_lower_alpha(lexer->lookahead);
-  bool first_upper_alpha = is_upper_alpha(lexer->lookahead);
-
   if (scan_ordered_list_enumerator(s, lexer, DECIMAL)) {
     *res = DECIMAL;
     return true;
@@ -684,6 +672,8 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
         return LIST_MARKER_LOWER_ROMAN_PARENS;
       case UPPER_ROMAN:
         return LIST_MARKER_UPPER_ROMAN_PARENS;
+      default:
+        return IGNORED;
       }
     } else {
       switch (list_type) {
@@ -697,6 +687,8 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
         return LIST_MARKER_LOWER_ROMAN_PAREN;
       case UPPER_ROMAN:
         return LIST_MARKER_UPPER_ROMAN_PAREN;
+      default:
+        return IGNORED;
       }
     }
   case '.':
@@ -712,6 +704,8 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
       return LIST_MARKER_LOWER_ROMAN_PERIOD;
     case UPPER_ROMAN:
       return LIST_MARKER_UPPER_ROMAN_PERIOD;
+    default:
+      return IGNORED;
     }
   default:
     return IGNORED;
@@ -1314,6 +1308,10 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
+#ifdef DEBUG
+static void dump(Scanner *s, TSLexer *lexer);
+#endif
+
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -1406,6 +1404,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     if (parse_open_bracket(s, lexer, valid_symbols)) {
       return true;
     }
+    break;
   case '\n':
     if (try_close_verbatim(s, lexer)) {
       return true;
@@ -1526,6 +1525,14 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
   }
 }
 
+// static void dump_scanner(Scanner *s);
+// static void dump_valid_symbols(const bool *valid_symbols);
+
+// static char *token_type_s(TokenType t);
+// static char *block_type_s(BlockType t);
+
+#ifdef DEBUG
+
 static char *token_type_s(TokenType t) {
   switch (t) {
   case BLOCK_CLOSE:
@@ -1642,6 +1649,8 @@ static char *token_type_s(TokenType t) {
     return "ERROR";
   case IGNORED:
     return "IGNORED";
+  default:
+    return "NOT IMPLEMENTED";
   }
 }
 
@@ -1699,6 +1708,8 @@ static char *block_type_s(BlockType t) {
     return "LIST_LOWER_ROMAN_PARENS";
   case LIST_UPPER_ROMAN_PARENS:
     return "LIST_UPPER_ROMAN_PARENS";
+  default:
+    return "NOT IMPLEMENTED";
   }
 }
 
@@ -1762,3 +1773,5 @@ static void dump_valid_symbols(const bool *valid_symbols) {
   }
   printf("#\n");
 }
+
+#endif
