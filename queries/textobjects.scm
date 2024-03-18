@@ -5,6 +5,9 @@
 ; entire block quote, leaving the ">" prefix.
 ; The choices are a bit subjective though.
 
+; Custom textobject to jump between top headers
+(heading1) @heading1
+
 ; Classes, the highest level
 (thematic_break) @class.outer
 (heading1 (content) @class.inner) @class.outer
