@@ -17,6 +17,10 @@
   (raw_block)
   (frontmatter)
 ] @markup.raw
+
+; Remove @markup.raw for code with a language spec
+(code_block . (code_block_marker_begin) (language) (code) @none)
+
 [
   (code_block_marker_begin)
   (code_block_marker_end)
