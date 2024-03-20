@@ -755,16 +755,6 @@ static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
   }
 }
 
-static bool parse_eof_or_blankline(Scanner *s, TSLexer *lexer) {
-  if (!scan_eof_or_blankline(s, lexer)) {
-    return false;
-  }
-
-  lexer->mark_end(lexer);
-  lexer->result_symbol = EOF_OR_BLANKLINE;
-  return true;
-}
-
 // Can we scan a block closing marker?
 // For example, if we see a valid div marker.
 static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
@@ -1310,6 +1300,7 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
 
 #ifdef DEBUG
 static void dump(Scanner *s, TSLexer *lexer);
+static void dump_valid_symbols(const bool *valid_symbols);
 #endif
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
@@ -1333,6 +1324,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (is_newline) {
     s->block_quote_level = 0;
   }
+
+  bool can_be_eof_or_blankline = is_newline || lexer->eof(lexer);
 
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
@@ -1449,9 +1442,12 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // After some refactoring, this might be doable in grammar.js,
-  // but I don't care to refactor and try it. This works well.
-  if (valid_symbols[EOF_OR_BLANKLINE] && parse_eof_or_blankline(s, lexer)) {
+  if (valid_symbols[EOF_OR_BLANKLINE] && can_be_eof_or_blankline) {
+    if (lexer->lookahead == '\n') {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = EOF_OR_BLANKLINE;
     return true;
   }
 
@@ -1524,12 +1520,6 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     }
   }
 }
-
-// static void dump_scanner(Scanner *s);
-// static void dump_valid_symbols(const bool *valid_symbols);
-
-// static char *token_type_s(TokenType t);
-// static char *block_type_s(BlockType t);
 
 #ifdef DEBUG
 
