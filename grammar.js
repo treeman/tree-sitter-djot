@@ -511,7 +511,11 @@ module.exports = grammar({
       prec.left(
         choice(
           repeat1(prec.left($._inline_no_spaces)),
-          seq($._inline_no_spaces, $._inline, $._inline_no_spaces)
+          seq(
+            repeat1($._inline_no_spaces),
+            $._inline,
+            repeat1($._inline_no_spaces)
+          )
         )
       ),
     _inline_with_newlines: ($) =>
