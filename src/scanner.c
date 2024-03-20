@@ -206,7 +206,10 @@ static BlockType list_marker_to_block(TokenType type) {
   case LIST_MARKER_UPPER_ROMAN_PARENS:
     return LIST_UPPER_ROMAN_PARENS;
   default:
+#ifdef DEBUG
     assert(false);
+#endif
+    return LIST_DASH;
   }
 }
 
@@ -324,9 +327,13 @@ static Block *get_open_list(Scanner *s) {
 // This call will only emit a single BLOCK_CLOSE token,
 // the other are emitted in `parse_block_close`.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
+#ifdef DEBUG
   assert(s->open_blocks->size > 0);
-  remove_block(s);
-  s->blocks_to_close = s->blocks_to_close + count - 1;
+#endif
+  if (s->open_blocks->size > 0) {
+    remove_block(s);
+    s->blocks_to_close = s->blocks_to_close + count - 1;
+  }
   lexer->result_symbol = BLOCK_CLOSE;
 }
 
@@ -856,7 +863,9 @@ static bool parse_list_marker_or_thematic_break(
     return false;
   }
 
+#ifdef DEBUG
   assert(lexer->lookahead == marker);
+#endif
   lexer->advance(lexer, false);
   // If we advance and check thematic break, we can still go back to only
   // consume the list marker.
@@ -983,7 +992,9 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   if (!valid_symbols[LIST_MARKER_DEFINITION] && !can_be_div) {
     return false;
   }
+#ifdef DEBUG
   assert(lexer->lookahead == ':');
+#endif
   lexer->advance(lexer, false);
 
   if (lexer->lookahead == ' ') {
@@ -1320,17 +1331,23 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   lexer->mark_end(lexer);
   s->whitespace = consume_whitespace(lexer);
   bool is_newline = lexer->lookahead == '\n';
+  bool can_be_eof_or_blankline = is_newline || lexer->eof(lexer);
 
   if (is_newline) {
     s->block_quote_level = 0;
   }
 
-  bool can_be_eof_or_blankline = is_newline || lexer->eof(lexer);
-
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
+  // The above shouldn't allow us to continue past this point.
+#ifdef DEBUG
   assert(s->blocks_to_close == 0);
+#else
+  if (s->blocks_to_close > 0) {
+    return ERROR;
+  }
+#endif
 
   // Buffered tokens can come after blocks are closed.
   if (output_delayed_token(s, lexer, valid_symbols)) {
