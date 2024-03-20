@@ -2509,16 +2509,22 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "_inline_no_spaces"
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_inline_no_spaces"
+                }
               },
               {
                 "type": "SYMBOL",
                 "name": "_inline"
               },
               {
-                "type": "SYMBOL",
-                "name": "_inline_no_spaces"
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_inline_no_spaces"
+                }
               }
             ]
           }
