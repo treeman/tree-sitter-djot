@@ -829,8 +829,17 @@
             {
               "type": "ALIAS",
               "content": {
-                "type": "STRING",
-                "value": "x"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "x"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "X"
+                  }
+                ]
               },
               "named": true,
               "value": "checked"
@@ -2354,6 +2363,35 @@
       }
     },
     "_inline": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_inline_with_whitespace"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_inline_with_whitespace"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "_inline_with_whitespace": {
       "type": "REPEAT1",
       "content": {
         "type": "CHOICE",
@@ -2516,8 +2554,17 @@
                 }
               },
               {
-                "type": "SYMBOL",
-                "name": "_inline"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_inline"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_newline"
+                  }
+                ]
               },
               {
                 "type": "REPEAT1",
@@ -2529,30 +2576,6 @@
             ]
           }
         ]
-      }
-    },
-    "_inline_with_newlines": {
-      "type": "REPEAT1",
-      "content": {
-        "type": "PREC_LEFT",
-        "value": 0,
-        "content": {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_inline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_whitespace1"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_newline"
-            }
-          ]
-        }
       }
     },
     "_inline_line": {
@@ -3599,6 +3622,9 @@
   "conflicts": [
     [
       "_table_content"
+    ],
+    [
+      "_inline"
     ],
     [
       "_inline_no_surrounding_spaces"
