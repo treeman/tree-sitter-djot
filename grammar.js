@@ -5,6 +5,7 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$._table_content],
+    [$._inline],
     [$._inline_no_surrounding_spaces],
     [$.emphasis_begin, $._symbol_fallback],
     [$.strong_begin, $._symbol_fallback],
@@ -183,7 +184,7 @@ module.exports = grammar({
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
-        choice(alias(" ", $.unchecked), alias("x", $.checked)),
+        choice(alias(" ", $.unchecked), alias(choice("x", "X"), $.checked)),
         "]",
         $._whitespace1,
       ),
@@ -475,7 +476,15 @@ module.exports = grammar({
     _whitespace: (_) => token.immediate(/[ \t]*/),
     _whitespace1: (_) => token.immediate(/[ \t]+/),
 
-    _inline: ($) => repeat1(choice($._inline_no_spaces, $._whitespace1)),
+    _inline: ($) =>
+      prec.left(
+        seq(
+          $._inline_with_whitespace,
+          repeat(seq($._newline, $._inline_with_whitespace)),
+        ),
+      ),
+    _inline_with_whitespace: ($) =>
+      repeat1(choice($._inline_no_spaces, $._whitespace1)),
     _inline_no_spaces: ($) =>
       choice(
         seq(
@@ -513,13 +522,11 @@ module.exports = grammar({
           repeat1(prec.left($._inline_no_spaces)),
           seq(
             repeat1($._inline_no_spaces),
-            $._inline,
+            choice($._inline, $._newline),
             repeat1($._inline_no_spaces),
           ),
         ),
       ),
-    _inline_with_newlines: ($) =>
-      repeat1(prec.left(choice($._inline, $._whitespace1, $._newline))),
     _inline_line: ($) => seq($._inline, $._newline),
 
     hard_line_break: ($) => seq("\\", $._newline),
@@ -543,6 +550,7 @@ module.exports = grammar({
         alias($._inline_no_surrounding_spaces, $.content),
         $.emphasis_end,
       ),
+
     // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
     emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
     emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
