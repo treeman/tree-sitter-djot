@@ -1172,8 +1172,8 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // A valid marker is a '> ' or '>\n'.
   bool ending_newline = false;
+  // A valid marker is a '> ' or '>\n'.
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
   // Store nesting level on the scanner, to keep it between runs.
   uint8_t marker_count = s->block_quote_level + has_marker;
@@ -1309,6 +1309,34 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
+static bool parse_newlines(Scanner *s, TSLexer *lexer,
+                           const bool *valid_symbols, bool is_newline) {
+  if (!valid_symbols[NEWLINE] && !valid_symbols[EOF_OR_BLANKLINE]) {
+    return false;
+  }
+  if (lexer->lookahead == '\n') {
+    lexer->advance(lexer, false);
+  }
+  lexer->mark_end(lexer);
+
+  bool blankline_follows = is_newline && lexer->lookahead != '\n';
+
+  // We need to handle NEWLINE in the external scanner for our
+  // changes to the Scanner state to be saved
+  // (the reset of `block_quote_level` at newline).
+  if (valid_symbols[NEWLINE] && is_newline) {
+    lexer->result_symbol = NEWLINE;
+    return true;
+  }
+
+  if (valid_symbols[EOF_OR_BLANKLINE] && (is_newline || lexer->eof(lexer))) {
+    lexer->result_symbol = EOF_OR_BLANKLINE;
+    return true;
+  }
+
+  return false;
+}
+
 #ifdef DEBUG
 static void dump(Scanner *s, TSLexer *lexer);
 static void dump_valid_symbols(const bool *valid_symbols);
@@ -1331,7 +1359,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   lexer->mark_end(lexer);
   s->whitespace = consume_whitespace(lexer);
   bool is_newline = lexer->lookahead == '\n';
-  bool can_be_eof_or_blankline = is_newline || lexer->eof(lexer);
 
   if (is_newline) {
     s->block_quote_level = 0;
@@ -1367,8 +1394,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // Closing verbatim is a bit special as we need to match number of `
-  // or eof and we can always consume everything until newline.
+  // FIXME should close on a newline followed by a blankline, not just a single
+  // newline.
   if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
     return true;
   }
@@ -1449,22 +1476,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // We need to handle NEWLINE in the external scanner for our
-  // changes to the Scanner state to be saved
-  // (the reset of `block_quote_level` at newline).
-  if (valid_symbols[NEWLINE] && is_newline) {
-    lexer->advance(lexer, false);
-    lexer->mark_end(lexer);
-    lexer->result_symbol = NEWLINE;
-    return true;
-  }
-
-  if (valid_symbols[EOF_OR_BLANKLINE] && can_be_eof_or_blankline) {
-    if (lexer->lookahead == '\n') {
-      lexer->advance(lexer, false);
-    }
-    lexer->mark_end(lexer);
-    lexer->result_symbol = EOF_OR_BLANKLINE;
+  if (parse_newlines(s, lexer, valid_symbols, is_newline)) {
     return true;
   }
 
