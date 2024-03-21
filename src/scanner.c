@@ -499,8 +499,21 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
   uint8_t ticks = 0;
   while (!lexer->eof(lexer)) {
     if (lexer->lookahead == '\n') {
-      // We shouldn't consume the newline, leave that for VERBATIM_END.
-      break;
+      // We should only end verbatim if the paragraph is ended by a
+      // blankline.
+
+      // Advance over the first newline
+      lexer->advance(lexer, false);
+      // Remove any whitespace on the next line
+      consume_whitespace(lexer);
+      if (lexer->eof(lexer) || lexer->lookahead == '\n') {
+        // Found a blankline, now we should end the verbatim.
+        break;
+      } else {
+        // Continue parsing
+        lexer->mark_end(lexer);
+        ticks = 0;
+      }
     } else if (lexer->lookahead == '`') {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(lexer, '`');
@@ -1394,8 +1407,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // FIXME should close on a newline followed by a blankline, not just a single
-  // newline.
+  // Verbatim content parsing is responsible for setting VERBATIM_END
+  // for normal instances as well.
   if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
     return true;
   }

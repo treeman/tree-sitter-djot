@@ -1567,6 +1567,25 @@ Verbatim: newline closes
       (content)
       (verbatim_marker_end))))
 
+===============================================================================
+Verbatim: can contain newlines
+===============================================================================
+`verbatim
+with
+newlines`
+
+trailing
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end)))
+  (paragraph))
+
 
 ===============================================================================
 Verbatim: multiple
