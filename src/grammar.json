@@ -2391,6 +2391,31 @@
         ]
       }
     },
+    "_inline_no_prec": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_inline_with_whitespace"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_newline"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_inline_with_whitespace"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "_inline_with_whitespace": {
       "type": "REPEAT1",
       "content": {
@@ -2527,56 +2552,80 @@
       ]
     },
     "_inline_no_surrounding_spaces": {
-      "type": "PREC_LEFT",
-      "value": 0,
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC",
+          "value": 100,
+          "content": {
             "type": "REPEAT1",
             "content": {
-              "type": "PREC_LEFT",
-              "value": 0,
+              "type": "SYMBOL",
+              "name": "_inline_no_spaces"
+            }
+          }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_inline_no_spaces"
+              }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_inline_no_prec"
+                    },
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "_newline"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT1",
               "content": {
                 "type": "SYMBOL",
                 "name": "_inline_no_spaces"
               }
             }
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_inline_no_spaces"
-                }
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "_inline"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_newline"
-                  }
-                ]
-              },
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_inline_no_spaces"
-                }
-              }
-            ]
-          }
-        ]
-      }
+          ]
+        }
+      ]
     },
     "_inline_line": {
       "type": "SEQ",
@@ -3529,7 +3578,7 @@
     },
     "_symbol_fallback": {
       "type": "PREC_DYNAMIC",
-      "value": -100,
+      "value": -1000,
       "content": {
         "type": "CHOICE",
         "members": [
@@ -3625,6 +3674,13 @@
     ],
     [
       "_inline"
+    ],
+    [
+      "_inline_no_prec"
+    ],
+    [
+      "_inline_no_prec",
+      "_inline_no_surrounding_spaces"
     ],
     [
       "_inline_no_surrounding_spaces"

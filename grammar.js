@@ -6,6 +6,8 @@ module.exports = grammar({
   conflicts: ($) => [
     [$._table_content],
     [$._inline],
+    [$._inline_no_prec],
+    [$._inline_no_prec, $._inline_no_surrounding_spaces],
     [$._inline_no_surrounding_spaces],
     [$.emphasis_begin, $._symbol_fallback],
     [$.strong_begin, $._symbol_fallback],
@@ -483,6 +485,11 @@ module.exports = grammar({
           repeat(seq($._newline, $._inline_with_whitespace)),
         ),
       ),
+    _inline_no_prec: ($) =>
+      seq(
+        $._inline_with_whitespace,
+        repeat(seq($._newline, $._inline_with_whitespace)),
+      ),
     _inline_with_whitespace: ($) =>
       repeat1(choice($._inline_no_spaces, $._whitespace1)),
     _inline_no_spaces: ($) =>
@@ -517,16 +524,22 @@ module.exports = grammar({
         $.span,
       ),
     _inline_no_surrounding_spaces: ($) =>
-      prec.left(
-        choice(
-          repeat1(prec.left($._inline_no_spaces)),
-          seq(
-            repeat1($._inline_no_spaces),
-            choice($._inline, $._newline),
-            repeat1($._inline_no_spaces),
-          ),
+      choice(
+        // Workaround for a weird issue where nested emphasis
+        // of a certain length isn't recognized properly.
+        // I have no idea how that happens, almost feels like a bug?
+        prec(100, repeat1($._inline_no_spaces)),
+        seq(
+          // This is pretty gross...
+          // I wonder if there's a smarter way to solve this?
+          // There are various edge cases that needs to be considered.
+          repeat1($._inline_no_spaces),
+          optional($._newline),
+          optional(seq($._inline_no_prec, optional($._newline))),
+          repeat1($._inline_no_spaces),
         ),
       ),
+
     _inline_line: ($) => seq($._inline, $._newline),
 
     hard_line_break: ($) => seq("\\", $._newline),
@@ -540,7 +553,6 @@ module.exports = grammar({
 
     backslash_escape: (_) => /\\[^\\\n]/,
 
-    // autolink: (_) => token(seq("<", /[^>\s]+/, ">")),
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
     // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
@@ -668,7 +680,7 @@ module.exports = grammar({
     // catch-all _text regex.
     _symbol_fallback: (_) =>
       prec.dynamic(
-        -100,
+        -1000,
         choice(
           "![",
           "*",
@@ -690,6 +702,8 @@ module.exports = grammar({
           "$",
         ),
       ),
+    // Could think that a repeat1() here would be useful,
+    // but for some reason it breaks one edge case test.
     _text: (_) => /\S/,
   },
 
