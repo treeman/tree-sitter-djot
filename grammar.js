@@ -186,6 +186,7 @@ module.exports = grammar({
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
+        "[",
         choice(alias(" ", $.unchecked), alias(choice("x", "X"), $.checked)),
         "]",
         $._whitespace1,
@@ -678,7 +679,7 @@ module.exports = grammar({
     // These exists to explicit trigger an LR collision with existing
     // prefixes. A collision isn't detected with a string and a
     // catch-all _text regex.
-    _symbol_fallback: (_) =>
+    _symbol_fallback: ($) =>
       prec.dynamic(
         -1000,
         choice(

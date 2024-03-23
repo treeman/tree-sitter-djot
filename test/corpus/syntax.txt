@@ -2410,6 +2410,84 @@ List: task mix multiple styles
         (paragraph)))))
 
 ===============================================================================
+List: not tasks
+===============================================================================
+- [ ]a
+
+- [x]b
+
+- [X]c
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: task list closed
+===============================================================================
+- [ ] a
+
++ x
+
+- [ ] a
+
+- x
+
++ [ ] a
+
+* x
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_star)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
 List: double dash
 ===============================================================================
 - -
