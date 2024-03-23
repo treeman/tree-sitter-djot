@@ -815,6 +815,10 @@
           "name": "_list_marker_task_begin"
         },
         {
+          "type": "STRING",
+          "value": "["
+        },
+        {
           "type": "CHOICE",
           "members": [
             {

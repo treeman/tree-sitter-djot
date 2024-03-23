@@ -1302,6 +1302,33 @@ With [a reference][ref]
     (link_destination)))
 
 ===============================================================================
+Link: inside list
+===============================================================================
+- [label](#ref)
+
++ [label](#ref)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination))))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
+
+===============================================================================
 Image: inline
 ===============================================================================
 ![descr](/url)
@@ -2410,6 +2437,84 @@ List: task mix multiple styles
         (paragraph)))))
 
 ===============================================================================
+List: not tasks
+===============================================================================
+- [ ]a
+
+- [x]b
+
+- [X]c
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: task list closed
+===============================================================================
+- [ ] a
+
++ x
+
+- [ ] a
+
+- x
+
++ [ ] a
+
+* x
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_task
+        (unchecked))
+      (list_item_content
+        (paragraph))))
+  (list
+    (list_item
+      (list_marker_star)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
 List: double dash
 ===============================================================================
 - -
@@ -2804,6 +2909,37 @@ Higlight TODO NOTE and FIXME
 
 (document
   (paragraph (todo) (note) (fixme)))
+
+===============================================================================
+Paragraph: Not list items
+===============================================================================
+a)s
+
+a.b
+
+1.a
+
+i.e.
+
+(a)(b)
+
+-a
+
+*a
+
++a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph))
 
 ===============================================================================
 Frontmatter

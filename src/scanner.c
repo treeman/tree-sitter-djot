@@ -1,10 +1,13 @@
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
-#include <assert.h>
 #include <stdio.h>
 
 // #define DEBUG
+
+#ifdef DEBUG
+#include <assert.h>
+#endif
 
 typedef enum {
   BLOCK_CLOSE,
@@ -134,6 +137,12 @@ typedef struct {
 } Scanner;
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
+static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
+
+#ifdef DEBUG
+static char *block_type_s(BlockType t);
+static char *token_type_s(TokenType t);
+#endif
 
 static bool is_list(BlockType type) {
   switch (type) {
@@ -258,7 +267,6 @@ static void remove_block(Scanner *s) {
   }
 }
 
-// static bool any_block(Scanner *s) { return s->open_blocks.size > 0; }
 static bool any_block(Scanner *s) { return s->open_blocks->size > 0; }
 
 static Block *peek_block(Scanner *s) {
@@ -409,7 +417,7 @@ static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
     if (close_different_list_if_needed(s, lexer, list, ordered_list_marker)) {
       return true;
     }
-    TokenType other_list_marker = scan_list_marker_token(s, lexer);
+    TokenType other_list_marker = scan_unordered_list_marker_token(s, lexer);
     if (close_different_list_if_needed(s, lexer, list, other_list_marker)) {
       return true;
     }
@@ -665,7 +673,8 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+static TokenType scan_ordered_list_marker_token_type(Scanner *s,
+                                                     TSLexer *lexer) {
   bool surrounding_parens = false;
   if (lexer->lookahead == '(') {
     surrounding_parens = true;
@@ -732,23 +741,62 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
   }
 }
 
-static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
+static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+  TokenType res = scan_ordered_list_marker_token_type(s, lexer);
+  if (res == IGNORED) {
+    return res;
+  }
+
+  if (lexer->lookahead == ' ') {
+    lexer->advance(lexer, false);
+    return res;
+  } else {
+    return IGNORED;
+  }
+}
+
+// Scan the characters following the '[' in a task list, namely 'x] '.
+// This is needed because the external scanner needs to scan ahead to know
+// if we can accept the beginning '[', otherwise we might end up in an error
+// state.
+static bool scan_task_list_postfix(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != 'x' && lexer->lookahead != 'X' &&
+      lexer->lookahead != ' ') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  return lexer->lookahead == ' ';
+}
+
+static bool scan_task_list_marker(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '[') {
+    return false;
+  }
+  lexer->advance(lexer, false);
+  return scan_task_list_postfix(s, lexer);
+}
+
+static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, '-')) {
-    if (lexer->lookahead == '[') {
+    if (scan_task_list_marker(s, lexer)) {
       return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_DASH;
     }
   }
   if (scan_bullet_list_marker(s, lexer, '*')) {
-    if (lexer->lookahead == '[') {
+    if (scan_task_list_marker(s, lexer)) {
       return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_STAR;
     }
   }
   if (scan_bullet_list_marker(s, lexer, '+')) {
-    if (lexer->lookahead == '[') {
+    if (scan_task_list_marker(s, lexer)) {
       return LIST_MARKER_TASK_BEGIN;
     } else {
       return LIST_MARKER_PLUS;
@@ -757,11 +805,20 @@ static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
   if (scan_bullet_list_marker(s, lexer, ':')) {
     return LIST_MARKER_DEFINITION;
   }
+  return IGNORED;
+}
+
+static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
+  TokenType unordered = scan_unordered_list_marker_token(s, lexer);
+  if (unordered != IGNORED) {
+    return unordered;
+  }
   return scan_ordered_list_marker_token(s, lexer);
 }
 
 static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
-  return scan_list_marker_token(s, lexer) != IGNORED;
+  TokenType marker = scan_list_marker_token(s, lexer);
+  return marker != IGNORED;
 }
 
 static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
@@ -880,9 +937,6 @@ static bool parse_list_marker_or_thematic_break(
   assert(lexer->lookahead == marker);
 #endif
   lexer->advance(lexer, false);
-  // If we advance and check thematic break, we can still go back to only
-  // consume the list marker.
-  lexer->mark_end(lexer);
 
   // We should prioritize a thematic break over lists.
   // We need to remember if a '- ' is found, which means we can open a list.
@@ -896,9 +950,8 @@ static bool parse_list_marker_or_thematic_break(
   bool can_be_thematic_break = valid_symbols[thematic_break_type] &&
                                (marker_count == 2 || lexer->lookahead == ' ');
 
-  // Advance once more so we can check '['
   lexer->advance(lexer, false);
-  bool can_be_task = can_be_list_marker && lexer->lookahead == '[';
+  lexer->mark_end(lexer);
 
   // Check frontmatter, if possible
   if (check_frontmatter) {
@@ -920,17 +973,20 @@ static bool parse_list_marker_or_thematic_break(
     }
   }
 
-  if (valid_symbols[LIST_MARKER_TASK_BEGIN] && can_be_task) {
-    lexer->advance(lexer, false); // Consume the '['
-    ensure_list_open(s, LIST_TASK, s->whitespace + 1);
-    lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
-    lexer->mark_end(lexer);
-    return true;
-  }
-  if (valid_symbols[marker_type] && can_be_list_marker) {
-    ensure_list_open(s, list_type, s->whitespace + 1);
-    lexer->result_symbol = marker_type;
-    return true;
+  if (can_be_list_marker) {
+    if (valid_symbols[LIST_MARKER_TASK_BEGIN]) {
+      if (scan_task_list_marker(s, lexer)) {
+        ensure_list_open(s, LIST_TASK, s->whitespace + 1);
+        lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
+        return true;
+      }
+    }
+
+    if (valid_symbols[marker_type]) {
+      ensure_list_open(s, list_type, s->whitespace + 1);
+      lexer->result_symbol = marker_type;
+      return true;
+    }
   }
 
   return false;
@@ -957,18 +1013,23 @@ static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     return false;
   }
 
-  if (lexer->lookahead == '[') {
-    lexer->advance(lexer, false); // Consume the '['
-    ensure_list_open(s, LIST_TASK, s->whitespace + 1);
-    lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
-    lexer->mark_end(lexer);
-    return true;
-  } else {
+  lexer->mark_end(lexer);
+
+  if (valid_symbols[LIST_MARKER_TASK_BEGIN]) {
+    if (scan_task_list_marker(s, lexer)) {
+      ensure_list_open(s, LIST_TASK, s->whitespace + 1);
+      lexer->result_symbol = LIST_MARKER_TASK_BEGIN;
+      return true;
+    }
+  }
+
+  if (valid_symbols[LIST_MARKER_PLUS]) {
     ensure_list_open(s, LIST_PLUS, s->whitespace + 1);
     lexer->result_symbol = LIST_MARKER_PLUS;
-    lexer->mark_end(lexer);
     return true;
   }
+
+  return false;
 }
 
 static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
@@ -990,7 +1051,11 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  if (scan_list_marker(s, lexer)) {
+  TokenType next_marker = scan_list_marker_token(s, lexer);
+  if (next_marker != IGNORED) {
+    if (list_marker_to_block(next_marker) != list->type) {
+      s->blocks_to_close = 1;
+    }
     lexer->result_symbol = LIST_ITEM_END;
     return true;
   }
@@ -1211,7 +1276,8 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   // There is an open block quote with a higher nesting level than what we've
   // found.
   if (highest_block_quote && marker_count < highest_block_quote->level) {
-    // Close the paragraph, but allow lazy continuation (without any > marker).
+    // Close the paragraph, but allow lazy continuation (without any >
+    // marker).
     if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
       lexer->result_symbol = CLOSE_PARAGRAPH;
       return true;
@@ -1789,18 +1855,21 @@ static void dump_valid_symbols(const bool *valid_symbols) {
   // printf("# valid_symbols (shortened):\n");
   // for (int i = 0; i <= IGNORED; ++i) {
   //   switch (i) {
-  //   // case BLOCK_CLOSE:
+  //   case BLOCK_CLOSE:
   //   // case BLOCK_QUOTE_BEGIN:
   //   // case BLOCK_QUOTE_CONTINUATION:
-  //   // case CLOSE_PARAGRAPH:
+  //   case CLOSE_PARAGRAPH:
   //   // case FOOTNOTE_BEGIN:
   //   // case FOOTNOTE_END:
-  //   // case NEWLINE:
-  //   // case EOF_OR_BLANKLINE:
-  //   // case TABLE_CAPTION_BEGIN:
-  //   // case TABLE_CAPTION_END:
-  //   case FRONTMATTER_MARKER:
-  //   case THEMATIC_BREAK_DASH:
+  //   case NEWLINE:
+  //   case LIST_MARKER_TASK_BEGIN:
+  //   case LIST_MARKER_DASH:
+  //   case LIST_MARKER_STAR:
+  //   case LIST_MARKER_PLUS:
+  //   case LIST_ITEM_END:
+  //   case EOF_OR_BLANKLINE:
+  //     // case TABLE_CAPTION_BEGIN:
+  //     // case TABLE_CAPTION_END:
   //     if (valid_symbols[i]) {
   //       printf("%s\n", token_type_s(i));
   //     }
