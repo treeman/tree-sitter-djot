@@ -1302,6 +1302,33 @@ With [a reference][ref]
     (link_destination)))
 
 ===============================================================================
+Link: inside list
+===============================================================================
+- [label](#ref)
+
++ [label](#ref)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination))))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
+
+===============================================================================
 Image: inline
 ===============================================================================
 ![descr](/url)
