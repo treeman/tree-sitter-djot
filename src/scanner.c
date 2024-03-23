@@ -665,7 +665,8 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+static TokenType scan_ordered_list_marker_token_type(Scanner *s,
+                                                     TSLexer *lexer) {
   bool surrounding_parens = false;
   if (lexer->lookahead == '(') {
     surrounding_parens = true;
@@ -728,6 +729,20 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
       return IGNORED;
     }
   default:
+    return IGNORED;
+  }
+}
+
+static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+  TokenType res = scan_ordered_list_marker_token_type(s, lexer);
+  if (res == IGNORED) {
+    return res;
+  }
+
+  if (lexer->lookahead == ' ') {
+    lexer->advance(lexer, false);
+    return res;
+  } else {
     return IGNORED;
   }
 }
