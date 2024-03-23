@@ -947,6 +947,90 @@ b_
       (emphasis_end))))
 
 ===============================================================================
+Emphasis: various weird tests
+===============================================================================
+_a b c_
+
+_a b_
+
+_a_
+
+_a
+b c_
+
+_ai
+b c_
+
+_a
+b
+c_
+
+_a
+b_
+
+_ab
+cd_
+
+_ab
+x
+cd_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Superscipt: various weird tests
+===============================================================================
+^a b c^
+
+^a b^
+
+^a^
+
+^a
+b c^
+
+^ai
+b c^
+
+^a
+b
+c^
+
+^a
+b^
+
+^ab
+cd^
+
+^ab
+x
+cd^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content)))
+  (paragraph (superscript (content))))
+
+===============================================================================
 Emphasis: nested
 ===============================================================================
 With __nested_ emphasis_
