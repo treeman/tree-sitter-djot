@@ -1094,6 +1094,10 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   Block *top = peek_block(s);
   bool top_heading = top && top->type == HEADING;
 
+  if (top && top->type == CODE_BLOCK) {
+    return false;
+  }
+
   if (hash_count > 0 && lexer->lookahead == ' ') {
     TokenType start_token = heading_start_token(hash_count);
     TokenType continuation_token = heading_continuation_token(hash_count);
@@ -1120,11 +1124,13 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
       return true;
     }
 
-    // Open a new heading
-    lexer->mark_end(lexer);
-    push_block(s, HEADING, hash_count);
-    lexer->result_symbol = start_token;
-    return true;
+    if (valid_symbols[start_token]) {
+      // Open a new heading
+      lexer->mark_end(lexer);
+      push_block(s, HEADING, hash_count);
+      lexer->result_symbol = start_token;
+      return true;
+    }
   } else if (hash_count == 0 && top_heading) {
     // We need to always provide a BLOCK_CLOSE to end headings.
     // We do this here, either when a blankline is followed or
@@ -1774,35 +1780,35 @@ static void dump(Scanner *s, TSLexer *lexer) {
 }
 
 static void dump_valid_symbols(const bool *valid_symbols) {
-  // printf("# valid_symbols:\n");
-  // for (int i = 0; i <= IGNORED; ++i) {
-  //   if (valid_symbols[i]) {
-  //     printf("%s\n", token_type_s(i));
-  //   }
-  // }
-  printf("# valid_symbols (shortened):\n");
+  printf("# valid_symbols:\n");
   for (int i = 0; i <= IGNORED; ++i) {
-    switch (i) {
-    // case BLOCK_CLOSE:
-    // case BLOCK_QUOTE_BEGIN:
-    // case BLOCK_QUOTE_CONTINUATION:
-    // case CLOSE_PARAGRAPH:
-    // case FOOTNOTE_BEGIN:
-    // case FOOTNOTE_END:
-    // case NEWLINE:
-    // case EOF_OR_BLANKLINE:
-    // case TABLE_CAPTION_BEGIN:
-    // case TABLE_CAPTION_END:
-    case FRONTMATTER_MARKER:
-    case THEMATIC_BREAK_DASH:
-      if (valid_symbols[i]) {
-        printf("%s\n", token_type_s(i));
-      }
-      break;
-    default:
-      continue;
+    if (valid_symbols[i]) {
+      printf("%s\n", token_type_s(i));
     }
   }
+  // printf("# valid_symbols (shortened):\n");
+  // for (int i = 0; i <= IGNORED; ++i) {
+  //   switch (i) {
+  //   // case BLOCK_CLOSE:
+  //   // case BLOCK_QUOTE_BEGIN:
+  //   // case BLOCK_QUOTE_CONTINUATION:
+  //   // case CLOSE_PARAGRAPH:
+  //   // case FOOTNOTE_BEGIN:
+  //   // case FOOTNOTE_END:
+  //   // case NEWLINE:
+  //   // case EOF_OR_BLANKLINE:
+  //   // case TABLE_CAPTION_BEGIN:
+  //   // case TABLE_CAPTION_END:
+  //   case FRONTMATTER_MARKER:
+  //   case THEMATIC_BREAK_DASH:
+  //     if (valid_symbols[i]) {
+  //       printf("%s\n", token_type_s(i));
+  //     }
+  //     break;
+  //   default:
+  //     continue;
+  //   }
+  // }
   printf("#\n");
 }
 
