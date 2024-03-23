@@ -4,6 +4,8 @@ This is an experimental [Tree-sitter][] grammar for [Djot][].
 
 # Features
 
+Aims to be fully feature complete with the [Djot specification][]:
+
 - [x] Inline syntax
     - [x] Links
     - [x] Image
@@ -37,10 +39,18 @@ This is an experimental [Tree-sitter][] grammar for [Djot][].
     - [x] Footnote
     - [x] Block attribute
 
-# To-do list
+Also contains some extra features not included in the Djot standard:
 
-- [ ] Fix `locals.scm` and highlight missing link and footnote references.
-- [ ] Sections(?)
+- Parses an optional frontmatter at the very start of the file, e.g:
+
+  ````
+  ---toml
+  tag = "Some value"
+  ---
+  ````
+
+- Highlights standalone `TODO`, `NOTE` and `FIXME`.
 
 [Tree-sitter]: https://tree-sitter.github.io/tree-sitter/
 [Djot]: https://djot.net/
+[Djot specification]: https://htmlpreview.github.io/?https://github.com/jgm/djot/blob/master/doc/syntax.html

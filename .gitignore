@@ -8,6 +8,5 @@ build
 /examples/npm
 package-lock.json
 /target/
-example-file
 log.html
-example-file.dj
+*.dj
