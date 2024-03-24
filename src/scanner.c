@@ -871,8 +871,8 @@ static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
 }
 
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
-  if (any_block(s)) {
-    Block *top = peek_block(s);
+  Block *top = peek_block(s);
+  if (top) {
     // Found a list with the same type and indent, we should continue it.
     if (top->type == type && top->level == indent) {
       return;
@@ -1053,7 +1053,10 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 
   TokenType next_marker = scan_list_marker_token(s, lexer);
   if (next_marker != IGNORED) {
-    if (list_marker_to_block(next_marker) != list->type) {
+    bool different_type = list_marker_to_block(next_marker) != list->type;
+    bool different_indent = list->level != s->whitespace + 1;
+
+    if (different_type || different_indent) {
       s->blocks_to_close = 1;
     }
     lexer->result_symbol = LIST_ITEM_END;

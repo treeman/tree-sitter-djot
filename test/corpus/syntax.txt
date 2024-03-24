@@ -1798,6 +1798,32 @@ List: tight dashes
       (list_item_content (paragraph)))))
 
 ===============================================================================
+List: Close sublist
+===============================================================================
+- a
+
+  - b
+
+- c
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (list
+          (list_item
+            (list_marker_dash)
+            (list_item_content
+              (paragraph))))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content (paragraph)))))
+
+===============================================================================
 List: multiple lists with space between (not separated due to simplicity)
 ===============================================================================
 - a
