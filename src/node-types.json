@@ -963,6 +963,10 @@
           "named": true
         },
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "collapsed_reference_image",
           "named": true
         },
@@ -1191,6 +1195,10 @@
           "named": true
         },
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "collapsed_reference_image",
           "named": true
         },
@@ -1338,6 +1346,10 @@
         },
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "block_quote_marker",
           "named": true
         },
         {
@@ -1940,6 +1952,10 @@
         },
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "block_quote_marker",
           "named": true
         },
         {

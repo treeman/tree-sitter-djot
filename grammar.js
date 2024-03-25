@@ -5,10 +5,8 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$._table_content],
-    [$._inline],
-    [$._inline_no_prec],
-    [$._inline_no_prec, $._inline_no_surrounding_spaces],
     [$._inline_no_surrounding_spaces],
+    [$._inline_element_with_whitespace, $._inline_no_surrounding_spaces],
     [$.emphasis_begin, $._symbol_fallback],
     [$.strong_begin, $._symbol_fallback],
     [$.highlighted, $._symbol_fallback],
@@ -352,7 +350,8 @@ module.exports = grammar({
         ),
       ),
     table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
-    table_cell: ($) => prec.left($._inline),
+    table_cell: ($) =>
+      prec.left(repeat1($._inline_element_with_whitespace_without_newline)),
     table_caption: ($) =>
       seq(
         alias($._table_caption_begin, $.marker),
@@ -421,7 +420,12 @@ module.exports = grammar({
     _block_quote_content: ($) =>
       seq(
         $._block_without_standalone_newline,
-        repeat(seq($._block_quote_prefix, $._block_without_standalone_newline)),
+        repeat(
+          seq(
+            $._block_quote_prefix,
+            optional($._block_without_standalone_newline),
+          ),
+        ),
       ),
     _block_quote_prefix: ($) =>
       prec.left(
@@ -470,8 +474,7 @@ module.exports = grammar({
         alias($._paragraph_content, $.paragraph),
         choice($._eof_or_blankline, $._close_paragraph),
       ),
-    _paragraph_content: ($) =>
-      repeat1(seq(optional($._block_quote_prefix), $._inline_line)),
+    _paragraph_content: ($) => seq($._inline, $._newline),
 
     _one_or_two_newlines: ($) =>
       prec.left(choice("\0", seq($._newline, $._newline), $._newline)),
@@ -479,65 +482,70 @@ module.exports = grammar({
     _whitespace: (_) => token.immediate(/[ \t]*/),
     _whitespace1: (_) => token.immediate(/[ \t]+/),
 
-    _inline: ($) =>
-      prec.left(
-        seq(
-          $._inline_with_whitespace,
-          repeat(seq($._newline, $._inline_with_whitespace)),
-        ),
-      ),
+    _inline: ($) => prec.left(repeat1($._inline_element_with_whitespace)),
+
     _inline_no_prec: ($) =>
       seq(
-        $._inline_with_whitespace,
-        repeat(seq($._newline, $._inline_with_whitespace)),
-      ),
-    _inline_with_whitespace: ($) =>
-      repeat1(choice($._inline_no_spaces, $._whitespace1)),
-    _inline_no_spaces: ($) =>
-      choice(
-        seq(
-          choice(
-            $.hard_line_break,
-            $._smart_punctuation,
-            $.backslash_escape,
-            $.autolink,
-            $.emphasis,
-            $.strong,
-            $.highlighted,
-            $.superscript,
-            $.subscript,
-            $.insert,
-            $.delete,
-            $.verbatim,
-            $.math,
-            $.raw_inline,
-            $.footnote_reference,
-            $.symbol,
-            $.span,
-            $._image,
-            $._link,
-            $._todo_highlights,
-            $._symbol_fallback,
-            $._text,
+        repeat1($._inline_element_with_whitespace),
+        repeat(
+          prec.left(
+            seq($._newline, repeat1($._inline_element_with_whitespace)),
           ),
-          optional($.inline_attribute),
         ),
-        $.span,
       ),
+    _inline_element_with_whitespace: ($) =>
+      choice($._inline_element_with_newline, $._whitespace1),
+    _inline_element_with_whitespace_without_newline: ($) =>
+      choice($._inline_core_element, $._whitespace1),
+    _inline_element_without_whitespace: ($) =>
+      choice($._inline_element_with_newline, $._whitespace1),
+    _inline_element_with_newline: ($) =>
+      choice(
+        $._inline_core_element,
+        seq($._newline_inline, optional($._block_quote_prefix)),
+      ),
+
+    _inline_core_element: ($) =>
+      prec.left(
+        choice(
+          seq(
+            choice(
+              $.hard_line_break,
+              $._smart_punctuation,
+              $.backslash_escape,
+              $.autolink,
+              $.emphasis,
+              $.strong,
+              $.highlighted,
+              $.superscript,
+              $.subscript,
+              $.insert,
+              $.delete,
+              $.verbatim,
+              $.math,
+              $.raw_inline,
+              $.footnote_reference,
+              $.symbol,
+              $.span,
+              $._image,
+              $._link,
+              $._todo_highlights,
+              $._symbol_fallback,
+              $._text,
+            ),
+            optional($.inline_attribute),
+          ),
+          $.span,
+        ),
+      ),
+
     _inline_no_surrounding_spaces: ($) =>
       choice(
-        // Workaround for a weird issue where nested emphasis
-        // of a certain length isn't recognized properly.
-        // I have no idea how that happens, almost feels like a bug?
-        prec(100, repeat1($._inline_no_spaces)),
+        $._inline_element_with_newline,
         seq(
-          // This is pretty gross...
-          // I wonder if there's a smarter way to solve this?
-          // There are various edge cases that needs to be considered.
-          repeat1($._inline_no_spaces),
-          optional($._newline),
-          optional(seq($._inline_no_prec, optional($._newline))),
-          repeat1($._inline_no_spaces),
+          $._inline_element_with_newline,
+          repeat($._inline_element_with_whitespace),
+          $._inline_element_with_newline,
         ),
       ),
 
@@ -703,9 +711,8 @@ module.exports = grammar({
           "$",
         ),
       ),
-    // Could think that a repeat1() here would be useful,
-    // but for some reason it breaks one edge case test.
-    _text: (_) => /\S/,
+    // It's a bit faster with repeat1 here.
+    _text: (_) => repeat1(/\S/),
   },
 
   externals: ($) => [
@@ -713,6 +720,7 @@ module.exports = grammar({
     $._block_close,
     $._eof_or_blankline,
     $._newline,
+    $._newline_inline,
 
     // Special
     $.frontmatter_marker,

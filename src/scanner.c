@@ -13,6 +13,7 @@ typedef enum {
   BLOCK_CLOSE,
   EOF_OR_BLANKLINE,
   NEWLINE,
+  NEWLINE_INLINE,
 
   FRONTMATTER_MARKER,
 
@@ -850,10 +851,11 @@ static bool close_paragraph(Scanner *s, TSLexer *lexer) {
   // Workaround for not including the following blankline when closing a
   // paragraph inside a block.
   // I'm not 100% sure this works all the time, but seems ok?
-  Block *top = peek_block(s);
-  if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
-    return true;
-  }
+  // TODO maybe enable this again?
+  // Block *top = peek_block(s);
+  // if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
+  //   return true;
+  // }
   if (scan_containing_block_closing_marker(s, lexer)) {
     return true;
   }
@@ -1262,12 +1264,6 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   bool ending_newline = false;
   // A valid marker is a '> ' or '>\n'.
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
-  // Store nesting level on the scanner, to keep it between runs.
-  uint8_t marker_count = s->block_quote_level + has_marker;
-
-  size_t matching_block_pos =
-      number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
-  Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
   // If we have a marker but with an empty line,
   // we need to close the paragraph.
@@ -1275,6 +1271,12 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
   }
+
+  // Store nesting level on the scanner, to keep it between runs.
+  uint8_t marker_count = s->block_quote_level + has_marker;
+  size_t matching_block_pos =
+      number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
+  Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
   // There is an open block quote with a higher nesting level than what we've
   // found.
@@ -1397,27 +1399,90 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
-static bool parse_newlines(Scanner *s, TSLexer *lexer,
-                           const bool *valid_symbols, bool is_newline) {
-  if (!valid_symbols[NEWLINE] && !valid_symbols[EOF_OR_BLANKLINE]) {
+static bool end_paragraph_in_block(Scanner *s, TSLexer *lexer) {
+  Block *top = peek_block(s);
+  if (!top || top->type != BLOCK_QUOTE) {
     return false;
   }
+
+  bool ending_newline = false;
+  uint8_t marker_count = 0;
+  while (scan_block_quote_marker(s, lexer, &ending_newline)) {
+    ++marker_count;
+    if (ending_newline) {
+      break;
+    }
+  }
+
+  if (marker_count == 0) {
+    return false;
+  }
+
+  if (marker_count < top->level) {
+    return true;
+  }
+
+  if (ending_newline) {
+    return true;
+  }
+
+  consume_whitespace(lexer);
+  return lexer->lookahead == '\n';
+}
+
+static bool parse_newlines(Scanner *s, TSLexer *lexer,
+                           const bool *valid_symbols, bool is_newline) {
+  if (!valid_symbols[NEWLINE] && !valid_symbols[NEWLINE_INLINE] &&
+      !valid_symbols[EOF_OR_BLANKLINE]) {
+    return false;
+  }
+
+  if (!is_newline) {
+    if (valid_symbols[EOF_OR_BLANKLINE] && lexer->eof(lexer)) {
+      lexer->result_symbol = EOF_OR_BLANKLINE;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  uint32_t column = lexer->get_column(lexer);
+
   if (lexer->lookahead == '\n') {
     lexer->advance(lexer, false);
   }
   lexer->mark_end(lexer);
+  uint8_t next_line_whitespace = consume_whitespace(lexer);
+  bool trailing_blankline = lexer->lookahead == '\n';
 
-  bool blankline_follows = is_newline && lexer->lookahead != '\n';
+  bool end_in_block = end_paragraph_in_block(s, lexer);
+  bool close_p = close_paragraph(s, lexer);
+
+  if (valid_symbols[NEWLINE_INLINE] && !trailing_blankline && !close_p &&
+      column != 0 && !lexer->eof(lexer)) {
+
+    // Need an extra check so we don't emit a NEWLINE_INLINE at the end
+    // of a table caption.
+    Block *top = peek_block(s);
+
+    bool end_caption =
+        top && top->type == TABLE_CAPTION && next_line_whitespace < top->level;
+
+    if (!end_caption && !end_in_block) {
+      lexer->result_symbol = NEWLINE_INLINE;
+      return true;
+    }
+  }
 
   // We need to handle NEWLINE in the external scanner for our
   // changes to the Scanner state to be saved
   // (the reset of `block_quote_level` at newline).
-  if (valid_symbols[NEWLINE] && is_newline) {
+  if (valid_symbols[NEWLINE]) {
     lexer->result_symbol = NEWLINE;
     return true;
   }
 
-  if (valid_symbols[EOF_OR_BLANKLINE] && (is_newline || lexer->eof(lexer))) {
+  if (valid_symbols[EOF_OR_BLANKLINE]) {
     lexer->result_symbol = EOF_OR_BLANKLINE;
     return true;
   }
@@ -1648,6 +1713,8 @@ static char *token_type_s(TokenType t) {
     return "EOF_OR_BLANKLINE";
   case NEWLINE:
     return "NEWLINE";
+  case NEWLINE_INLINE:
+    return "NEWLINE_INLINE";
 
   case FRONTMATTER_MARKER:
     return "FRONTMATTER_MARKER";
@@ -1849,38 +1916,39 @@ static void dump(Scanner *s, TSLexer *lexer) {
 }
 
 static void dump_valid_symbols(const bool *valid_symbols) {
-  printf("# valid_symbols:\n");
-  for (int i = 0; i <= IGNORED; ++i) {
-    if (valid_symbols[i]) {
-      printf("%s\n", token_type_s(i));
-    }
-  }
-  // printf("# valid_symbols (shortened):\n");
+  // printf("# valid_symbols:\n");
   // for (int i = 0; i <= IGNORED; ++i) {
-  //   switch (i) {
-  //   case BLOCK_CLOSE:
-  //   // case BLOCK_QUOTE_BEGIN:
-  //   // case BLOCK_QUOTE_CONTINUATION:
-  //   case CLOSE_PARAGRAPH:
-  //   // case FOOTNOTE_BEGIN:
-  //   // case FOOTNOTE_END:
-  //   case NEWLINE:
-  //   case LIST_MARKER_TASK_BEGIN:
-  //   case LIST_MARKER_DASH:
-  //   case LIST_MARKER_STAR:
-  //   case LIST_MARKER_PLUS:
-  //   case LIST_ITEM_END:
-  //   case EOF_OR_BLANKLINE:
-  //     // case TABLE_CAPTION_BEGIN:
-  //     // case TABLE_CAPTION_END:
-  //     if (valid_symbols[i]) {
-  //       printf("%s\n", token_type_s(i));
-  //     }
-  //     break;
-  //   default:
-  //     continue;
+  //   if (valid_symbols[i]) {
+  //     printf("%s\n", token_type_s(i));
   //   }
   // }
+  printf("# valid_symbols (shortened):\n");
+  for (int i = 0; i <= IGNORED; ++i) {
+    switch (i) {
+    case BLOCK_CLOSE:
+    // case BLOCK_QUOTE_BEGIN:
+    case BLOCK_QUOTE_CONTINUATION:
+    case CLOSE_PARAGRAPH:
+    // case FOOTNOTE_BEGIN:
+    // case FOOTNOTE_END:
+    case NEWLINE:
+    case NEWLINE_INLINE:
+    // case LIST_MARKER_TASK_BEGIN:
+    // case LIST_MARKER_DASH:
+    // case LIST_MARKER_STAR:
+    // case LIST_MARKER_PLUS:
+    // case LIST_ITEM_END:
+    case EOF_OR_BLANKLINE:
+      // case TABLE_CAPTION_BEGIN:
+      // case TABLE_CAPTION_END:
+      if (valid_symbols[i]) {
+        printf("%s\n", token_type_s(i));
+      }
+      break;
+    default:
+      continue;
+    }
+  }
   printf("#\n");
 }
 
