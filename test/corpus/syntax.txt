@@ -126,9 +126,7 @@ A paragraph
 (document
   (heading1
     (marker)
-    (content
-      (marker)
-      (marker)))
+    (content))
   (paragraph))
 
 ===============================================================================
@@ -145,9 +143,7 @@ A paragraph
 (document
   (heading1
     (marker)
-    (content
-      (marker)
-      (marker)))
+    (content))
   (paragraph))
 
 ===============================================================================
@@ -164,9 +160,7 @@ A paragraph
 (document
   (heading2
     (marker)
-    (content
-      (marker)
-      (marker)))
+    (content))
   (paragraph))
 
 ===============================================================================
@@ -247,8 +241,8 @@ Block quote: long
     (content
       (paragraph)
       (block_quote_marker)
-      (paragraph
-        (block_quote_marker)))))
+      (block_quote_marker)
+      (paragraph))))
 
 ===============================================================================
 Block quote: lazy
@@ -322,8 +316,8 @@ Block quote: multilevel nesting with space
         (content
           (paragraph)))
       (block_quote_marker)
-      (paragraph
-        (block_quote_marker)))))
+      (block_quote_marker)
+      (paragraph))))
 
 ===============================================================================
 Block quote: contain code block
