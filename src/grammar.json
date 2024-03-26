@@ -2621,6 +2621,18 @@
         {
           "type": "SYMBOL",
           "name": "_newline"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_block_quote_prefix"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },

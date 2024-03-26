@@ -543,6 +543,9 @@ module.exports = grammar({
         ),
       ),
 
+    // Emphasis and strong markers aren't allowed to exist next a space.
+    // This incarnation exists to ensure that the content doesn't start or end
+    // with a space.
     _inline_no_surrounding_spaces: ($) =>
       choice(
         $._inline_element_with_newline,
@@ -555,7 +558,8 @@ module.exports = grammar({
 
     _inline_line: ($) => seq($._inline, $._newline),
 
-    hard_line_break: ($) => seq("\\", $._newline),
+    hard_line_break: ($) =>
+      seq("\\", $._newline, optional($._block_quote_prefix)),
 
     _smart_punctuation: ($) =>
       choice($.straight_quote, $.ellipsis, $.em_dash, $.en_dash),
@@ -568,7 +572,6 @@ module.exports = grammar({
 
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
-    // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
     emphasis: ($) =>
       seq(
         $.emphasis_begin,
@@ -577,6 +580,7 @@ module.exports = grammar({
       ),
 
     // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
+    // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
     emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
     emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
 
