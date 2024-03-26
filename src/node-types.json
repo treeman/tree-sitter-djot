@@ -123,7 +123,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "image_description",
@@ -1721,6 +1721,11 @@
     }
   },
   {
+    "type": "note",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "paragraph",
     "named": true,
     "fields": {},
@@ -2521,6 +2526,11 @@
     "fields": {}
   },
   {
+    "type": "todo",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "value",
     "named": true,
     "fields": {}
@@ -2614,6 +2624,26 @@
   },
   {
     "type": ">",
+    "named": false
+  },
+  {
+    "type": "INFO",
+    "named": false
+  },
+  {
+    "type": "NOTE",
+    "named": false
+  },
+  {
+    "type": "TODO",
+    "named": false
+  },
+  {
+    "type": "WIP",
+    "named": false
+  },
+  {
+    "type": "XXX",
     "named": false
   },
   {
@@ -2809,10 +2839,6 @@
     "named": true
   },
   {
-    "type": "note",
-    "named": true
-  },
-  {
     "type": "raw_block_marker_begin",
     "named": true
   },
@@ -2838,10 +2864,6 @@
   },
   {
     "type": "table_cell_alignment",
-    "named": true
-  },
-  {
-    "type": "todo",
     "named": true
   },
   {
