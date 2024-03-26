@@ -57,6 +57,8 @@ module.exports = grammar({
         $._paragraph,
       ),
 
+    // Headings can't be mixed, this verbose description (together with the external scanner)
+    // ensures that they're not.
     _heading: ($) =>
       choice(
         $.heading1,
@@ -139,9 +141,9 @@ module.exports = grammar({
         repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line)),
       ),
 
+    // Djot has a crazy number of different list types,
+    // that we need to keep separate from each other.
     list: ($) =>
-      // Djot has a crazy number of different list types,
-      // that we need to keep separate from each other.
       prec.left(
         choice(
           $._list_dash,
@@ -467,10 +469,21 @@ module.exports = grammar({
     key: ($) => $._id,
     value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
 
+    // Paragraphs are a bit special parsing wise as it's the "fallback"
+    // block, where everything that doesn't fit will go.
+    // There's no "start" token and they're not tracked by the external scanner.
+    //
+    // Instead they're ended by either a blankline or by an explicit
+    // `_close_paragraph` token (by for instance div markers).
+    //
+    // Lines inside paragraphs are handled by the `_newline_inline` token
+    // that's a newline character only valid inside an `_inline` context.
+    // When the `newline_inline` token is no longer valid, the `_newline`
+    // token can be emitted which closes the paragraph content.
     _paragraph: ($) =>
       seq(
         // Blankline is split out from paragraph to enable textobject
-        // to not select newline up to following text
+        // to not select newline up to following text.
         alias($._paragraph_content, $.paragraph),
         choice($._eof_or_blankline, $._close_paragraph),
       ),
@@ -484,15 +497,6 @@ module.exports = grammar({
 
     _inline: ($) => prec.left(repeat1($._inline_element_with_whitespace)),
 
-    _inline_no_prec: ($) =>
-      seq(
-        repeat1($._inline_element_with_whitespace),
-        repeat(
-          prec.left(
-            seq($._newline, repeat1($._inline_element_with_whitespace)),
-          ),
-        ),
-      ),
     _inline_element_with_whitespace: ($) =>
       choice($._inline_element_with_newline, $._whitespace1),
     _inline_element_with_whitespace_without_newline: ($) =>
@@ -685,8 +689,8 @@ module.exports = grammar({
     fixme: (_) => "FIXME",
 
     // These exists to explicit trigger an LR collision with existing
-    // prefixes. A collision isn't detected with a string and a
-    // catch-all _text regex.
+    // prefixes. A collision isn't detected with a string and the
+    // catch-all `_text` regex.
     _symbol_fallback: ($) =>
       prec.dynamic(
         -1000,
@@ -716,17 +720,42 @@ module.exports = grammar({
   },
 
   externals: ($) => [
-    // Block management
+    // Used as default value in scanner, should never be referenced.
+    $._ignored,
+
+    // Token to implicitly terminate open blocks,
+    // for instance in this case:
+    //
+    //    :::
+    //    ::::
+    //    txt
+    //    :::   <- closes both divs
+    //
+    // `_block_close` is used to close both open divs,
+    // and the outer most div consumes the optional ending div marker.
     $._block_close,
+
+    // Different kinds of newlines are handled by the external scanner so
+    // we can manually track indent (and reset it on newlines).
     $._eof_or_blankline,
+    // `_newline` is a regular newline, and is used to end paragraphs and other blocks.
     $._newline,
+    // `_newline_inline` is a newline that's only valid inside an inline context.
+    // It contains logic on when to terminate a paragraph.
+    // When a paragraph should be closed, `_newline_inline` will not be valid,
+    // so `_newline` will have to be used, which is only valid at the end of a paragraph.
     $._newline_inline,
 
-    // Special
+    // Detects a frontmatter delimiters: `---`
+    // Handled externally to resolve conflicts with list markers and thematic breaks.
     $.frontmatter_marker,
 
-    // Blocks
+    // Blocks.
+    // The external scanner keeps a stack of blocks for context in order to
+    // match and close against open blocks.
     $._heading1_begin,
+    // Heading continuation can continue a heading, but only if
+    // they match the number of `#` (or there's no `#`).
     $._heading1_continuation,
     $._heading2_begin,
     $._heading2_continuation,
@@ -738,13 +767,20 @@ module.exports = grammar({
     $._heading5_continuation,
     $._heading6_begin,
     $._heading6_continuation,
+    // Matches div markers with varying number of `:`.
     $._div_begin,
     $._div_end,
+    // Matches code block markers with varying number of `.
     $._code_block_begin,
     $._code_block_end,
+    // There are lots of lists in Djot that shouldn't be mixed.
+    // Parsing a list marker opens or closes lists depending on the marker type.
     $.list_marker_dash,
     $.list_marker_star,
     $.list_marker_plus,
+    // `list_marker_task_begin` only matches opening `- `, `+ `, or `* `, but
+    // only if followed by a valid task box.
+    // This is done to allow the task box markers like `x` to have their own token.
     $._list_marker_task_begin,
     $.list_marker_definition,
     $.list_marker_decimal_period,
@@ -762,25 +798,37 @@ module.exports = grammar({
     $.list_marker_upper_alpha_parens,
     $.list_marker_lower_roman_parens,
     $.list_marker_upper_roman_parens,
+    // `_list_item_end` is responsible for closing an open list,
+    // if indent or list markers are mismatched.
     $._list_item_end,
+    // Paragraphs are anonymous blocks and open blocks aren't tracked by the
+    // external scanner. `close_paragraph` is a marker that's responsible
+    // for closing the paragraph early, for example on a div marker.
     $._close_paragraph,
     $._block_quote_begin,
+    // `block_quote_continuation` continues an open block quote, and can be included
+    // in other elements. For example:
+    //
+    //    > a   <- `block_quote_begin` (before the paragraph)
+    //    > b   <- `block_quote_continuation` (inside the paragraph)
     $._block_quote_continuation,
     $._thematic_break_dash,
     $._thematic_break_star,
+    // Footnotes have significant whitespace.
     $._footnote_begin,
     $._footnote_end,
+    // Table captions have significant whitespace.
     $._table_caption_begin,
     $._table_caption_end,
 
-    // Inline
+    // Inline elements.
+    // Verbatim is handled externally to match a varying number of `,
+    // and to close open verbatim when a paragraph ends with a blankline.
     $._verbatim_begin,
     $._verbatim_end,
     $._verbatim_content,
 
     // Never valid and is used to kill parse branches.
     $._error,
-    // Used as default value in scanner, should never be referenced.
-    $._ignored,
   ],
 });

@@ -9,7 +9,11 @@
 #include <assert.h>
 #endif
 
+// The different tokens the external scanner support
+// See `externals` in `grammar.js` for a description of most of them.
 typedef enum {
+  IGNORED,
+
   BLOCK_CLOSE,
   EOF_OR_BLANKLINE,
   NEWLINE,
@@ -69,9 +73,11 @@ typedef enum {
   VERBATIM_CONTENT,
 
   ERROR,
-  IGNORED
 } TokenType;
 
+// The different blocks in Djot that we track,
+// in order to match or close them properly.
+// Note that paragraphs are anonymous and aren't tracked.
 typedef enum {
   BLOCK_QUOTE,
   CODE_BLOCK,
@@ -101,6 +107,7 @@ typedef enum {
   LIST_UPPER_ROMAN_PARENS,
 } BlockType;
 
+// The different types of "numbers" in ordered lists.
 typedef enum {
   DECIMAL,
   LOWER_ALPHA,
@@ -111,12 +118,14 @@ typedef enum {
 
 typedef struct {
   BlockType type;
-  // Level can be either indentation or number of opening/ending symbols.
-  // Or it may also be unused.
+  // Level can be either indentation or number of opening/ending symbols,
+  // or it may be unused for some block types.
   uint8_t level;
 } Block;
 
 typedef struct {
+  // Open blocks is a stack of the blocks that haven't been closed.
+  // Used to match closing markers or for implicitly closing blocks.
   Array(Block *) * open_blocks;
 
   // How many BLOCK_CLOSE we should output right now?
@@ -133,7 +142,7 @@ typedef struct {
   // What's our current block quote level?
   uint8_t block_quote_level;
 
-  // Currently consumed whitespace.
+  // Currently consumed whitespace. Resets on every token.
   uint8_t whitespace;
 } Scanner;
 
@@ -268,8 +277,6 @@ static void remove_block(Scanner *s) {
   }
 }
 
-static bool any_block(Scanner *s) { return s->open_blocks->size > 0; }
-
 static Block *peek_block(Scanner *s) {
   if (s->open_blocks->size > 0) {
     return *array_back(s->open_blocks);
@@ -322,7 +329,7 @@ static Block *find_block(Scanner *s, BlockType type) {
   return NULL;
 }
 
-static Block *get_open_list(Scanner *s) {
+static Block *find_list(Scanner *s) {
   for (int i = s->open_blocks->size - 1; i >= 0; --i) {
     Block *b = *array_get(s->open_blocks, i);
     if (is_list(b->type)) {
@@ -334,7 +341,7 @@ static Block *get_open_list(Scanner *s) {
 
 // Mark that we should close `count` blocks.
 // This call will only emit a single BLOCK_CLOSE token,
-// the other are emitted in `parse_block_close`.
+// the other are emitted in `handle_blocks_to_close`.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
 #ifdef DEBUG
   assert(s->open_blocks->size > 0);
@@ -348,7 +355,7 @@ static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
 
 // Mark that we should close `count` blocks.
 // This call will only emit a single BLOCK_CLOSE token,
-// the other are emitted in `parse_block_close`.
+// the other are emitted in `handle_blocks_to_close`.
 //
 // The final block type (such as a `DIV_END` token)
 // is emitted from `output_delayed_token` when all BLOCK_CLOSE
@@ -360,25 +367,23 @@ static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
   set_delayed_token(s, final, final_token_width);
 }
 
+// Output BLOCK_CLOSE tokens, delegated from previous iteration.
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   if (s->open_blocks->size == 0) {
     return false;
   }
 
   // If we reach eof with open blocks, we should close them all.
-  if (lexer->eof(lexer)) {
+  if (lexer->eof(lexer) || s->blocks_to_close > 0) {
     lexer->result_symbol = BLOCK_CLOSE;
     remove_block(s);
     return true;
+  } else {
+    return false;
   }
-  if (s->blocks_to_close > 0) {
-    lexer->result_symbol = BLOCK_CLOSE;
-    remove_block(s);
-    return true;
-  }
-  return false;
 }
 
+// Close open list if list markers are different.
 static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
                                            Block *list, TokenType list_marker) {
   if (list_marker != IGNORED) {
@@ -392,14 +397,18 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static bool close_lists_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
-                                  TokenType ordered_list_marker) {
+// Check if open list should be closed, and close it.
+// Lists should be closed if indentation is too little or if
+// a different list marker is encountered.
+// Note that this function may scan a complete list marker.
+static bool close_list_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
+                                 TokenType ordered_list_marker) {
   if (s->open_blocks->size == 0) {
     return false;
   }
 
   Block *top = peek_block(s);
-  Block *list = get_open_list(s);
+  Block *list = find_list(s);
 
   // If we're in a block that's in a list
   // we should check the indentation level,
@@ -472,22 +481,10 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   return true;
 }
 
-static bool parse_verbatim_start(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+static void output_verbatim_begin(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   lexer->mark_end(lexer);
   s->verbatim_tick_count = ticks;
   lexer->result_symbol = VERBATIM_BEGIN;
-  return true;
-}
-
-static bool parse_verbatim_end(Scanner *s, TSLexer *lexer, uint8_t ticks) {
-  if (s->verbatim_tick_count == 0) {
-    return false;
-  }
-
-  lexer->mark_end(lexer);
-  s->verbatim_tick_count = 0;
-  lexer->result_symbol = VERBATIM_END;
-  return true;
 }
 
 static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
@@ -500,6 +497,7 @@ static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
   }
 }
 
+// Parsing verbatim content is also responsible for parsing VERBATIM_END.
 static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
   if (s->verbatim_tick_count == 0) {
     return false;
@@ -511,15 +509,16 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       // We should only end verbatim if the paragraph is ended by a
       // blankline.
 
-      // Advance over the first newline
+      // Advance over the first newline.
       lexer->advance(lexer, false);
-      // Remove any whitespace on the next line
+      // Remove any whitespace on the next line.
       consume_whitespace(lexer);
       if (lexer->eof(lexer) || lexer->lookahead == '\n') {
-        // Found a blankline, now we should end the verbatim.
+        // Found a blankline, meaning the paragraph containing the varbatim
+        // should be closed. So now we can close the verbatim.
         break;
       } else {
-        // Continue parsing
+        // No blankline, continue parsing.
         lexer->mark_end(lexer);
         ticks = 0;
       }
@@ -546,6 +545,8 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       ticks = 0;
     }
   }
+
+  // Scanned all the verbatim.
   lexer->result_symbol = VERBATIM_CONTENT;
   return true;
 }
@@ -564,15 +565,15 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
       return true;
     }
   }
-  if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer, ticks)) {
-    return true;
-  }
-  if (valid_symbols[VERBATIM_BEGIN] && parse_verbatim_start(s, lexer, ticks)) {
+  // VERBATIM_END is handled by `parse_verbatim_content`.
+  if (valid_symbols[VERBATIM_BEGIN]) {
+    output_verbatim_begin(s, lexer, ticks);
     return true;
   }
   return false;
 }
 
+// Scan a '+ ' or similar.
 static bool scan_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker) {
   if (lexer->lookahead != marker) {
     return false;
@@ -639,6 +640,7 @@ static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
                                          OrderedListType type) {
   uint8_t scanned = 0;
   while (!lexer->eof(lexer)) {
+    // Note that we don't check if marker is a valid roman numeral.
     if (matches_ordered_list(type, lexer->lookahead)) {
       ++scanned;
       lexer->advance(lexer, false);
@@ -655,6 +657,7 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
     *res = DECIMAL;
     return true;
   }
+  // We don't differentiate between alpha and roman lists, but prefer roman.
   if (scan_ordered_list_enumerator(s, lexer, LOWER_ROMAN)) {
     *res = LOWER_ROMAN;
     return true;
@@ -676,6 +679,7 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
 
 static TokenType scan_ordered_list_marker_token_type(Scanner *s,
                                                      TSLexer *lexer) {
+  // A marker can be `(a)` or `a)`.
   bool surrounding_parens = false;
   if (lexer->lookahead == '(') {
     surrounding_parens = true;
@@ -691,6 +695,7 @@ static TokenType scan_ordered_list_marker_token_type(Scanner *s,
   case ')':
     lexer->advance(lexer, false);
     if (surrounding_parens) {
+      // (a)
       switch (list_type) {
       case DECIMAL:
         return LIST_MARKER_DECIMAL_PARENS;
@@ -706,6 +711,7 @@ static TokenType scan_ordered_list_marker_token_type(Scanner *s,
         return IGNORED;
       }
     } else {
+      // a)
       switch (list_type) {
       case DECIMAL:
         return LIST_MARKER_DECIMAL_PAREN;
@@ -722,6 +728,7 @@ static TokenType scan_ordered_list_marker_token_type(Scanner *s,
       }
     }
   case '.':
+    // a.
     lexer->advance(lexer, false);
     switch (list_type) {
     case DECIMAL:
@@ -756,11 +763,12 @@ static TokenType scan_ordered_list_marker_token(Scanner *s, TSLexer *lexer) {
   }
 }
 
-// Scan the characters following the '[' in a task list, namely 'x] '.
-// This is needed because the external scanner needs to scan ahead to know
-// if we can accept the beginning '[', otherwise we might end up in an error
-// state.
-static bool scan_task_list_postfix(Scanner *s, TSLexer *lexer) {
+// Scans a task marker box, e.g. `[x] `.
+static bool scan_task_list_marker(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '[') {
+    return false;
+  }
+  lexer->advance(lexer, false);
   if (lexer->lookahead != 'x' && lexer->lookahead != 'X' &&
       lexer->lookahead != ' ') {
     return false;
@@ -773,15 +781,9 @@ static bool scan_task_list_postfix(Scanner *s, TSLexer *lexer) {
   return lexer->lookahead == ' ';
 }
 
-static bool scan_task_list_marker(Scanner *s, TSLexer *lexer) {
-  if (lexer->lookahead != '[') {
-    return false;
-  }
-  lexer->advance(lexer, false);
-  return scan_task_list_postfix(s, lexer);
-}
-
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer) {
+  // A task marker token can be started with any of `-`, `*`, or `+` and
+  // still be of the same type.
   if (scan_bullet_list_marker(s, lexer, '-')) {
     if (scan_task_list_marker(s, lexer)) {
       return LIST_MARKER_TASK_BEGIN;
@@ -825,6 +827,8 @@ static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
 static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
   if (lexer->eof(lexer)) {
     return true;
+    // We've already parsed any leading whitespace in the beginning of the scan
+    // function.
   } else if (lexer->lookahead == '\n') {
     lexer->advance(lexer, false);
     return true;
@@ -836,31 +840,18 @@ static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
 // Can we scan a block closing marker?
 // For example, if we see a valid div marker.
 static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
-  if (is_div_marker_next(s, lexer)) {
-    return true;
-  }
-
-  if (scan_list_marker(s, lexer)) {
-    return true;
-  }
-
-  return false;
+  return is_div_marker_next(s, lexer) || scan_list_marker(s, lexer);
 }
 
 static bool close_paragraph(Scanner *s, TSLexer *lexer) {
   // Workaround for not including the following blankline when closing a
   // paragraph inside a block.
-  // I'm not 100% sure this works all the time, but seems ok?
-  // TODO maybe enable this again?
-  // Block *top = peek_block(s);
-  // if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
-  //   return true;
-  // }
-  if (scan_containing_block_closing_marker(s, lexer)) {
+  Block *top = peek_block(s);
+  if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
     return true;
   }
 
-  return false;
+  return scan_containing_block_closing_marker(s, lexer);
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
@@ -874,13 +865,11 @@ static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
 
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
   Block *top = peek_block(s);
-  if (top) {
-    // Found a list with the same type and indent, we should continue it.
-    if (top->type == type && top->level == indent) {
-      return;
-    }
+  // Found a list with the same type and indent, we should continue it.
+  if (top && top->type == type && top->level == indent) {
+    return;
     // There might be other cases, like if the top list is a list of different
-    // types, but that's handled by BLOCK_CLOSE in `close_lists_if_needed` and
+    // types, but that's handled by BLOCK_CLOSE in `close_list_if_needed` and
     // we shouldn't see that state here.
   }
 
@@ -913,7 +902,7 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
     } else if (lexer->lookahead == ' ') {
       lexer->advance(lexer, false);
     } else if (lexer->lookahead == '\n') {
-      break;
+      return seen;
     } else {
       return 0;
     }
@@ -952,10 +941,13 @@ static bool parse_list_marker_or_thematic_break(
   bool can_be_thematic_break = valid_symbols[thematic_break_type] &&
                                (marker_count == 2 || lexer->lookahead == ' ');
 
+  // We might have scanned a '- ', we need to mark the end here
+  // so we can go back to simply returning a list marker that
+  // only consumes these two characters.
   lexer->advance(lexer, false);
   lexer->mark_end(lexer);
 
-  // Check frontmatter, if possible
+  // Check frontmatter, if needed.
   if (check_frontmatter) {
     marker_count += consume_chars(lexer, marker);
     if (marker_count >= 3) {
@@ -965,7 +957,7 @@ static bool parse_list_marker_or_thematic_break(
     }
   }
 
-  // Now check the entire line, if possible.
+  // Check a thematic break that can span the entire line.
   if (can_be_thematic_break) {
     marker_count += consume_line_with_char_or_whitespace(s, lexer, marker);
     if (marker_count >= 3) {
@@ -1015,6 +1007,7 @@ static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     return false;
   }
 
+  // We should only consume '+ '.
   lexer->mark_end(lexer);
 
   if (valid_symbols[LIST_MARKER_TASK_BEGIN]) {
@@ -1036,15 +1029,11 @@ static bool parse_plus(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
 
 static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
                                 const bool *valid_symbols) {
-  // If we come here, we need to be in a list, but safeguards are nice.
-  if (!any_block(s)) {
-    return false;
-  }
   // We only look at the top, list item end is only valid if we're
   // about to close the list. Otherwise we need to close the open blocks
   // first.
   Block *list = peek_block(s);
-  if (!is_list(list->type)) {
+  if (!list || !is_list(list->type)) {
     return false;
   }
 
@@ -1053,6 +1042,13 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  // Handle the special case of a list item following this,
+  // which may close the entire list if it's of a different type
+  // or a mismatching indent. For instance:
+  //
+  //      - a
+  //
+  //    - b     <- different indent should close the `a` list.
   TokenType next_marker = scan_list_marker_token(s, lexer);
   if (next_marker != IGNORED) {
     bool different_type = list_marker_to_block(next_marker) != list->type;
@@ -1081,6 +1077,7 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   lexer->advance(lexer, false);
 
   if (lexer->lookahead == ' ') {
+    // Found a `: `, can only be a list.
     if (valid_symbols[LIST_MARKER_DEFINITION]) {
       ensure_list_open(s, LIST_DEFINITION, s->whitespace + 1);
       lexer->result_symbol = LIST_MARKER_DEFINITION;
@@ -1096,7 +1093,7 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     return false;
   }
 
-  // We consume a colon in the start of the function.
+  // We consumed a colon in the start of the function.
   uint8_t colons = consume_chars(lexer, ':') + 1;
   if (colons < 3) {
     return false;
@@ -1164,10 +1161,12 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   Block *top = peek_block(s);
   bool top_heading = top && top->type == HEADING;
 
+  // Not technically needed, but allows us to skip unnecessary parsing.
   if (top && top->type == CODE_BLOCK) {
     return false;
   }
 
+  // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
     TokenType start_token = heading_start_token(hash_count);
     TokenType continuation_token = heading_continuation_token(hash_count);
@@ -1177,11 +1176,11 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
       return false;
     }
 
-    lexer->advance(lexer, false); // Consume the ' '
+    lexer->advance(lexer, false); // Consume the ' '.
 
     if (valid_symbols[continuation_token] && top_heading &&
         top->level == hash_count) {
-      // We're in a heading matching the same number of '#'
+      // We're in a heading matching the same number of '#'.
       lexer->mark_end(lexer);
       lexer->result_symbol = continuation_token;
       return true;
@@ -1195,13 +1194,16 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     if (valid_symbols[start_token]) {
-      // Open a new heading
+      // Open a new heading.
       lexer->mark_end(lexer);
       push_block(s, HEADING, hash_count);
       lexer->result_symbol = start_token;
       return true;
     }
   } else if (hash_count == 0 && top_heading) {
+    // We didn't find any `#`, but we might be able to continue
+    // the heading lazily.
+
     // We need to always provide a BLOCK_CLOSE to end headings.
     // We do this here, either when a blankline is followed or
     // by the end of a container block.
@@ -1224,6 +1226,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   return false;
 }
 
+// Scan a `> ` or `>\n`.
 static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
                                     bool *ending_newline) {
   if (lexer->lookahead != '>') {
@@ -1254,7 +1257,6 @@ static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
 // And we also need to close open blocks when we go down a nesting level.
 static bool parse_block_quote(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
-  // Don't scan unless needed.
   if (!valid_symbols[BLOCK_QUOTE_BEGIN] &&
       !valid_symbols[BLOCK_QUOTE_CONTINUATION] && !valid_symbols[BLOCK_CLOSE] &&
       !valid_symbols[CLOSE_PARAGRAPH]) {
@@ -1272,24 +1274,23 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return true;
   }
 
-  // Store nesting level on the scanner, to keep it between runs.
+  // Store nesting level on the scanner, to keep it between runs
+  // in the case of multiple `>`, like `> > > txt`.
   uint8_t marker_count = s->block_quote_level + has_marker;
   size_t matching_block_pos =
       number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
   Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
-  // There is an open block quote with a higher nesting level than what we've
-  // found.
+  // There's an open block quote with a higher nesting level.
   if (highest_block_quote && marker_count < highest_block_quote->level) {
-    // Close the paragraph, but allow lazy continuation (without any >
-    // marker).
+    // Close the paragraph, but allow lazy continuation (without any `>`).
     if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
       lexer->result_symbol = CLOSE_PARAGRAPH;
       return true;
     }
     if (valid_symbols[BLOCK_CLOSE]) {
       // We may need to close more than one block (nested block quotes, lists,
-      // etc).
+      // divs, etc).
       size_t close_pos =
           number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count + 1);
       close_blocks(s, lexer, close_pos);
@@ -1383,7 +1384,6 @@ static bool parse_table_caption_begin(Scanner *s, TSLexer *lexer) {
 
 static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   Block *caption = peek_block(s);
-
   if (!caption || caption->type != TABLE_CAPTION) {
     return false;
   }
@@ -1399,12 +1399,13 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
-static bool end_paragraph_in_block(Scanner *s, TSLexer *lexer) {
+static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   Block *top = peek_block(s);
   if (!top || top->type != BLOCK_QUOTE) {
     return false;
   }
 
+  // Scan all `> ` markers we can find.
   bool ending_newline = false;
   uint8_t marker_count = 0;
   while (scan_block_quote_marker(s, lexer, &ending_newline)) {
@@ -1414,69 +1415,95 @@ static bool end_paragraph_in_block(Scanner *s, TSLexer *lexer) {
     }
   }
 
+  // No blockquote marker.
   if (marker_count == 0) {
     return false;
   }
 
-  if (marker_count < top->level) {
+  // We've gone down a blockquote level, we need to close the paragraph.
+  if (marker_count < top->level || ending_newline) {
     return true;
   }
 
-  if (ending_newline) {
-    return true;
-  }
-
+  // Check if there's a blankline following the blockquote marker.
   consume_whitespace(lexer);
   return lexer->lookahead == '\n';
 }
 
-static bool parse_newlines(Scanner *s, TSLexer *lexer,
-                           const bool *valid_symbols, bool is_newline) {
+// Decide if we should emit a `NEWLINE_INLINE` token.
+//
+// This should only be allowed inside a paragraph (or inline context),
+// not at the end of a paragraph. Therefore there's logic
+// here to detect the end of a paragraph.
+//
+// We should have already advanced over `\n` before calling this function.
+static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
+                                uint32_t newline_column) {
+  // Need a proper `NEWLINE` to end a paragraph.
+  if (lexer->eof(lexer)) {
+    return false;
+  }
+
+  // Is never valid as the first character of a line.
+  if (newline_column == 0) {
+    return false;
+  }
+
+  // This is a lookahead for the next line, to check if
+  // there's a blankline ending the paragraph or not (in which case we shouldn't
+  // emit a `NEWLINE_INLINE`).
+  uint8_t next_line_whitespace = consume_whitespace(lexer);
+  if (lexer->lookahead == '\n') {
+    return false;
+  }
+
+  // Need an extra check so we don't emit a NEWLINE_INLINE at the end
+  // of a table caption if there's a mismatched indent.
+  Block *top = peek_block(s);
+  if (top && top->type == TABLE_CAPTION && next_line_whitespace < top->level) {
+    return false;
+  }
+
+  // Paragraph should end, don't continue.
+  if (close_paragraph(s, lexer) || end_paragraph_in_block_quote(s, lexer)) {
+    return false;
+  }
+
+  lexer->result_symbol = NEWLINE_INLINE;
+  return true;
+}
+
+static bool parse_newline(Scanner *s, TSLexer *lexer,
+                          const bool *valid_symbols) {
+  if (valid_symbols[VERBATIM_END] && try_close_verbatim(s, lexer)) {
+    return true;
+  }
+
+  // Various different newline types share the `\n` consumption.
   if (!valid_symbols[NEWLINE] && !valid_symbols[NEWLINE_INLINE] &&
       !valid_symbols[EOF_OR_BLANKLINE]) {
     return false;
   }
 
-  if (!is_newline) {
-    if (valid_symbols[EOF_OR_BLANKLINE] && lexer->eof(lexer)) {
-      lexer->result_symbol = EOF_OR_BLANKLINE;
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  uint32_t column = lexer->get_column(lexer);
+  uint32_t newline_column = lexer->get_column(lexer);
 
   if (lexer->lookahead == '\n') {
     lexer->advance(lexer, false);
   }
   lexer->mark_end(lexer);
-  uint8_t next_line_whitespace = consume_whitespace(lexer);
-  bool trailing_blankline = lexer->lookahead == '\n';
 
-  bool end_in_block = end_paragraph_in_block(s, lexer);
-  bool close_p = close_paragraph(s, lexer);
-
-  if (valid_symbols[NEWLINE_INLINE] && !trailing_blankline && !close_p &&
-      column != 0 && !lexer->eof(lexer)) {
-
-    // Need an extra check so we don't emit a NEWLINE_INLINE at the end
-    // of a table caption.
-    Block *top = peek_block(s);
-
-    bool end_caption =
-        top && top->type == TABLE_CAPTION && next_line_whitespace < top->level;
-
-    if (!end_caption && !end_in_block) {
-      lexer->result_symbol = NEWLINE_INLINE;
-      return true;
-    }
+  // Prefer NEWLINE_INLINE for newlines in inline context.
+  // When they're no longer accepted, this marks the end of a paragraph
+  // and a regular NEWLINE (or EOF_OR_BLANKLINE) can be emitted.
+  if (valid_symbols[NEWLINE_INLINE] &&
+      emit_newline_inline(s, lexer, newline_column)) {
+    lexer->result_symbol = NEWLINE_INLINE;
+    return true;
   }
 
   // We need to handle NEWLINE in the external scanner for our
   // changes to the Scanner state to be saved
-  // (the reset of `block_quote_level` at newline).
+  // (the reset of `block_quote_level` at newline in the main scan function).
   if (valid_symbols[NEWLINE]) {
     lexer->result_symbol = NEWLINE;
     return true;
@@ -1487,6 +1514,7 @@ static bool parse_newlines(Scanner *s, TSLexer *lexer,
     return true;
   }
 
+  // Something should already have matched, but lets not rely on that shall we?
   return false;
 }
 
@@ -1520,7 +1548,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
-  // The above shouldn't allow us to continue past this point.
+  // The above shouldn't allow us to continue past this point,
+  // but it may happen if we've encountered a bug somewhere.
 #ifdef DEBUG
   assert(s->blocks_to_close == 0);
 #else
@@ -1596,7 +1625,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     }
     break;
   case '\n':
-    if (try_close_verbatim(s, lexer)) {
+    if (parse_newline(s, lexer, valid_symbols)) {
       return true;
     }
     break;
@@ -1625,11 +1654,12 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we should output the list marker itself.
   // Yeah, the order dependencies aren't very nice.
   if (valid_symbols[BLOCK_CLOSE] &&
-      close_lists_if_needed(s, lexer, !is_newline, ordered_list_marker)) {
+      close_list_if_needed(s, lexer, !is_newline, ordered_list_marker)) {
     return true;
   }
 
-  if (parse_newlines(s, lexer, valid_symbols, is_newline)) {
+  if (valid_symbols[EOF_OR_BLANKLINE] && lexer->eof(lexer)) {
+    lexer->result_symbol = EOF_OR_BLANKLINE;
     return true;
   }
 
@@ -1917,13 +1947,13 @@ static void dump(Scanner *s, TSLexer *lexer) {
 
 static void dump_valid_symbols(const bool *valid_symbols) {
   // printf("# valid_symbols:\n");
-  // for (int i = 0; i <= IGNORED; ++i) {
+  // for (int i = 0; i <= ERROR; ++i) {
   //   if (valid_symbols[i]) {
   //     printf("%s\n", token_type_s(i));
   //   }
   // }
   printf("# valid_symbols (shortened):\n");
-  for (int i = 0; i <= IGNORED; ++i) {
+  for (int i = 0; i <= ERROR; ++i) {
     switch (i) {
     case BLOCK_CLOSE:
     // case BLOCK_QUOTE_BEGIN:
