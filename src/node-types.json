@@ -123,7 +123,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "image_description",
@@ -319,6 +319,10 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_block",
           "named": true
         },
@@ -328,10 +332,6 @@
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -1053,15 +1053,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -1285,15 +1285,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -1439,15 +1439,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -1721,6 +1721,11 @@
     }
   },
   {
+    "type": "note",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "paragraph",
     "named": true,
     "fields": {},
@@ -1817,15 +1822,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -2045,15 +2050,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -2285,15 +2290,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -2477,15 +2482,15 @@
           "named": true
         },
         {
+          "type": "quotation_marks",
+          "named": true
+        },
+        {
           "type": "raw_inline",
           "named": true
         },
         {
           "type": "span",
-          "named": true
-        },
-        {
-          "type": "straight_quote",
           "named": true
         },
         {
@@ -2517,6 +2522,11 @@
   },
   {
     "type": "thematic_break",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "todo",
     "named": true,
     "fields": {}
   },
@@ -2614,6 +2624,26 @@
   },
   {
     "type": ">",
+    "named": false
+  },
+  {
+    "type": "INFO",
+    "named": false
+  },
+  {
+    "type": "NOTE",
+    "named": false
+  },
+  {
+    "type": "TODO",
+    "named": false
+  },
+  {
+    "type": "WIP",
+    "named": false
+  },
+  {
+    "type": "XXX",
     "named": false
   },
   {
@@ -2809,7 +2839,7 @@
     "named": true
   },
   {
-    "type": "note",
+    "type": "quotation_marks",
     "named": true
   },
   {
@@ -2829,19 +2859,11 @@
     "named": true
   },
   {
-    "type": "straight_quote",
-    "named": true
-  },
-  {
     "type": "symbol",
     "named": true
   },
   {
     "type": "table_cell_alignment",
-    "named": true
-  },
-  {
-    "type": "todo",
     "named": true
   },
   {

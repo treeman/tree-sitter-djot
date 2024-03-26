@@ -12,35 +12,43 @@
  (div_marker_end)
  ] @punctuation.delimiter
 
-[
+([
   (code_block)
   (raw_block)
   (frontmatter)
-] @markup.raw
+  ] @markup.raw.block
+ (#set! "priority" 90))
 
 ; Remove @markup.raw for code with a language spec
-(code_block . (code_block_marker_begin) (language) (code) @none)
+(code_block . (code_block_marker_begin) (language) (code) @none
+ (#set! "priority" 90))
 
 [
-  (code_block_marker_begin)
-  (code_block_marker_end)
-  (raw_block_marker_begin)
-  (raw_block_marker_end)
+ (code_block_marker_begin)
+ (code_block_marker_end)
+ (raw_block_marker_begin)
+ (raw_block_marker_end)
 ] @punctuation.delimiter
 
-(language) @tag.attribute
-(language_marker) @tag.delimiter
-(class_name) @tag.attribute
+(language) @attribute
+
+(inline_attribute _ @conceal (#set! conceal ""))
+
+((language_marker) @punctuation.delimiter
+                   (#set! conceal ""))
 
 (block_quote) @markup.quote
 (block_quote_marker) @punctuation.special
 
-(table_header) @text.title
+(table_header) @markup.heading
+
 (table_header "|" @punctuation.special)
 (table_row "|" @punctuation.special)
 (table_separator) @punctuation.special
 (table_caption (marker) @punctuation.special)
-(table_caption) @markup.caption
+; FIXME this one is wrong in nvim-treesitter I think
+; (table_caption) @markup.heading
+(table_caption) @markup.italic
 
 [
  (list_marker_dash)
@@ -62,132 +70,191 @@
  (list_marker_upper_roman_period)
  (list_marker_upper_roman_paren)
  (list_marker_upper_roman_parens)
-] @markup.list
+ ] @markup.list
 
-(list_marker_task (unchecked) @constant.builtin) @markup.list.unchecked
-(list_marker_task (checked) @constant.builtin) @markup.list.checked
-(list_item (term) @define)
+(list_marker_task (unchecked)) @markup.list.unchecked
+(list_marker_task (checked)) @markup.list.checked
+((checked) @constant.builtin (#set! conceal "✓"))
 
-[
- (ellipsis)
- (en_dash)
- (em_dash)
- (straight_quote)
- ] @string.special
+; FIXME Not in nvim-treesitter
+(list_item (term) @type.definition)
+
+(quotation_marks) @string.special
+
+((quotation_marks) @string.special
+   (#eq? @string.special "{\"")
+   (#set! conceal "“"))
+((quotation_marks) @string.special
+   (#eq? @string.special "\"}")
+   (#set! conceal "”"))
+((quotation_marks) @string.special
+   (#eq? @string.special "{'")
+   (#set! conceal "‘"))
+((quotation_marks) @string.special
+   (#eq? @string.special "'}")
+   (#set! conceal "’"))
+((quotation_marks) @string.special
+   (#any-of? @string.special "\\\"" "\\'")
+   (#offset! @string.special 0 0 0 -1)
+   (#set! conceal ""))
+
+(ellipsis) @string.special
+(en_dash) @string.special
+(em_dash) @string.special
+
+((hard_line_break) @string.escape (#set! conceal "↵"))
+
+(backslash_escape) @string.escape
+; Only conceal \ but leave escaped character.
+((backslash_escape) @string.escape (#offset! @string.escape 0 0 0 -1) (#set! conceal ""))
 
 (frontmatter_marker) @punctuation.delimiter
 
 (emphasis) @markup.italic
+
 (strong) @markup.strong
-(emphasis (emphasis_begin) @punctuation.delimiter)
-(emphasis (emphasis_end) @punctuation.delimiter)
-(strong (strong_begin) @punctuation.delimiter)
-(strong (strong_end) @punctuation.delimiter)
 
+(symbol) @string.special.symbol
+
+(insert) @markup.underline
+(delete) @markup.strikethrough
+
+; FIXME For nvim-treesitter
+; (highlighted) @string.special
+; (superscript) @string.special
+; (subscript) @string.special
+
+; TODO
+; @markup.caption in various places?
+; Instead of @markup.italic?
+; Maybe italic is fine...
+
+; For our query
 (highlighted) @markup.highlighted
-(highlighted ["{=" "=}"] @punctuation.delimiter)
-
-(insert) @markup.insert
-(insert ["{+" "+}"] @punctuation.delimiter)
-
-(delete) @markup.delete
-(delete ["{-" "-}"] @punctuation.delimiter)
-
-(symbol) @markup.symbol
-
 (superscript) @markup.superscript
-(superscript ["^" "{^" "^}"] @punctuation.delimiter)
-
 (subscript) @markup.subscript
-(subscript ["~" "{~" "~}"] @punctuation.delimiter)
 
-(verbatim) @markup.raw
-[
+; We need to target tokens specifically because `{=` etc can exist as fallback symbols in
+; regular text, which we don't want to highlight or conceal.
+(highlighted ["{=" "=}"] @punctuation.delimiter (#set! conceal ""))
+(insert ["{+" "+}"] @punctuation.delimiter (#set! conceal ""))
+(delete ["{-" "-}"] @punctuation.delimiter (#set! conceal ""))
+(superscript ["{^" "^}" "^"] @punctuation.delimiter (#set! conceal ""))
+(subscript ["{~" "~}" "~"] @punctuation.delimiter (#set! conceal ""))
+
+([
+ (emphasis_begin)
+ (emphasis_end)
+ (strong_begin)
+ (strong_end)
  (verbatim_marker_begin)
  (verbatim_marker_end)
- ] @punctuation.delimiter
-
-(math) @markup.math
-[
  (math_marker)
  (math_marker_begin)
  (math_marker_end)
- ] @punctuation.delimiter
-
-(raw_inline) @markup.raw
-[
  (raw_inline_attribute)
  (raw_inline_marker_begin)
  (raw_inline_marker_end)
  ] @punctuation.delimiter
+  (#set! conceal ""))
 
-(paragraph) @markup
+(math) @markup.math
+(verbatim) @markup.raw
+((raw_inline) @markup.raw (#set! "priority" 90))
+
+(link_text ["[" "]"] @punctuation.bracket (#set! conceal ""))
+(autolink ["<" ">"] @punctuation.bracket (#set! conceal ""))
+((inline_link (inline_link_destination) @markup.link.uri (#set! conceal "")))
+
+(comment) @comment
+(comment "%" @commeent (#set! conceal ""))
 
 (span ["[" "]"] @punctuation.bracket)
 (inline_attribute ["{" "}"] @punctuation.bracket)
 (block_attribute ["{" "}"] @punctuation.bracket)
 
-(comment) @comment
-(class) @tag.attribute
+[
+  (class)
+  (class_name)
+] @type
+
 (identifier) @tag
+
 (key_value "=" @operator)
-(key_value (key) @variable)
+
+(key_value (key) @property)
+
 (key_value (value) @string)
 
-[
-  (backslash_escape)
-  (hard_line_break)
-] @string.escape
+(link_reference_definition ":" @punctuation.special)
+
+(full_reference_link
+  (link_text) @markup.link)
+
+(full_reference_link
+  (link_label) @markup.link.label (#set! conceal ""))
+
+(collapsed_reference_link "[]" @punctuation.bracket (#set! conceal ""))
+
+(full_reference_link ["[" "]"] @punctuation.bracket (#set! conceal ""))
+
+(collapsed_reference_link
+  (link_text) @markup.link)
+
+(collapsed_reference_link
+  (link_text) @markup.link.label)
+
+(inline_link
+  (link_text) @markup.link)
+
+(full_reference_image
+  (link_label) @markup.link.label)
+
+(full_reference_image ["![" "[" "]"] @punctuation.bracket)
+
+(collapsed_reference_image ["![" "]"] @punctuation.bracket)
+
+(inline_image ["![" "]"] @punctuation.bracket)
+
+; I couldn't merge these two, possibly a bug?
+(image_description) @markup.italic
+(image_description ["[" "]"] @punctuation.bracket)
+
+(link_reference_definition ["[" "]"] @punctuation.bracket)
+
+(link_reference_definition
+  (link_label) @markup.link.label)
 
 (inline_link_destination ["(" ")"] @punctuation.bracket)
-(link_label ["[" "]"] @punctuation.bracket)
-(link_text ["[" "]"] @punctuation.bracket)
-(collapsed_reference_link "[]" @punctuation.bracket)
-(collapsed_reference_image "[]" @punctuation.bracket)
-(image_description ["![" "]"] @punctuation.bracket)
-(link_reference_definition ["[" "]"] @punctuation.bracket)
-(link_reference_definition ":" @punctuation.special)
-(autolink ["<" ">"] @punctuation.bracket)
-
-; Not usually how it's done, but this allows us to differentiate
-; how to color `text` in [text][myref] and [text][].
-(full_reference_link (link_text) @markup.link.label)
-(full_reference_link (link_label) @markup.link.reference)
-(collapsed_reference_link (link_text) @markup.link.label)
-(collapsed_reference_link (link_text) @markup.link.reference)
-(inline_link (link_text) @markup.link.label)
-(full_reference_image (link_label) @markup.link.reference)
-(image_description) @markup.link.label
-(link_reference_definition (link_label) @markup.link.definition)
 
 [
-  (autolink)
-  (inline_link_destination)
-  (link_destination)
-  (link_reference_definition)
-] @markup.link.url
+ (autolink)
+ (inline_link_destination)
+ (link_destination)
+ (link_reference_definition)
+ ] @markup.link.url
 
-; This always errors out...?
-; Should try mark invalid references with @exception or something
-; ((link_label) @label (#is-not? local))
-; ((link_label) @label)
+(footnote
+  (reference_label) @markup.link.label)
 
-(footnote (reference_label) @markup.footnote.definition) @markup.footnote
-(footnote_reference (reference_label) @markup.footnote.reference)
+(footnote_reference
+  (reference_label) @markup.link.label)
+
 [
-  (footnote_marker_begin)
-  (footnote_marker_end)
-] @punctuation.bracket
+ (footnote_marker_begin)
+ (footnote_marker_end)
+ ] @punctuation.bracket
 
-(todo) @markup.todo
-(note) @markup.note
-(fixme) @markup.fixme
+(todo) @comment.todo
+(note) @comment.note
+(fixme) @comment.error
 
 [
  (paragraph)
  (comment)
  (table_cell)
  ] @spell
+
 [
  (autolink)
  (inline_link_destination)
@@ -203,7 +270,10 @@
  (identifier)
  (key_value)
  (frontmatter)
-] @nospell
-(full_reference_link (link_label) @nospell)
-(full_reference_image (link_label) @nospell)
+ ] @nospell
 
+(full_reference_link
+  (link_label) @nospell)
+
+(full_reference_image
+  (link_label) @nospell)

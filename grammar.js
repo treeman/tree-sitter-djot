@@ -15,7 +15,7 @@ module.exports = grammar({
     [$.insert, $._symbol_fallback],
     [$.delete, $._symbol_fallback],
     [$.table_row, $._symbol_fallback],
-    [$.image_description, $._symbol_fallback],
+    [$._image_description, $._symbol_fallback],
     [$.math, $._symbol_fallback],
     [$.link_text, $.span, $._symbol_fallback],
     [$.link_reference_definition, $.link_text, $.span, $._symbol_fallback],
@@ -562,8 +562,8 @@ module.exports = grammar({
       seq("\\", $._newline, optional($._block_quote_prefix)),
 
     _smart_punctuation: ($) =>
-      choice($.straight_quote, $.ellipsis, $.em_dash, $.en_dash),
-    straight_quote: (_) => token(choice('{"', '}"', "{'", "}'", '\\"', "\\'")),
+      choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
+    quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
     en_dash: (_) => "--",
@@ -621,22 +621,24 @@ module.exports = grammar({
         $.collapsed_reference_image,
         $.inline_image,
       ),
-    full_reference_image: ($) => seq($.image_description, $.link_label),
+    full_reference_image: ($) => seq($._image_description, $._link_label),
     collapsed_reference_image: ($) =>
-      seq($.image_description, token.immediate("[]")),
-    inline_image: ($) => seq($.image_description, $.inline_link_destination),
+      seq($._image_description, token.immediate("[]")),
+    inline_image: ($) => seq($._image_description, $.inline_link_destination),
 
-    image_description: ($) => seq("![", optional($._inline), "]"),
+    _image_description: ($) =>
+      seq("![", optional(alias($._inline, $.image_description)), "]"),
 
     _link: ($) =>
       choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
-    full_reference_link: ($) => seq($.link_text, $.link_label),
+    full_reference_link: ($) => seq($.link_text, $._link_label),
     collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
     inline_link: ($) => seq($.link_text, $.inline_link_destination),
 
     link_text: ($) => seq("[", $._inline, "]"),
 
-    link_label: ($) => seq("[", $._inline, token.immediate("]")),
+    _link_label: ($) =>
+      seq("[", alias($._inline, $.link_label), token.immediate("]")),
     inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
 
     inline_attribute: ($) =>
@@ -688,8 +690,8 @@ module.exports = grammar({
       ),
 
     _todo_highlights: ($) => choice($.todo, $.note, $.fixme),
-    todo: (_) => "TODO",
-    note: (_) => "NOTE",
+    todo: (_) => choice("TODO", "WIP"),
+    note: (_) => choice("NOTE", "INFO", "XXX"),
     fixme: (_) => "FIXME",
 
     // These exists to explicit trigger an LR collision with existing

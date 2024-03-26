@@ -6,6 +6,7 @@
 ; The choices are a bit subjective though.
 
 ; Custom textobject to jump between top headers
+; FIXME not standard, move to nvim config.
 (heading1) @heading1
 
 ; Classes, the highest level
@@ -51,6 +52,7 @@
 (symbol) @attribute.outer
 (superscript (content) @attribute.inner) @attribute.outer
 (subscript (content) @attribute.inner) @attribute.outer
+(verbatim (content) @attribute.inner) @attribute.outer
 
 ; Parameters, inside a description of a thing
 [
