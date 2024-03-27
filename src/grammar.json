@@ -2641,7 +2641,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "straight_quote"
+          "name": "quotation_marks"
         },
         {
           "type": "SYMBOL",
@@ -2657,7 +2657,7 @@
         }
       ]
     },
-    "straight_quote": {
+    "quotation_marks": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -2668,7 +2668,7 @@
           },
           {
             "type": "STRING",
-            "value": "}\""
+            "value": "\"}"
           },
           {
             "type": "STRING",
@@ -2676,7 +2676,7 @@
           },
           {
             "type": "STRING",
-            "value": "}'"
+            "value": "'}"
           },
           {
             "type": "STRING",

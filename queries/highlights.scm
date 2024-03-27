@@ -22,12 +22,13 @@
 ; Remove @markup.raw for code with a language spec
 (code_block . (code_block_marker_begin) (language) (code) @none)
 
-[
+([
  (code_block_marker_begin)
  (code_block_marker_end)
  (raw_block_marker_begin)
  (raw_block_marker_end)
  ] @punctuation.delimiter
+   (#set! conceal ""))
 
 (language) @attribute
 
@@ -74,12 +75,36 @@
 ; FIXME Not in nvim-treesitter
 (list_item (term) @type.definition)
 
+(quotation_marks) @string.special
+
+((quotation_marks) @string.special
+   (#eq? @string.special "{\"")
+   (#set! conceal "“"))
+((quotation_marks) @string.special
+   (#eq? @string.special "\"}")
+   (#set! conceal "”"))
+((quotation_marks) @string.special
+   (#eq? @string.special "{'")
+   (#set! conceal "‘"))
+((quotation_marks) @string.special
+   (#eq? @string.special "'}")
+   (#set! conceal "’"))
+((quotation_marks) @string.special
+   (#any-of? @string.special "\\\"" "\\'")
+   (#offset! @string.special 0 0 0 -1)
+   (#set! conceal ""))
+
+((ellipsis) @string.special (#set! conceal "…"))
+((en_dash) @string.special (#set! conceal "–"))
+((em_dash) @string.special (#set! conceal "—"))
+
 [
- (ellipsis)
- (en_dash)
- (em_dash)
- (straight_quote)
- ] @string.special
+ (backslash_escape)
+ (hard_line_break)
+ ] @string.escape
+
+; Only conceal \ but leave escaped character.
+((backslash_escape) @conceal (#offset! @conceal 0 0 0 -1) (#set! conceal ""))
 
 (frontmatter_marker) @punctuation.delimiter
 
@@ -107,7 +132,7 @@
 (superscript) @markup.superscript
 (subscript) @markup.subscript
 
-[
+([
  (emphasis_begin)
  (emphasis_end)
  (strong_begin)
@@ -125,29 +150,23 @@
  "{="
  "=}"
  ] @punctuation.delimiter
+  (#set! conceal ""))
 
-(verbatim) @markup.raw
-
-[
+([
  (verbatim_marker_begin)
  (verbatim_marker_end)
- ] @punctuation.delimiter
-
-(math) @markup.math
-
-[
  (math_marker)
  (math_marker_begin)
  (math_marker_end)
- ] @punctuation.delimiter
-
-(raw_inline) @markup.raw
-
-[
  (raw_inline_attribute)
  (raw_inline_marker_begin)
  (raw_inline_marker_end)
  ] @punctuation.delimiter
+  (#set! conceal ""))
+
+(math) @markup.math
+(verbatim) @markup.raw
+(raw_inline) @markup.raw
 
 [
  "{"
@@ -163,6 +182,7 @@
  ] @punctuation.bracket
 
 (comment) @comment
+(comment "%" @commeent (#set! conceal ""))
 
 [
   (class)
@@ -176,11 +196,6 @@
 (key_value (key) @property)
 
 (key_value (value) @string)
-
-[
- (backslash_escape)
- (hard_line_break)
- ] @string.escape
 
 (link_reference_definition ":" @punctuation.special)
 

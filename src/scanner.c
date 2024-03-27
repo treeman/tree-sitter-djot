@@ -566,7 +566,8 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
     }
   }
   // VERBATIM_END is handled by `parse_verbatim_content`.
-  if (valid_symbols[VERBATIM_BEGIN]) {
+  // Don't capture leading whitespace for prettier conceal.
+  if (valid_symbols[VERBATIM_BEGIN] && s->whitespace == 0) {
     output_verbatim_begin(s, lexer, ticks);
     return true;
   }

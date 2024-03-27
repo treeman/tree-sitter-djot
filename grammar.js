@@ -562,8 +562,8 @@ module.exports = grammar({
       seq("\\", $._newline, optional($._block_quote_prefix)),
 
     _smart_punctuation: ($) =>
-      choice($.straight_quote, $.ellipsis, $.em_dash, $.en_dash),
-    straight_quote: (_) => token(choice('{"', '}"', "{'", "}'", '\\"', "\\'")),
+      choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
+    quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
     en_dash: (_) => "--",

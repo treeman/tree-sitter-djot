@@ -1361,7 +1361,6 @@ Image: empty inline
 (document
   (paragraph
     (inline_image
-      (image_description)
       (inline_link_destination))))
 
 ===============================================================================
@@ -1579,13 +1578,15 @@ Some{"quotes"} be{'here'}yo
     (em_dash)
     (en_dash))
   (paragraph
-    (straight_quote)
-    (straight_quote))
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks))
   (paragraph
-    (straight_quote)
-    (straight_quote)
-    (straight_quote)
-    (straight_quote)))
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks)))
 
 ===============================================================================
 Backslash escape
