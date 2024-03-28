@@ -534,30 +534,6 @@
           "named": true
         },
         {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
-          "named": true
-        },
-        {
           "type": "link_reference_definition",
           "named": true
         },
@@ -571,6 +547,10 @@
         },
         {
           "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "section",
           "named": true
         },
         {
@@ -1952,6 +1932,89 @@
     "type": "reference_label",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "section",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_attribute",
+          "named": true
+        },
+        {
+          "type": "block_quote",
+          "named": true
+        },
+        {
+          "type": "code_block",
+          "named": true
+        },
+        {
+          "type": "div",
+          "named": true
+        },
+        {
+          "type": "footnote",
+          "named": true
+        },
+        {
+          "type": "heading1",
+          "named": true
+        },
+        {
+          "type": "heading2",
+          "named": true
+        },
+        {
+          "type": "heading3",
+          "named": true
+        },
+        {
+          "type": "heading4",
+          "named": true
+        },
+        {
+          "type": "heading5",
+          "named": true
+        },
+        {
+          "type": "heading6",
+          "named": true
+        },
+        {
+          "type": "link_reference_definition",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "raw_block",
+          "named": true
+        },
+        {
+          "type": "section",
+          "named": true
+        },
+        {
+          "type": "table",
+          "named": true
+        },
+        {
+          "type": "thematic_break",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "span",

@@ -23,7 +23,8 @@ module.exports = grammar({
   ],
 
   rules: {
-    document: ($) => seq(optional($.frontmatter), repeat($._block)),
+    document: ($) =>
+      seq(optional($.frontmatter), repeat($._block_with_section)),
 
     frontmatter: ($) =>
       seq(
@@ -37,12 +38,14 @@ module.exports = grammar({
       ),
     frontmatter_content: ($) => repeat1($._line),
 
-    // Every block contains a newline.
-    _block: ($) => choice($._block_without_standalone_newline, $._newline),
+    // A section is only valid on the top level, or nested inside other sections.
+    // Otherwise standalone headings are used (inside divs for example).
+    _block_with_section: ($) => choice($.section, $._block_element, $._newline),
+    _block_with_heading: ($) =>
+      choice($._heading, $._block_element, $._newline),
 
-    _block_without_standalone_newline: ($) =>
+    _block_element: ($) =>
       choice(
-        $._heading,
         $.list,
         $.table,
         $.footnote,
@@ -56,6 +59,10 @@ module.exports = grammar({
         $.block_attribute,
         $._paragraph,
       ),
+
+    // Section should end by a new header with the same or fewer amount of '#'.
+    section: ($) =>
+      seq($._heading, repeat($._block_with_section), $._block_close),
 
     // Headings can't be mixed, this verbose description (together with the external scanner)
     // ensures that they're not.
@@ -199,7 +206,7 @@ module.exports = grammar({
         $.list_marker_definition,
         alias($._paragraph_content, $.term),
         choice($._eof_or_blankline, $._close_paragraph),
-        alias(optional(repeat($._block)), $.definition),
+        alias(optional(repeat($._block_with_heading)), $.definition),
         $._list_item_end,
       ),
 
@@ -313,7 +320,8 @@ module.exports = grammar({
     _list_item_upper_roman_parens: ($) =>
       seq($.list_marker_upper_roman_parens, $.list_item_content),
 
-    list_item_content: ($) => seq(repeat1($._block), $._list_item_end),
+    list_item_content: ($) =>
+      seq(repeat1($._block_with_heading), $._list_item_end),
 
     table: ($) =>
       prec.right(
@@ -369,13 +377,13 @@ module.exports = grammar({
         $.footnote_content,
         $._footnote_end,
       ),
-    footnote_content: ($) => repeat1($._block),
+    footnote_content: ($) => repeat1($._block_with_heading),
 
     div: ($) =>
       seq(
         $.div_marker_begin,
         $._newline,
-        alias(repeat($._block), $.content),
+        alias(repeat($._block_with_heading), $.content),
         $._block_close,
         optional(alias($._div_end, $.div_marker_end)),
       ),
@@ -421,13 +429,9 @@ module.exports = grammar({
       ),
     _block_quote_content: ($) =>
       seq(
-        $._block_without_standalone_newline,
-        repeat(
-          seq(
-            $._block_quote_prefix,
-            optional($._block_without_standalone_newline),
-          ),
-        ),
+        // $._block_without_standalone_newline,
+        choice($._heading, $._block_element),
+        repeat(seq($._block_quote_prefix, optional($._block_element))),
       ),
     _block_quote_prefix: ($) =>
       prec.left(
@@ -759,6 +763,9 @@ module.exports = grammar({
     // Blocks.
     // The external scanner keeps a stack of blocks for context in order to
     // match and close against open blocks.
+
+    // Headings open and close sections, but they're not exposed to `grammar.js`
+    // but is used by the external scanner internally.
     $._heading1_begin,
     // Heading continuation can continue a heading, but only if
     // they match the number of `#` (or there's no `#`).
@@ -828,13 +835,14 @@ module.exports = grammar({
     $._table_caption_end,
 
     // Inline elements.
+
     // Verbatim is handled externally to match a varying number of `,
     // and to close open verbatim when a paragraph ends with a blankline.
     $._verbatim_begin,
     $._verbatim_end,
     $._verbatim_content,
 
-    // Never valid and is used to kill parse branches.
+    // Never valid and is only used to signal an internal scanner error.
     $._error,
   ],
 });

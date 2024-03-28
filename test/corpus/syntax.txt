@@ -70,7 +70,9 @@ Heading 1
 # Heading
 
 -------------------------------------------------------------------------------
-(document (heading1 (marker) (content)))
+(document
+  (section
+    (heading1 (marker) (content))))
 ===============================================================================
 Heading 2
 ===============================================================================
@@ -78,7 +80,8 @@ Heading 2
 
 -------------------------------------------------------------------------------
 (document
-  (heading2 (marker) (content)))
+  (section
+    (heading2 (marker) (content))))
 ===============================================================================
 Heading 3
 ===============================================================================
@@ -86,7 +89,8 @@ Heading 3
 
 -------------------------------------------------------------------------------
 (document
-  (heading3 (marker) (content)))
+  (section
+    (heading3 (marker) (content))))
 ===============================================================================
 Heading 4
 ===============================================================================
@@ -94,7 +98,8 @@ Heading 4
 
 -------------------------------------------------------------------------------
 (document
-  (heading4 (marker) (content)))
+  (section
+    (heading4 (marker) (content))))
 ===============================================================================
 Heading 5
 ===============================================================================
@@ -102,7 +107,8 @@ Heading 5
 
 -------------------------------------------------------------------------------
 (document
-  (heading5 (marker) (content)))
+  (section
+    (heading5 (marker) (content))))
 ===============================================================================
 Heading 6
 ===============================================================================
@@ -110,7 +116,8 @@ Heading 6
 
 -------------------------------------------------------------------------------
 (document
-  (heading6 (marker) (content)))
+  (section
+    (heading6 (marker) (content))))
 
 ===============================================================================
 Heading: multiple lines
@@ -124,10 +131,11 @@ A paragraph
 -------------------------------------------------------------------------------
 
 (document
-  (heading1
-    (marker)
-    (content))
-  (paragraph))
+  (section
+    (heading1
+      (marker)
+      (content))
+    (paragraph)))
 
 ===============================================================================
 Heading: multiple lines no # prefix
@@ -141,10 +149,11 @@ A paragraph
 -------------------------------------------------------------------------------
 
 (document
-  (heading1
-    (marker)
-    (content))
-  (paragraph))
+  (section
+    (heading1
+      (marker)
+      (content))
+    (paragraph)))
 
 ===============================================================================
 Heading 2: multiple lines
@@ -158,10 +167,11 @@ A paragraph
 -------------------------------------------------------------------------------
 
 (document
-  (heading2
-    (marker)
-    (content))
-  (paragraph))
+  (section
+    (heading2
+      (marker)
+      (content))
+    (paragraph)))
 
 ===============================================================================
 Heading 4: div closes
@@ -191,11 +201,12 @@ Heading 6: list closes
 -------------------------------------------------------------------------------
 
 (document
-  (heading6 (marker) (content))
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content (paragraph)))))
+  (section
+    (heading6 (marker) (content))
+    (list
+      (list_item
+        (list_marker_dash)
+        (list_item_content (paragraph))))))
 
 ===============================================================================
 Heading: followed by list
@@ -207,11 +218,84 @@ Heading: followed by list
 -------------------------------------------------------------------------------
 
 (document
-  (heading1 (marker) (content))
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content (paragraph)))))
+  (section
+    (heading1 (marker) (content))
+    (list
+      (list_item
+        (list_marker_dash)
+        (list_item_content (paragraph))))))
+
+===============================================================================
+Section: closed by the same level
+===============================================================================
+# First
+
+# Second
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading1 (marker) (content)))
+  (section
+    (heading1 (marker) (content))))
+
+===============================================================================
+Section: closed by a lower level
+===============================================================================
+## First
+
+# Second
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading2 (marker) (content)))
+  (section
+    (heading1 (marker) (content))))
+
+===============================================================================
+Section: not closed by higher level
+===============================================================================
+# First
+
+## Second
+
+### Third
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading1
+      (marker)
+      (content))
+    (section
+      (heading2 (marker) (content))
+      (section
+        (heading3 (marker) (content))))))
+
+===============================================================================
+Section: only allow sections on top level
+===============================================================================
+# First
+
+- text
+
+  # Second
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading1 (marker) (content))
+    (list
+      (list_item
+        (list_marker_dash)
+        (list_item_content
+          (paragraph)
+          (heading1 (marker) (content)))))))
 
 ===============================================================================
 Block quote: oneline
@@ -2815,7 +2899,8 @@ Footnote: before heading
     (footnote_marker_end)
     (footnote_content
       (paragraph)))
-  (heading1 (marker) (content)))
+  (section
+    (heading1 (marker) (content))))
 
 ===============================================================================
 Footnote: multiline

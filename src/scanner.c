@@ -82,6 +82,7 @@ typedef enum {
   BLOCK_QUOTE,
   CODE_BLOCK,
   DIV,
+  SECTION,
   HEADING,
   FOOTNOTE,
   TABLE_CAPTION,
@@ -1160,12 +1161,13 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
-  bool top_heading = top && top->type == HEADING;
 
   // Not technically needed, but allows us to skip unnecessary parsing.
   if (top && top->type == CODE_BLOCK) {
     return false;
   }
+
+  bool top_heading = top && top->type == HEADING;
 
   // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
@@ -1194,10 +1196,23 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
       return true;
     }
 
+    // Open a new heading.
     if (valid_symbols[start_token]) {
-      // Open a new heading.
-      lexer->mark_end(lexer);
+      // Sections are created on the root level (or nested inside other
+      // sections). They should be closed when a header with the same or fewer
+      // `#` is encountered, and then a new section should be started.
+      if (!top || (top->type == SECTION && top->level < hash_count)) {
+        push_block(s, SECTION, hash_count);
+      } else if (top && top->type == SECTION && top->level >= hash_count) {
+        // NOTE closing multiple nested sections requires us to re-scan the
+        // heading when we return without saving our work.
+        lexer->result_symbol = BLOCK_CLOSE;
+        remove_block(s);
+        return true;
+      }
+
       push_block(s, HEADING, hash_count);
+      lexer->mark_end(lexer);
       lexer->result_symbol = start_token;
       return true;
     }
@@ -1861,6 +1876,8 @@ static char *token_type_s(TokenType t) {
 
 static char *block_type_s(BlockType t) {
   switch (t) {
+  case SECTION:
+    return "SECTION";
   case HEADING:
     return "HEADING";
   case DIV:
