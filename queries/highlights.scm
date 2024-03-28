@@ -20,17 +20,19 @@
  (#set! "priority" 90))
 
 ; Remove @markup.raw for code with a language spec
-(code_block . (code_block_marker_begin) (language) (code) @none)
+(code_block . (code_block_marker_begin) (language) (code) @none
+ (#set! "priority" 90))
 
-([
+[
  (code_block_marker_begin)
  (code_block_marker_end)
  (raw_block_marker_begin)
  (raw_block_marker_end)
- ] @punctuation.delimiter
-   (#set! conceal ""))
+] @punctuation.delimiter
 
 (language) @attribute
+
+(inline_attribute _ @conceal (#set! conceal ""))
 
 ((language_marker) @punctuation.delimiter
                    (#set! conceal ""))
@@ -70,8 +72,10 @@
  (list_marker_upper_roman_parens)
  ] @markup.list
 
-(list_marker_task (unchecked) @constant.builtin) @markup.list.unchecked
-(list_marker_task (checked) @constant.builtin) @markup.list.checked
+(list_marker_task (unchecked)) @markup.list.unchecked
+(list_marker_task (checked)) @markup.list.checked
+((checked) @constant.builtin (#set! conceal "✓"))
+
 ; FIXME Not in nvim-treesitter
 (list_item (term) @type.definition)
 
@@ -94,17 +98,15 @@
    (#offset! @string.special 0 0 0 -1)
    (#set! conceal ""))
 
-((ellipsis) @string.special (#set! conceal "…"))
-((en_dash) @string.special (#set! conceal "–"))
-((em_dash) @string.special (#set! conceal "—"))
+(ellipsis) @string.special
+(en_dash) @string.special
+(em_dash) @string.special
 
-[
- (backslash_escape)
- (hard_line_break)
- ] @string.escape
+((hard_line_break) @string.escape (#set! conceal "↵"))
 
+(backslash_escape) @string.escape
 ; Only conceal \ but leave escaped character.
-((backslash_escape) @conceal (#offset! @conceal 0 0 0 -1) (#set! conceal ""))
+((backslash_escape) @string.escape (#offset! @string.escape 0 0 0 -1) (#set! conceal ""))
 
 (frontmatter_marker) @punctuation.delimiter
 
@@ -132,27 +134,19 @@
 (superscript) @markup.superscript
 (subscript) @markup.subscript
 
+; We need to target tokens specifically because `{=` etc can exist as fallback symbols in
+; regular text, which we don't want to highlight or conceal.
+(highlighted ["{=" "=}"] @punctuation.delimiter (#set! conceal ""))
+(insert ["{+" "+}"] @punctuation.delimiter (#set! conceal ""))
+(delete ["{-" "-}"] @punctuation.delimiter (#set! conceal ""))
+(superscript ["{^" "^}" "^"] @punctuation.delimiter (#set! conceal ""))
+(subscript ["{~" "~}" "~"] @punctuation.delimiter (#set! conceal ""))
+
 ([
  (emphasis_begin)
  (emphasis_end)
  (strong_begin)
  (strong_end)
- "~"
- "{~"
- "~}"
- "^"
- "{^"
- "^}"
- "{-"
- "-}"
- "{+"
- "+}"
- "{="
- "=}"
- ] @punctuation.delimiter
-  (#set! conceal ""))
-
-([
  (verbatim_marker_begin)
  (verbatim_marker_end)
  (math_marker)
@@ -166,23 +160,18 @@
 
 (math) @markup.math
 (verbatim) @markup.raw
-(raw_inline) @markup.raw
+((raw_inline) @markup.raw (#set! "priority" 90))
 
-[
- "{"
- "}"
- "!["
- "["
- "]"
- "[]"
- "("
- ")"
- "<"
- ">"
- ] @punctuation.bracket
+(link_text ["[" "]"] @punctuation.bracket (#set! conceal ""))
+(autolink ["<" ">"] @punctuation.bracket (#set! conceal ""))
+((inline_link (inline_link_destination) @markup.link.uri (#set! conceal "")))
 
 (comment) @comment
 (comment "%" @commeent (#set! conceal ""))
+
+(span ["[" "]"] @punctuation.bracket)
+(inline_attribute ["{" "}"] @punctuation.bracket)
+(block_attribute ["{" "}"] @punctuation.bracket)
 
 [
   (class)
@@ -203,7 +192,11 @@
   (link_text) @markup.link)
 
 (full_reference_link
-  (link_label) @markup.link.label)
+  (link_label) @markup.link.label (#set! conceal ""))
+
+(collapsed_reference_link "[]" @punctuation.bracket (#set! conceal ""))
+
+(full_reference_link ["[" "]"] @punctuation.bracket (#set! conceal ""))
 
 (collapsed_reference_link
   (link_text) @markup.link)
@@ -217,11 +210,22 @@
 (full_reference_image
   (link_label) @markup.link.label)
 
-; FIXME maybe something better here?
+(full_reference_image ["![" "[" "]"] @punctuation.bracket)
+
+(collapsed_reference_image ["![" "]"] @punctuation.bracket)
+
+(inline_image ["![" "]"] @punctuation.bracket)
+
+; I couldn't merge these two, possibly a bug?
 (image_description) @markup.italic
+(image_description ["[" "]"] @punctuation.bracket)
+
+(link_reference_definition ["[" "]"] @punctuation.bracket)
 
 (link_reference_definition
   (link_label) @markup.link.label)
+
+(inline_link_destination ["(" ")"] @punctuation.bracket)
 
 [
  (autolink)

@@ -6,12 +6,6 @@
   (raw_block_info (language) @injection.language)
   (content) @injection.content)
 
-; There's no "latex-math" I could find?
-; How should we manage injection?
-; (math
-;   (content) @injection.content
-;   (#set! injection.language "latex"))
-
 (raw_inline
   (content) @injection.content
   (raw_inline_attribute

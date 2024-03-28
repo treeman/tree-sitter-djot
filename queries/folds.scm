@@ -16,5 +16,3 @@
 ] @fold
   (#trim! @fold))
 
-; (div) @fold
-; (code_block) @fold

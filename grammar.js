@@ -637,7 +637,6 @@ module.exports = grammar({
 
     link_text: ($) => seq("[", $._inline, "]"),
 
-    // FIXME link label should only capture inlIne
     _link_label: ($) =>
       seq("[", alias($._inline, $.link_label), token.immediate("]")),
     inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
