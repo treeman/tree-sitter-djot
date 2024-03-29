@@ -68,8 +68,6 @@
 (table_caption
   (marker) @punctuation.special)
 
-; FIXME this one is wrong in nvim-treesitter I think
-; (table_caption) @markup.heading
 (table_caption) @markup.italic
 
 [
@@ -103,7 +101,12 @@
 ((checked) @constant.builtin
   (#set! conceal "✓"))
 
-; FIXME Not in nvim-treesitter
+[
+  (ellipsis)
+  (en_dash)
+  (em_dash)
+] @string.special
+
 (list_item
   (term) @type.definition)
 
@@ -130,12 +133,6 @@
   (#offset! @string.special 0 0 0 -1)
   (#set! conceal ""))
 
-(ellipsis) @string.special
-
-(en_dash) @string.special
-
-(em_dash) @string.special
-
 ((hard_line_break) @string.escape
   (#set! conceal "↵"))
 
@@ -158,15 +155,8 @@
 
 (delete) @markup.strikethrough
 
-; FIXME For nvim-treesitter
-; (highlighted) @string.special
-; (superscript) @string.special
-; (subscript) @string.special
-; TODO
-; @markup.caption in various places?
-; Instead of @markup.italic?
-; Maybe italic is fine...
-; For our query
+; Note that these aren't standard in nvim-treesitter,
+; but I didn't find any that fit well.
 (highlighted) @markup.highlighted
 
 (superscript) @markup.superscript
@@ -198,17 +188,17 @@
 
 (superscript
   [
+    "^"
     "{^"
     "^}"
-    "^"
   ] @punctuation.delimiter
   (#set! conceal ""))
 
 (subscript
   [
+    "~"
     "{~"
     "~}"
-    "~"
   ] @punctuation.delimiter
   (#set! conceal ""))
 
@@ -228,30 +218,13 @@
 ] @punctuation.delimiter
   (#set! conceal ""))
 
-(math) @markup.math
+((math) @markup.math
+  (#set! "priority" 90))
 
 (verbatim) @markup.raw
 
 ((raw_inline) @markup.raw
   (#set! "priority" 90))
-
-(link_text
-  [
-    "["
-    "]"
-  ] @punctuation.bracket
-  (#set! conceal ""))
-
-(autolink
-  [
-    "<"
-    ">"
-  ] @punctuation.bracket
-  (#set! conceal ""))
-
-(inline_link
-  (inline_link_destination) @markup.link.uri
-  (#set! conceal ""))
 
 (comment) @comment
 
@@ -292,6 +265,24 @@
 
 (key_value
   (value) @string)
+
+(link_text
+  [
+    "["
+    "]"
+  ] @punctuation.bracket
+  (#set! conceal ""))
+
+(autolink
+  [
+    "<"
+    ">"
+  ] @punctuation.bracket
+  (#set! conceal ""))
+
+(inline_link
+  (inline_link_destination) @markup.link.uri
+  (#set! conceal ""))
 
 (link_reference_definition
   ":" @punctuation.special)
@@ -345,7 +336,6 @@
     "]"
   ] @punctuation.bracket)
 
-; I couldn't merge these two, possibly a bug?
 (image_description) @markup.italic
 
 (image_description
