@@ -164,17 +164,26 @@
           "name": "_heading"
         },
         {
-          "type": "REPEAT",
+          "type": "ALIAS",
           "content": {
-            "type": "SYMBOL",
-            "name": "_block_with_section"
-          }
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_block_with_section"
+            }
+          },
+          "named": true,
+          "value": "section_content"
         },
         {
           "type": "SYMBOL",
           "name": "_block_close"
         }
       ]
+    },
+    "section_content": {
+      "type": "SEQ",
+      "members": []
     },
     "_heading": {
       "type": "CHOICE",

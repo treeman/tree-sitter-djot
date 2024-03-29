@@ -11,14 +11,16 @@
 
 ; Classes, the highest level
 (thematic_break) @class.outer
-(heading1 (content) @class.inner) @class.outer
-(heading2 (content) @class.inner) @class.outer
-(heading3 (content) @class.inner) @class.outer
-(heading4 (content) @class.inner) @class.outer
-(heading5 (content) @class.inner) @class.outer
-(heading6 (content) @class.inner) @class.outer
+(section (section_content) @class.inner (#offset! @class.inner 0 0 -1 0)) @class.outer
+; (section (section_content) @class.inner) @class.outer
 
 ; Functions, the next level
+(heading1 (content) @function.inner) @function.outer
+(heading2 (content) @function.inner) @function.outer
+(heading3 (content) @function.inner) @function.outer
+(heading4 (content) @function.inner) @function.outer
+(heading5 (content) @function.inner) @function.outer
+(heading6 (content) @function.inner) @function.outer
 (div (content) @function.inner) @function.outer
 (block_quote (content) @function.inner) @function.outer
 (code_block (code) @function.inner) @function.outer

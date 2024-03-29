@@ -62,7 +62,12 @@ module.exports = grammar({
 
     // Section should end by a new header with the same or fewer amount of '#'.
     section: ($) =>
-      seq($._heading, repeat($._block_with_section), $._block_close),
+      seq(
+        $._heading,
+        alias(repeat($._block_with_section), $.section_content),
+        $._block_close,
+      ),
+    section_content: ($) => seq(),
 
     // Headings can't be mixed, this verbose description (together with the external scanner)
     // ensures that they're not.

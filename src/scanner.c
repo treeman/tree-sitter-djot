@@ -1192,7 +1192,8 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     if (valid_symbols[BLOCK_CLOSE] && top_heading && top->level != hash_count) {
       // Found a mismatched heading level, need to close the previous
       // before opening this one.
-      close_blocks_with_final_token(s, lexer, 1, start_token, hash_count + 1);
+      lexer->result_symbol = BLOCK_CLOSE;
+      remove_block(s);
       return true;
     }
 
@@ -1473,9 +1474,16 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  Block *top = peek_block(s);
+
+  // Disallow `NEWLINE_INLINE` inside headings as it uses lines of inline
+  // with heading continuations instead.
+  if (top && top->type == HEADING) {
+    return false;
+  }
+
   // Need an extra check so we don't emit a NEWLINE_INLINE at the end
   // of a table caption if there's a mismatched indent.
-  Block *top = peek_block(s);
   if (top && top->type == TABLE_CAPTION && next_line_whitespace < top->level) {
     return false;
   }

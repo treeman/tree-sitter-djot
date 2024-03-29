@@ -134,8 +134,10 @@ A paragraph
   (section
     (heading1
       (marker)
-      (content))
-    (paragraph)))
+      (content
+        (marker)
+        (marker)))
+    (section_content (paragraph))))
 
 ===============================================================================
 Heading: multiple lines no # prefix
@@ -152,8 +154,10 @@ A paragraph
   (section
     (heading1
       (marker)
-      (content))
-    (paragraph)))
+      (content
+        (marker)
+        (marker)))
+    (section_content (paragraph))))
 
 ===============================================================================
 Heading 2: multiple lines
@@ -170,8 +174,47 @@ A paragraph
   (section
     (heading2
       (marker)
+      (content
+        (marker)
+        (marker)))
+    (section_content (paragraph))))
+
+===============================================================================
+Heading: closed by higher heading on the next line
+===============================================================================
+# One
+## Two
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading1
+      (marker)
       (content))
-    (paragraph)))
+    (section_content
+      (section
+        (heading2
+          (marker)
+          (content))))))
+
+===============================================================================
+Heading: closed by lower heading on the next line
+===============================================================================
+## One
+# Two
+
+-------------------------------------------------------------------------------
+
+(document
+  (section
+    (heading2
+      (marker)
+      (content)))
+  (section
+    (heading1
+      (marker)
+      (content))))
 
 ===============================================================================
 Heading 4: div closes
@@ -203,10 +246,11 @@ Heading 6: list closes
 (document
   (section
     (heading6 (marker) (content))
-    (list
-      (list_item
-        (list_marker_dash)
-        (list_item_content (paragraph))))))
+    (section_content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content (paragraph)))))))
 
 ===============================================================================
 Heading: followed by list
@@ -220,10 +264,11 @@ Heading: followed by list
 (document
   (section
     (heading1 (marker) (content))
-    (list
-      (list_item
-        (list_marker_dash)
-        (list_item_content (paragraph))))))
+    (section_content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content (paragraph)))))))
 
 ===============================================================================
 Section: closed by the same level
@@ -236,7 +281,8 @@ Section: closed by the same level
 
 (document
   (section
-    (heading1 (marker) (content)))
+    (heading1 (marker) (content))
+    (section_content))
   (section
     (heading1 (marker) (content))))
 
@@ -251,7 +297,8 @@ Section: closed by a lower level
 
 (document
   (section
-    (heading2 (marker) (content)))
+    (heading2 (marker) (content))
+    (section_content))
   (section
     (heading1 (marker) (content))))
 
@@ -271,10 +318,12 @@ Section: not closed by higher level
     (heading1
       (marker)
       (content))
-    (section
-      (heading2 (marker) (content))
+    (section_content
       (section
-        (heading3 (marker) (content))))))
+        (heading2 (marker) (content))
+        (section_content
+          (section
+            (heading3 (marker) (content))))))))
 
 ===============================================================================
 Section: only allow sections on top level
@@ -290,12 +339,13 @@ Section: only allow sections on top level
 (document
   (section
     (heading1 (marker) (content))
-    (list
-      (list_item
-        (list_marker_dash)
-        (list_item_content
-          (paragraph)
-          (heading1 (marker) (content)))))))
+    (section_content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)
+            (heading1 (marker) (content))))))))
 
 ===============================================================================
 Block quote: oneline
