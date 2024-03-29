@@ -99,6 +99,7 @@
   (checked)) @markup.list.checked
 
 ((checked) @constant.builtin
+  (#offset! @constant.builtin 0 1 0 -1)
   (#set! conceal "✓"))
 
 [

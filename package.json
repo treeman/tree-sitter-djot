@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-djot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "bindings/node",
   "types": "bindings/node",
@@ -27,7 +27,7 @@
     }
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.21",
+    "tree-sitter-cli": "^0.22.1",
     "prebuildify": "^6.0.0"
   },
   "tree-sitter": [

@@ -66,6 +66,11 @@
     }
   },
   {
+    "type": "checked",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "class",
     "named": false,
     "fields": {}
@@ -2609,6 +2614,11 @@
     "fields": {}
   },
   {
+    "type": "unchecked",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "value",
     "named": true,
     "fields": {}
@@ -2721,6 +2731,10 @@
     "named": false
   },
   {
+    "type": "X",
+    "named": false
+  },
+  {
     "type": "XXX",
     "named": false
   },
@@ -2762,10 +2776,6 @@
   },
   {
     "type": "block_quote_marker",
-    "named": true
-  },
-  {
-    "type": "checked",
     "named": true
   },
   {
@@ -2945,16 +2955,16 @@
     "named": true
   },
   {
-    "type": "unchecked",
-    "named": true
-  },
-  {
     "type": "verbatim_marker_begin",
     "named": true
   },
   {
     "type": "verbatim_marker_end",
     "named": true
+  },
+  {
+    "type": "x",
+    "named": false
   },
   {
     "type": "{",

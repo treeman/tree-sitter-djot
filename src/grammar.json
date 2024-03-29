@@ -181,10 +181,6 @@
         }
       ]
     },
-    "section_content": {
-      "type": "SEQ",
-      "members": []
-    },
     "_heading": {
       "type": "CHOICE",
       "members": [
@@ -861,6 +857,28 @@
           "name": "_list_marker_task_begin"
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "checked"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "unchecked"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_whitespace1"
+        }
+      ]
+    },
+    "checked": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "STRING",
           "value": "["
         },
@@ -868,41 +886,35 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "STRING",
-                "value": " "
-              },
-              "named": true,
-              "value": "unchecked"
+              "type": "STRING",
+              "value": "x"
             },
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "x"
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "X"
-                  }
-                ]
-              },
-              "named": true,
-              "value": "checked"
+              "type": "STRING",
+              "value": "X"
             }
           ]
         },
         {
           "type": "STRING",
           "value": "]"
+        }
+      ]
+    },
+    "unchecked": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
         },
         {
-          "type": "SYMBOL",
-          "name": "_whitespace1"
+          "type": "STRING",
+          "value": " "
+        },
+        {
+          "type": "STRING",
+          "value": "]"
         }
       ]
     },

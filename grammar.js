@@ -197,11 +197,11 @@ module.exports = grammar({
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
-        "[",
-        choice(alias(" ", $.unchecked), alias(choice("x", "X"), $.checked)),
-        "]",
+        choice($.checked, $.unchecked),
         $._whitespace1,
       ),
+    checked: (_) => seq("[", choice("x", "X"), "]"),
+    unchecked: (_) => seq("[", " ", "]"),
 
     _list_definition: ($) =>
       seq(repeat1(alias($._list_item_definition, $.list_item)), $._block_close),
@@ -433,7 +433,6 @@ module.exports = grammar({
       ),
     _block_quote_content: ($) =>
       seq(
-        // $._block_without_standalone_newline,
         choice($._heading, $._block_element),
         repeat(seq($._block_quote_prefix, optional($._block_element))),
       ),
