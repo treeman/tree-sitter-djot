@@ -1,11 +1,17 @@
-; Not sure if this is needed?
-(document) @local.scope
+(link_reference_definition
+  (link_label) @local.definition)
 
-; FIXME no idea if these work
-(link_reference_definition (link_label) @local.definition)
-(footnote (reference_label) @local.definition)
+(footnote
+  (reference_label) @local.definition)
 
-(collapsed_reference_link (link_text) @local.reference)
-(full_reference_link (link_label) @local.reference)
-(full_reference_image (link_label) @local.reference)
-(footnote_reference (reference_label) @local.reference)
+(collapsed_reference_link
+  (link_text) @local.reference)
+
+(full_reference_link
+  (link_label) @local.reference)
+
+(full_reference_image
+  (link_label) @local.reference)
+
+(footnote_reference
+  (reference_label) @local.reference)

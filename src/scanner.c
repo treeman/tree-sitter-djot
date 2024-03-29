@@ -82,6 +82,7 @@ typedef enum {
   BLOCK_QUOTE,
   CODE_BLOCK,
   DIV,
+  SECTION,
   HEADING,
   FOOTNOTE,
   TABLE_CAPTION,
@@ -566,7 +567,8 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
     }
   }
   // VERBATIM_END is handled by `parse_verbatim_content`.
-  if (valid_symbols[VERBATIM_BEGIN]) {
+  // Don't capture leading whitespace for prettier conceal.
+  if (valid_symbols[VERBATIM_BEGIN] && s->whitespace == 0) {
     output_verbatim_begin(s, lexer, ticks);
     return true;
   }
@@ -1159,12 +1161,13 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
-  bool top_heading = top && top->type == HEADING;
 
   // Not technically needed, but allows us to skip unnecessary parsing.
   if (top && top->type == CODE_BLOCK) {
     return false;
   }
+
+  bool top_heading = top && top->type == HEADING;
 
   // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
@@ -1189,14 +1192,28 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     if (valid_symbols[BLOCK_CLOSE] && top_heading && top->level != hash_count) {
       // Found a mismatched heading level, need to close the previous
       // before opening this one.
-      close_blocks_with_final_token(s, lexer, 1, start_token, hash_count + 1);
+      lexer->result_symbol = BLOCK_CLOSE;
+      remove_block(s);
       return true;
     }
 
+    // Open a new heading.
     if (valid_symbols[start_token]) {
-      // Open a new heading.
-      lexer->mark_end(lexer);
+      // Sections are created on the root level (or nested inside other
+      // sections). They should be closed when a header with the same or fewer
+      // `#` is encountered, and then a new section should be started.
+      if (!top || (top->type == SECTION && top->level < hash_count)) {
+        push_block(s, SECTION, hash_count);
+      } else if (top && top->type == SECTION && top->level >= hash_count) {
+        // NOTE closing multiple nested sections requires us to re-scan the
+        // heading when we return without saving our work.
+        lexer->result_symbol = BLOCK_CLOSE;
+        remove_block(s);
+        return true;
+      }
+
       push_block(s, HEADING, hash_count);
+      lexer->mark_end(lexer);
       lexer->result_symbol = start_token;
       return true;
     }
@@ -1457,9 +1474,16 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  Block *top = peek_block(s);
+
+  // Disallow `NEWLINE_INLINE` inside headings as it uses lines of inline
+  // with heading continuations instead.
+  if (top && top->type == HEADING) {
+    return false;
+  }
+
   // Need an extra check so we don't emit a NEWLINE_INLINE at the end
   // of a table caption if there's a mismatched indent.
-  Block *top = peek_block(s);
   if (top && top->type == TABLE_CAPTION && next_line_whitespace < top->level) {
     return false;
   }
@@ -1860,6 +1884,8 @@ static char *token_type_s(TokenType t) {
 
 static char *block_type_s(BlockType t) {
   switch (t) {
+  case SECTION:
+    return "SECTION";
   case HEADING:
     return "HEADING";
   case DIV:
