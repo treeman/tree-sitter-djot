@@ -4,10 +4,6 @@
 ; For instance "change inner function" allows us to replace an
 ; entire block quote, leaving the ">" prefix.
 ; The choices are a bit subjective though.
-; Custom textobject to jump between top headers
-; FIXME not standard, move to nvim config.
-(heading1) @heading1
-
 ; Classes, the highest level
 (thematic_break) @class.outer
 
@@ -15,7 +11,6 @@
   (section_content) @class.inner
   (#offset! @class.inner 0 0 -1 0)) @class.outer
 
-; (section (section_content) @class.inner) @class.outer
 ; Functions, the next level
 (heading1
   (content) @function.inner) @function.outer
@@ -50,8 +45,6 @@
 ; Inner selects current list item, outer selects whole list
 (list
   (_) @function.inner) @function.outer
-
-
 
 ; Inner selects row, outer selects whole table
 (table
