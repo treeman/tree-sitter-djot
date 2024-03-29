@@ -67,7 +67,6 @@ module.exports = grammar({
         alias(repeat($._block_with_section), $.section_content),
         $._block_close,
       ),
-    section_content: ($) => seq(),
 
     // Headings can't be mixed, this verbose description (together with the external scanner)
     // ensures that they're not.

@@ -5,4 +5,6 @@
 (list_item_content) @indent.auto
 
 (footnote_content) @indent.align
-((table_caption) @indent.begin (#set! indent.immediate 1))
+
+((table_caption) @indent.begin
+  (#set! indent.immediate 1))

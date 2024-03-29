@@ -3,7 +3,8 @@
   (code) @injection.content)
 
 (raw_block
-  (raw_block_info (language) @injection.language)
+  (raw_block_info
+    (language) @injection.language)
   (content) @injection.content)
 
 (raw_inline
