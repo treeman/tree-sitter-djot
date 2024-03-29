@@ -1,3 +1,6 @@
+; Please note that each editor handles highlighting differently.
+; This file is made with Neovim in mind and will not
+; work correctly in other editors, but can serve as a starting point.
 (heading1) @markup.heading.1
 
 (heading2) @markup.heading.2
