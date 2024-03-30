@@ -227,10 +227,8 @@
 ((raw_inline) @markup.raw
   (#set! "priority" 90))
 
-(comment) @comment
-
 (comment
-  "%" @commeent
+  "%" @comment
   (#set! conceal ""))
 
 (span
@@ -282,7 +280,7 @@
   (#set! conceal ""))
 
 (inline_link
-  (inline_link_destination) @markup.link.uri
+  (inline_link_destination) @markup.link.url
   (#set! conceal ""))
 
 (link_reference_definition
