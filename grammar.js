@@ -417,10 +417,10 @@ module.exports = grammar({
       ),
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
-    language: (_) => /[^\n\t \{\}=]+/,
+    language: (_) => /[^\n\r\t \{\}=]+/,
     code: ($) =>
       prec.left(repeat1(seq(optional($._block_quote_prefix), $._line))),
-    _line: ($) => seq(/[^\n]*/, $._newline),
+    _line: ($) => seq(/[^\n\r]*/, $._newline),
 
     thematic_break: ($) =>
       choice($._thematic_break_dash, $._thematic_break_star),
@@ -474,7 +474,7 @@ module.exports = grammar({
     identifier: (_) => token(seq("#", token.immediate(/[^\s\}]+/))),
     key_value: ($) => seq($.key, "=", $.value),
     key: ($) => $._id,
-    value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
+    value: (_) => choice(seq('"', /[^"\n\r]+/, '"'), /\w+/),
 
     // Paragraphs are a bit special parsing wise as it's the "fallback"
     // block, where everything that doesn't fit will go.
@@ -575,7 +575,7 @@ module.exports = grammar({
     em_dash: (_) => "---",
     en_dash: (_) => "--",
 
-    backslash_escape: (_) => /\\[^\\\n]/,
+    backslash_escape: (_) => /\\[^\\\n\r]/,
 
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
@@ -672,7 +672,7 @@ module.exports = grammar({
     _comment_with_newline: ($) =>
       seq("%", $._whitespace, alias(/[^%]+/, $.content), "%"),
     _comment_no_newline: ($) =>
-      seq("%", $._whitespace, alias(/[^%\n]+/, $.content), "%"),
+      seq("%", $._whitespace, alias(/[^%\n\r]+/, $.content), "%"),
 
     raw_inline: ($) =>
       seq(
