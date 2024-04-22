@@ -469,6 +469,7 @@ module.exports = grammar({
           $.args,
         ),
         "}",
+        $._newline,
       ),
     class: ($) => seq(".", alias($.class_name, "class")),
     identifier: (_) => token(seq("#", token.immediate(/[^\s\}]+/))),
