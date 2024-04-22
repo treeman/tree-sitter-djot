@@ -2778,7 +2778,7 @@
     },
     "backslash_escape": {
       "type": "PATTERN",
-      "value": "\\\\[^\\\\\\n]"
+      "value": "\\\\[^\\\\\\r\\n]"
     },
     "autolink": {
       "type": "SEQ",
