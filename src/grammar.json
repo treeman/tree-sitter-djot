@@ -2262,6 +2262,10 @@
         {
           "type": "STRING",
           "value": "}"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_newline"
         }
       ]
     },
@@ -2600,6 +2604,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "_link"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "comment"
                   },
                   {
                     "type": "SYMBOL",
@@ -3405,6 +3413,23 @@
         }
       ]
     },
+    "comment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_comment_with_newline"
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
     "span": {
       "type": "SEQ",
       "members": [
@@ -3440,8 +3465,24 @@
         {
           "type": "ALIAS",
           "content": {
-            "type": "PATTERN",
-            "value": "[^%]+"
+            "type": "REPEAT",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "backslash_escape"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "[^%\\n]"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                }
+              ]
+            }
           },
           "named": true,
           "value": "content"
@@ -3460,14 +3501,22 @@
           "value": "%"
         },
         {
-          "type": "SYMBOL",
-          "name": "_whitespace"
-        },
-        {
           "type": "ALIAS",
           "content": {
-            "type": "PATTERN",
-            "value": "[^%\\n]+"
+            "type": "REPEAT",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "backslash_escape"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "[^%\\n]"
+                }
+              ]
+            }
           },
           "named": true,
           "value": "content"
