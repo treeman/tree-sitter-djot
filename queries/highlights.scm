@@ -227,8 +227,15 @@
 ((raw_inline) @markup.raw
   (#set! "priority" 90))
 
+(comment) @comment
+
+; Don't conceal standalone comments themselves, only delimiters.
 (comment
-  "%" @comment
+  [
+    "{"
+    "}"
+    "%"
+  ] @comment
   (#set! conceal ""))
 
 (span

@@ -540,6 +540,7 @@ module.exports = grammar({
               $.span,
               $._image,
               $._link,
+              $.comment,
               $._todo_highlights,
               $._symbol_fallback,
               $._text,
@@ -667,12 +668,30 @@ module.exports = grammar({
         "}",
       ),
 
+    // An inline attribute is only allowed to have surrounding spaces
+    // if it only contains a comment.
+    comment: ($) => seq("{", $._comment_with_newline, "}"),
+
     span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
     _comment_with_newline: ($) =>
-      seq("%", $._whitespace, alias(/[^%]+/, $.content), "%"),
+      seq(
+        "%",
+        // With a whitespace here there's weirdly enough no conflict with
+        // `_comment_no_newline` despite only a single choice difference.
+        $._whitespace,
+        alias(
+          repeat(choice($.backslash_escape, /[^%\n]/, $._newline)),
+          $.content,
+        ),
+        "%",
+      ),
     _comment_no_newline: ($) =>
-      seq("%", $._whitespace, alias(/[^%\n]+/, $.content), "%"),
+      seq(
+        "%",
+        alias(repeat(choice($.backslash_escape, /[^%\n]/)), $.content),
+        "%",
+      ),
 
     raw_inline: ($) =>
       seq(
