@@ -248,6 +248,11 @@ static uint8_t consume_whitespace(TSLexer *lexer) {
     if (lexer->lookahead == ' ') {
       lexer->advance(lexer, false);
       ++indent;
+      // Carriage returns should simply be ignored,
+      // consuming the carriage return here takes care of almost all
+      // special case handling.
+    } else if (lexer->lookahead == '\r') {
+      lexer->advance(lexer, false);
     } else if (lexer->lookahead == '\t') {
       lexer->advance(lexer, false);
       indent += 4;
@@ -903,6 +908,8 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
       lexer->advance(lexer, false);
     } else if (lexer->lookahead == ' ') {
       lexer->advance(lexer, false);
+    } else if (lexer->lookahead == '\r') {
+      lexer->advance(lexer, false);
     } else if (lexer->lookahead == '\n') {
       return seen;
     } else {
@@ -1250,6 +1257,11 @@ static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
     return false;
   }
   lexer->advance(lexer, false);
+
+  // Carriage returns should be ignored.
+  if (lexer->lookahead == '\r') {
+    lexer->advance(lexer, false);
+  }
   if (lexer->lookahead == ' ') {
     lexer->advance(lexer, false);
     return true;
@@ -1978,6 +1990,10 @@ static void dump_valid_symbols(const bool *valid_symbols) {
   //     printf("%s\n", token_type_s(i));
   //   }
   // }
+  if (valid_symbols[ERROR]) {
+    printf("# In error recovery ALL SYMBOLS ARE VALID\n");
+    return;
+  }
   printf("# valid_symbols (shortened):\n");
   for (int i = 0; i <= ERROR; ++i) {
     switch (i) {

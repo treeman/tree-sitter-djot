@@ -577,7 +577,7 @@ module.exports = grammar({
     em_dash: (_) => "---",
     en_dash: (_) => "--",
 
-    backslash_escape: (_) => /\\[^\\\n]/,
+    backslash_escape: (_) => /\\[^\\\r\n]/,
 
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
