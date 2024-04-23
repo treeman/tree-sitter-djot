@@ -1163,18 +1163,17 @@ static TokenType heading_continuation_token(uint8_t level) {
 
 static bool parse_heading(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
-  // It's fine to always consume, since this only parses '#'
-  uint8_t hash_count = consume_chars(lexer, '#');
-
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
 
-  // Not technically needed, but allows us to skip unnecessary parsing.
-  if (top && top->type == CODE_BLOCK) {
+  // Avoids consuming `#` inside code/verbatim contexts.
+  if (top && top->type == CODE_BLOCK || s->verbatim_tick_count > 0) {
     return false;
   }
 
   bool top_heading = top && top->type == HEADING;
+
+  uint8_t hash_count = consume_chars(lexer, '#');
 
   // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
