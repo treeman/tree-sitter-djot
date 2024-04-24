@@ -804,17 +804,7 @@
   {
     "type": "hard_line_break",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "block_quote_marker",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "heading1",
@@ -2318,6 +2308,10 @@
         },
         {
           "type": "backslash_escape",
+          "named": true
+        },
+        {
+          "type": "block_quote_marker",
           "named": true
         },
         {

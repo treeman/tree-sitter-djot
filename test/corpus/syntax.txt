@@ -466,8 +466,8 @@ Block quote: with hard line break
     (block_quote_marker)
     (content
       (paragraph
-        (hard_line_break
-          (block_quote_marker))))))
+        (hard_line_break)
+        (block_quote_marker)))))
 
 ===============================================================================
 Block quote: contain code block
@@ -3253,6 +3253,10 @@ x * x*
 
 -
 
+[x](
+
+)
+
 -------------------------------------------------------------------------------
 
 (document
@@ -3281,6 +3285,8 @@ x * x*
       (verbatim_marker_begin)
       (content)
       (verbatim_marker_end)))
+  (paragraph)
+  (paragraph)
   (paragraph)
   (paragraph))
 

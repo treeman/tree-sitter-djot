@@ -2531,7 +2531,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "hard_line_break"
+                    "name": "_hard_line_break"
                   },
                   {
                     "type": "SYMBOL",
@@ -2686,16 +2686,12 @@
         }
       ]
     },
-    "hard_line_break": {
+    "_hard_line_break": {
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "\\"
-        },
-        {
           "type": "SYMBOL",
-          "name": "_newline"
+          "name": "hard_line_break"
         },
         {
           "type": "CHOICE",
@@ -2708,6 +2704,19 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "hard_line_break": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\\"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_newline"
         }
       ]
     },
@@ -3347,7 +3356,7 @@
         },
         {
           "type": "PATTERN",
-          "value": "[^\\)]+"
+          "value": "[^\\n\\)]+"
         },
         {
           "type": "STRING",

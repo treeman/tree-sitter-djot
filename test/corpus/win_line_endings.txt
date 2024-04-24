@@ -170,8 +170,8 @@ Block quote: with hard line break
     (block_quote_marker)
     (content
       (paragraph
-        (hard_line_break
-          (block_quote_marker))))))
+        (hard_line_break)
+        (block_quote_marker)))))
 
 ===============================================================================
 Code block: empty

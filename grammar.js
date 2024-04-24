@@ -522,7 +522,7 @@ module.exports = grammar({
         choice(
           seq(
             choice(
-              $.hard_line_break,
+              $._hard_line_break,
               $._smart_punctuation,
               $.backslash_escape,
               $.autolink,
@@ -567,8 +567,9 @@ module.exports = grammar({
 
     _inline_line: ($) => seq($._inline, $._newline),
 
-    hard_line_break: ($) =>
-      seq("\\", $._newline, optional($._block_quote_prefix)),
+    _hard_line_break: ($) =>
+      seq($.hard_line_break, optional($._block_quote_prefix)),
+    hard_line_break: ($) => seq("\\", $._newline),
 
     _smart_punctuation: ($) =>
       choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
@@ -648,7 +649,7 @@ module.exports = grammar({
 
     _link_label: ($) =>
       seq("[", alias($._inline, $.link_label), token.immediate("]")),
-    inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
+    inline_link_destination: (_) => seq("(", /[^\n\)]+/, ")"),
 
     inline_attribute: ($) =>
       seq(
