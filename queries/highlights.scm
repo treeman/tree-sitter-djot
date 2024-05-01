@@ -1,6 +1,35 @@
 ; Please note that each editor handles highlighting differently.
 ; This file is made with Neovim in mind and will not
 ; work correctly in other editors, but can serve as a starting point.
+[
+  (paragraph)
+  (comment)
+  (table_cell)
+] @spell
+
+[
+  (autolink)
+  (inline_link_destination)
+  (link_destination)
+  (code_block)
+  (raw_block)
+  (math)
+  (raw_inline)
+  (verbatim)
+  (reference_label)
+  (class)
+  (class_name)
+  (identifier)
+  (key_value)
+  (frontmatter)
+] @nospell
+
+(full_reference_link
+  (link_label) @nospell)
+
+(full_reference_image
+  (link_label) @nospell)
+
 (heading1) @markup.heading.1
 
 (heading2) @markup.heading.2
@@ -388,32 +417,3 @@
 (note) @comment.note
 
 (fixme) @comment.error
-
-[
-  (paragraph)
-  (comment)
-  (table_cell)
-] @spell
-
-[
-  (autolink)
-  (inline_link_destination)
-  (link_destination)
-  (code_block)
-  (raw_block)
-  (math)
-  (raw_inline)
-  (verbatim)
-  (reference_label)
-  (class)
-  (class_name)
-  (identifier)
-  (key_value)
-  (frontmatter)
-] @nospell
-
-(full_reference_link
-  (link_label) @nospell)
-
-(full_reference_image
-  (link_label) @nospell)
