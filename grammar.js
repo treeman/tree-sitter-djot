@@ -544,7 +544,7 @@ module.exports = grammar({
               $.comment,
               $._todo_highlights,
               $._symbol_fallback,
-              $._text,
+              $.text,
             ),
             optional($.inline_attribute),
           ),
@@ -750,7 +750,7 @@ module.exports = grammar({
         ),
       ),
     // It's a bit faster with repeat1 here.
-    _text: (_) => repeat1(/\S/),
+    text: (_) => /([^!*\[^_{|~<$\n\r]|![^\[])+/,
   },
 
   externals: ($) => [

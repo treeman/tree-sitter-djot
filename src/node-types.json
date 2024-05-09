@@ -364,6 +364,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "thematic_break",
           "named": true
         },
@@ -1064,6 +1068,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "todo",
           "named": true
         },
@@ -1300,6 +1308,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "todo",
           "named": true
         },
@@ -1455,6 +1467,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "text",
           "named": true
         },
         {
@@ -1845,6 +1861,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "todo",
           "named": true
         },
@@ -2175,6 +2195,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "todo",
           "named": true
         },
@@ -2423,6 +2447,10 @@
           "named": true
         },
         {
+          "type": "text",
+          "named": true
+        },
+        {
           "type": "todo",
           "named": true
         },
@@ -2616,6 +2644,10 @@
         },
         {
           "type": "symbol",
+          "named": true
+        },
+        {
+          "type": "text",
           "named": true
         },
         {
@@ -2978,6 +3010,10 @@
   },
   {
     "type": "table_cell_alignment",
+    "named": true
+  },
+  {
+    "type": "text",
     "named": true
   },
   {

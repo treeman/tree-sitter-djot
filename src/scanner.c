@@ -1782,7 +1782,8 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   return size;
 }
 
-void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
+void tree_sitter_djot_external_scanner_deserialize(void *payload,
+                                                   const char *buffer,
                                                    unsigned length) {
   Scanner *s = (Scanner *)payload;
   init(s);

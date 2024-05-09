@@ -2619,7 +2619,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "_text"
+                    "name": "text"
                   }
                 ]
               },
@@ -3797,12 +3797,9 @@
         ]
       }
     },
-    "_text": {
-      "type": "REPEAT1",
-      "content": {
-        "type": "PATTERN",
-        "value": "\\S"
-      }
+    "text": {
+      "type": "PATTERN",
+      "value": "([^!*\\[^_{|~<$\\n\\r]|![^\\[])+"
     }
   },
   "extras": [
