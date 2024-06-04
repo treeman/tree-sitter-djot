@@ -573,7 +573,9 @@ module.exports = grammar({
 
     _smart_punctuation: ($) =>
       choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
-    quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
+    // TODO test that this change makes sense and update tests
+    quotation_marks: (_) =>
+      token(choice('{"', '"}', "{'", "'}", '\\"', "\\'", '"', "'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
     en_dash: (_) => "--",
@@ -735,7 +737,7 @@ module.exports = grammar({
           "[^",
           "^",
           "_",
-          // "{",
+          "{",
           "{*",
           "{+",
           "{-",
