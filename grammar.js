@@ -565,7 +565,7 @@ module.exports = grammar({
         ),
       ),
 
-    _inline_line: ($) => seq($._inline, $._newline),
+    _inline_line: ($) => seq($._inline, choice($._newline, "\0")),
 
     _hard_line_break: ($) =>
       seq($.hard_line_break, optional($._block_quote_prefix)),

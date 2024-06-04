@@ -2681,8 +2681,17 @@
           "name": "_inline"
         },
         {
-          "type": "SYMBOL",
-          "name": "_newline"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_newline"
+            },
+            {
+              "type": "STRING",
+              "value": "\u0000"
+            }
+          ]
         }
       ]
     },
