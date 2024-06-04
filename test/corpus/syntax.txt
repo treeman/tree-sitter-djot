@@ -1041,6 +1041,26 @@ Block attribute: before thematic break
   (thematic_break))
 
 ===============================================================================
+Block attribute: inside list
+===============================================================================
+- Before
+
+  {.class}
+
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (block_attribute
+          (args
+            (class)))))))
+
+===============================================================================
 Inline attribute: mixed
 ===============================================================================
 text{.one .two #id author="with spaces"}
