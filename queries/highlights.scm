@@ -80,9 +80,10 @@
 ((language_marker) @punctuation.delimiter
   (#set! conceal ""))
 
-(block_quote) @markup.quote
-
-(block_quote_marker) @punctuation.special
+[
+  (block_quote)
+  (block_quote_marker)
+] @markup.quote
 
 (table_header) @markup.heading
 
