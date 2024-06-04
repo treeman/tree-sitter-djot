@@ -2218,6 +2218,10 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_whitespace"
+        },
+        {
           "type": "STRING",
           "value": "{"
         },
@@ -3754,10 +3758,6 @@
           {
             "type": "STRING",
             "value": "_"
-          },
-          {
-            "type": "STRING",
-            "value": "{"
           },
           {
             "type": "STRING",

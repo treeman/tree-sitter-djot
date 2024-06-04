@@ -55,7 +55,6 @@ module.exports = grammar({
         $.thematic_break,
         $.block_quote,
         $.link_reference_definition,
-        // NOTE Maybe the block attribute should be included inside all blocks?
         $.block_attribute,
         $._paragraph,
       ),
@@ -325,6 +324,7 @@ module.exports = grammar({
       seq($.list_marker_upper_roman_parens, $.list_item_content),
 
     list_item_content: ($) =>
+      // TODO introduce an 'list_item_continuation' here?
       seq(repeat1($._block_with_heading), $._list_item_end),
 
     table: ($) =>
@@ -735,7 +735,7 @@ module.exports = grammar({
           "[^",
           "^",
           "_",
-          "{",
+          // "{",
           "{*",
           "{+",
           "{-",
