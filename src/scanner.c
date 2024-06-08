@@ -3,7 +3,7 @@
 #include "tree_sitter/parser.h"
 #include <stdio.h>
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include <assert.h>
@@ -171,6 +171,8 @@ typedef struct {
   // Block quote
   // In `end_paragraph_in_block_quote` we scan all markers on a line
   // to compare levels. We should hopefully be able to reuse this information?
+
+  // Code block
 
   // The number of ` we are currently matching, or 0 when not inside.
   uint8_t verbatim_tick_count;
@@ -430,6 +432,7 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
   if (list_marker != IGNORED) {
     BlockType to_open = list_marker_to_block(list_marker);
     if (list->type != to_open) {
+      printf("closing different list\n");
       lexer->result_symbol = BLOCK_CLOSE;
       remove_block(s);
       return true;
@@ -449,6 +452,9 @@ static bool close_list_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
   }
 
   Block *top = peek_block(s);
+  // if ((top && top->type == CODE_BLOCK)) {
+  //   return false;
+  // }
   Block *list = find_list(s);
 
   // If we're in a block that's in a list
@@ -464,7 +470,7 @@ static bool close_list_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
 
   // If we're about to open a list of a different type, we
   // need to close the previous list.
-  if (list) {
+  if (list && top->type != CODE_BLOCK) {
     if (close_different_list_if_needed(s, lexer, list, ordered_list_marker)) {
       return true;
     }
