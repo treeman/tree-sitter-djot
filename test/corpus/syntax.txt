@@ -1061,6 +1061,28 @@ Block attribute: inside list
             (class)))))))
 
 ===============================================================================
+Block attribute: inside block quote
+===============================================================================
+> x
+>
+> {.class}
+> a
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (paragraph)
+      (block_quote_marker)
+      (block_quote_marker)
+      (block_attribute (args (class)))
+      (block_quote_marker)
+      (paragraph))))
+
+
+===============================================================================
 Inline attribute: mixed
 ===============================================================================
 text{.one .two #id author="with spaces"}
