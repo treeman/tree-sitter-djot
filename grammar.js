@@ -209,7 +209,12 @@ module.exports = grammar({
         $.list_marker_definition,
         alias($._paragraph_content, $.term),
         choice($._eof_or_blankline, $._close_paragraph),
-        alias(optional(repeat($._block_with_heading)), $.definition),
+        alias(
+          optional(
+            repeat(seq($._list_item_continuation, $._block_with_heading)),
+          ),
+          $.definition,
+        ),
         $._list_item_end,
       ),
 
@@ -325,7 +330,11 @@ module.exports = grammar({
 
     list_item_content: ($) =>
       // TODO introduce an 'list_item_continuation' here?
-      seq(repeat1($._block_with_heading), $._list_item_end),
+      seq(
+        $._block_with_heading,
+        optional(repeat(seq($._list_item_continuation, $._block_with_heading))),
+        $._list_item_end,
+      ),
 
     table: ($) =>
       prec.right(
@@ -389,7 +398,7 @@ module.exports = grammar({
         $._newline,
         alias(repeat($._block_with_heading), $.content),
         $._block_close,
-        optional(alias($._div_end, $.div_marker_end)),
+        optional(seq(alias($._div_end, $.div_marker_end), $._newline)),
       ),
     div_marker_begin: ($) =>
       seq($._div_begin, optional(seq($._whitespace1, $.class_name))),
@@ -403,7 +412,9 @@ module.exports = grammar({
         $._newline,
         optional($.code),
         $._block_close,
-        optional(alias($._code_block_end, $.code_block_marker_end)),
+        optional(
+          seq(alias($._code_block_end, $.code_block_marker_end), $._newline),
+        ),
       ),
     raw_block: ($) =>
       seq(
@@ -413,13 +424,15 @@ module.exports = grammar({
         $._newline,
         optional(alias($.code, $.content)),
         $._block_close,
-        optional(alias($._code_block_end, $.raw_block_marker_end)),
+        optional(
+          seq(alias($._code_block_end, $.raw_block_marker_end), $._newline),
+        ),
       ),
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
     language: (_) => /[^\n\t \{\}=]+/,
     code: ($) =>
-      prec.left(repeat1(seq(optional($._block_quote_prefix), $._line))),
+      prec.left(repeat1(seq(optional(choice($._block_quote_prefix)), $._line))),
     _line: ($) => seq(/[^\n]*/, $._newline),
 
     thematic_break: ($) =>
@@ -573,9 +586,9 @@ module.exports = grammar({
 
     _smart_punctuation: ($) =>
       choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
-    // TODO test that this change makes sense and update tests
-    quotation_marks: (_) =>
-      token(choice('{"', '"}', "{'", "'}", '\\"', "\\'", '"', "'")),
+    // NOTE it would be nice to be able to mark bare " and ', but then we'd have to be smarter
+    // so we don't mark the ' in `it's`.
+    quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
     en_dash: (_) => "--",
@@ -837,6 +850,8 @@ module.exports = grammar({
     $.list_marker_upper_alpha_parens,
     $.list_marker_lower_roman_parens,
     $.list_marker_upper_roman_parens,
+    // List item continuation consumes whitespace indentation for lists.
+    $._list_item_continuation,
     // `_list_item_end` is responsible for closing an open list,
     // if indent or list markers are mismatched.
     $._list_item_end,
