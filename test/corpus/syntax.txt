@@ -2418,6 +2418,54 @@ List: code block should ignore nested list
           (code_block_marker_end))))))
 
 ===============================================================================
+List: raw block at end
+===============================================================================
+- a
+
+  ```=html
+  x
+  ```
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)
+          (raw_block_marker_end))))))
+
+===============================================================================
+List: div at end
+===============================================================================
+- a
+
+  :::
+  x
+  :::
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))
+          (div_marker_end))))))
+
+===============================================================================
 List: Close contained div at eof
 ===============================================================================
 - ::: mydiv
