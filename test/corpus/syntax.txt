@@ -3562,6 +3562,56 @@ outside div
 
 -------------------------------------------------------------------------------
 (document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (div
+    (div_marker_begin)
+    (content
+      (paragraph))
+    (div_marker_end)))
+
+===============================================================================
+Code block in list should be closed before unindented code block
+===============================================================================
+- List
+
+  ```
+  First code
+
+```
+Second code
+```
+
+-------------------------------------------------------------------------------
+(document
+  (div
+    (div_marker_begin
+      (class_name))
+    (content)
+    (ERROR
+      (list_marker_dash))))
+
+===============================================================================
+Raw block in list should be closed before unindented raw block
+===============================================================================
+- a
+
+  ```=html
+  x
+
+```=html
+y
+```
+
+-------------------------------------------------------------------------------
+(document
   (div
     (div_marker_begin
       (class_name))
@@ -3665,3 +3715,5 @@ Line beginning with \\
     (content)
     (ERROR
       (list_marker_dash))))
+
+

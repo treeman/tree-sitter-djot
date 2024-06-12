@@ -416,19 +416,6 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
 }
 
 // Close open list if list markers are different.
-static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
-                                           Block *list, TokenType list_marker) {
-  if (list_marker != IGNORED) {
-    BlockType to_open = list_marker_to_block(list_marker);
-    if (list->type != to_open) {
-      lexer->result_symbol = BLOCK_CLOSE;
-      remove_block(s);
-      return true;
-    }
-  }
-  return false;
-}
-
 static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
                                          bool is_newline) {
   if (is_newline) {
@@ -443,20 +430,15 @@ static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-// Check if open list should be closed, and close it.
-// Lists should be closed if indentation is too little or if
-// a different list marker is encountered.
-// Note that this function may scan a complete list marker.
-static bool close_list_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
-                                 TokenType ordered_list_marker) {
+// Close a block inside a list.
+// They should be closed if indentation is too little.
+static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
+                                              bool non_newline) {
   if (s->open_blocks->size == 0) {
     return false;
   }
 
   Block *top = peek_block(s);
-  // if ((top && top->type == CODE_BLOCK)) {
-  //   return false;
-  // }
   Block *list = find_list(s);
 
   // If we're in a block that's in a list
@@ -470,9 +452,38 @@ static bool close_list_if_needed(Scanner *s, TSLexer *lexer, bool non_newline,
     }
   }
 
+  return false;
+}
+
+static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
+                                           Block *list, TokenType list_marker) {
+  if (list_marker != IGNORED) {
+    BlockType to_open = list_marker_to_block(list_marker);
+    if (list->type != to_open) {
+      lexer->result_symbol = BLOCK_CLOSE;
+      remove_block(s);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Check if we're starting a list of a different type and close the open one.
+static bool try_close_different_typed_list(Scanner *s, TSLexer *lexer,
+                                           TokenType ordered_list_marker) {
+  if (s->open_blocks->size == 0) {
+    return false;
+  }
+
+  Block *top = peek_block(s);
+  if (top->type == CODE_BLOCK) {
+    return false;
+  }
+  Block *list = find_list(s);
+
   // If we're about to open a list of a different type, we
   // need to close the previous list.
-  if (list && top->type != CODE_BLOCK) {
+  if (list) {
     if (close_different_list_if_needed(s, lexer, list, ordered_list_marker)) {
       return true;
     }
@@ -1685,6 +1696,17 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     }
   }
 
+  if (valid_symbols[BLOCK_CLOSE] &&
+      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
+    return true;
+  }
+
+  // End previous list item before opening new ones.
+  if (valid_symbols[LIST_ITEM_END] &&
+      parse_list_item_end(s, lexer, valid_symbols)) {
+    return true;
+  }
+
   switch (lexer->lookahead) {
   case '-':
     if (parse_dash(s, lexer, valid_symbols)) {
@@ -1746,7 +1768,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we should output the list marker itself.
   // Yeah, the order dependencies aren't very nice.
   if (valid_symbols[BLOCK_CLOSE] &&
-      close_list_if_needed(s, lexer, !is_newline, ordered_list_marker)) {
+      try_close_different_typed_list(s, lexer, ordered_list_marker)) {
     return true;
   }
 
