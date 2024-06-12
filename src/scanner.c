@@ -144,20 +144,6 @@ typedef struct {
   // What's our current block quote level?
   uint8_t block_quote_level;
 
-  // TODO needs to be persisted between tokens somehow.
-  // Should be used by lists (and maybe others?) to determine indent.
-  // Now required because we use item continuation.
-  // Currently consumed whitespace. Resets on every token.
-  // uint8_t whitespace;
-
-  // Track the column position we're currently parsing.
-  // The difference between `cur_column` and `marked_column` is that
-  // `cur_column` tracks the column we're peeking at and `marked_column`
-  // tracks the column we've marked (and thus will consume if we return a
-  // token).
-  // uint8_t cur_column;
-  // uint8_t marked_column;
-  //
   // The whitespace indent of the current line.
   uint8_t indent;
 } Scanner;
@@ -273,13 +259,7 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
     if (lexer->lookahead == ' ') {
       advance(s, lexer);
       ++indent;
-      // Carriage returns should simply be ignored,
-      // consuming the carriage return here takes care of almost all
-      // special case handling.
-      // } else if (lexer->lookahead == '\r') {
-      //     advance(s, lexer);
     } else if (lexer->lookahead == '\t') {
-      // FIXME rely on column pos instead...?
       advance(s, lexer);
       indent += 4;
     } else {
