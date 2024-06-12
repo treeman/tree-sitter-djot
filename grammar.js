@@ -182,19 +182,39 @@ module.exports = grammar({
       ),
     _list_dash: ($) =>
       seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
-    _list_item_dash: ($) => seq($.list_marker_dash, $.list_item_content),
+    _list_item_dash: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_dash,
+        $.list_item_content,
+      ),
 
     _list_plus: ($) =>
       seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
-    _list_item_plus: ($) => seq($.list_marker_plus, $.list_item_content),
+    _list_item_plus: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_plus,
+        $.list_item_content,
+      ),
 
     _list_star: ($) =>
       seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
-    _list_item_star: ($) => seq($.list_marker_star, $.list_item_content),
+    _list_item_star: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_star,
+        $.list_item_content,
+      ),
 
     _list_task: ($) =>
       seq(repeat1(alias($._list_item_task, $.list_item)), $._block_close),
-    _list_item_task: ($) => seq($.list_marker_task, $.list_item_content),
+    _list_item_task: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_task,
+        $.list_item_content,
+      ),
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,

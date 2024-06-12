@@ -371,6 +371,17 @@ static Block *find_list(Scanner *s) {
   return NULL;
 }
 
+static uint8_t count_blocks(Scanner *s, BlockType type) {
+  uint8_t count = 0;
+  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
+    Block *b = *array_get(s->open_blocks, i);
+    if (b->type == type) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 // Mark that we should close `count` blocks.
 // This call will only emit a single BLOCK_CLOSE token,
 // the other are emitted in `handle_blocks_to_close`.
@@ -647,6 +658,126 @@ static bool scan_bullet_list_marker(Scanner *s, TSLexer *lexer, char marker) {
   return true;
 }
 
+// Scan a `> ` or `>\n`.
+static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
+                                    bool *ending_newline) {
+  if (lexer->lookahead != '>') {
+    return false;
+  }
+  advance(s, lexer);
+
+  // Carriage returns should be ignored.
+  if (lexer->lookahead == '\r') {
+    advance(s, lexer);
+  }
+  if (lexer->lookahead == ' ') {
+    advance(s, lexer);
+    return true;
+  } else if (lexer->lookahead == '\n') {
+    advance(s, lexer);
+    *ending_newline = true;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static uint8_t scan_block_quote_markers(Scanner *s, TSLexer *lexer,
+                                        bool *ending_newline) {
+  uint8_t marker_count = 0;
+  while (scan_block_quote_marker(s, lexer, ending_newline)) {
+    ++marker_count;
+    if (*ending_newline) {
+      break;
+    }
+  }
+  return marker_count;
+}
+
+// Parse block quote related things.
+//
+// It's made complicated by the need to match nested quotes,
+// but we still want to keep block quotes separated,
+// so we can't match '> > ' in one go, but in multiple passes.
+//
+// We also need to close any contained paragraphs if there's a mismatch of
+// quote indentation, or if there's an "empty line" (only > on a line).
+//
+// And we also need to close open blocks when we go down a nesting level.
+static bool parse_block_quote(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (!valid_symbols[BLOCK_QUOTE_BEGIN] &&
+      !valid_symbols[BLOCK_QUOTE_CONTINUATION] && !valid_symbols[BLOCK_CLOSE] &&
+      !valid_symbols[CLOSE_PARAGRAPH]) {
+    return false;
+  }
+
+  bool ending_newline = false;
+  // A valid marker is a '> ' or '>\n'.
+  bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
+
+  // If we have a marker but with an empty line,
+  // we need to close the paragraph.
+  if (has_marker && ending_newline && valid_symbols[CLOSE_PARAGRAPH]) {
+    lexer->result_symbol = CLOSE_PARAGRAPH;
+    return true;
+  }
+
+  // Store nesting level on the scanner, to keep it between runs
+  // in the case of multiple `>`, like `> > > txt`.
+  uint8_t marker_count = s->block_quote_level + has_marker;
+  size_t matching_block_pos =
+      number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
+  Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
+
+  // There's an open block quote with a higher nesting level.
+  if (highest_block_quote && marker_count < highest_block_quote->level) {
+    // Close the paragraph, but allow lazy continuation (without any `>`).
+    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
+      lexer->result_symbol = CLOSE_PARAGRAPH;
+      return true;
+    }
+    if (valid_symbols[BLOCK_CLOSE]) {
+      // We may need to close more than one block (nested block quotes, lists,
+      // divs, etc).
+      size_t close_pos =
+          number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count + 1);
+      close_blocks(s, lexer, close_pos);
+      return true;
+    }
+  }
+
+  // If we should continue an open block quote.
+  if (valid_symbols[BLOCK_QUOTE_CONTINUATION] && has_marker &&
+      matching_block_pos != 0) {
+    lexer->mark_end(lexer);
+    // It's important to always clear the stored level on newlines.
+    if (ending_newline) {
+      s->block_quote_level = 0;
+    } else {
+      s->block_quote_level = marker_count;
+    }
+    lexer->result_symbol = BLOCK_QUOTE_CONTINUATION;
+    return true;
+  }
+
+  // Finally, start a new block quote if there's any marker.
+  if (valid_symbols[BLOCK_QUOTE_BEGIN] && has_marker) {
+    push_block(s, BLOCK_QUOTE, marker_count);
+    lexer->mark_end(lexer);
+    // It's important to always clear the stored level on newlines.
+    if (ending_newline) {
+      s->block_quote_level = 0;
+    } else {
+      s->block_quote_level = marker_count;
+    }
+    lexer->result_symbol = BLOCK_QUOTE_BEGIN;
+    return true;
+  }
+
+  return false;
+}
+
 static bool is_decimal(char c) { return '0' <= c && c <= '9'; }
 static bool is_lower_alpha(char c) { return 'a' <= c && c <= 'z'; }
 static bool is_upper_alpha(char c) { return 'A' <= c && c <= 'Z'; }
@@ -904,26 +1035,6 @@ static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
   return is_div_marker_next(s, lexer) || scan_list_marker(s, lexer);
 }
 
-static bool close_paragraph(Scanner *s, TSLexer *lexer) {
-  // Workaround for not including the following blankline when closing a
-  // paragraph inside a block.
-  Block *top = peek_block(s);
-  if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
-    return true;
-  }
-
-  return scan_containing_block_closing_marker(s, lexer);
-}
-
-static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
-  if (close_paragraph(s, lexer)) {
-    lexer->result_symbol = CLOSE_PARAGRAPH;
-    return true;
-  }
-
-  return false;
-}
-
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
   Block *top = peek_block(s);
   // Found a list with the same type and indent, we should continue it.
@@ -1102,6 +1213,28 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 
   if (s->indent >= list->level) {
     return false;
+  }
+
+  // This handles the case with a nested list inside a block quote:
+  //
+  //   > - a
+  //   > - b
+  //
+  // Where we scan the next list marker after we've scanned the block quote
+  // markers.
+  bool ending_newline;
+  uint8_t block_quote_markers =
+      scan_block_quote_markers(s, lexer, &ending_newline);
+
+  // An extra check to make sure that we have a matching block quote level
+  // in the nested lists.
+  // I'm not 100% sure this is required, but it felt weird just blindly
+  // scanning markers without any sanity check that it's correct.
+  if (block_quote_markers > 0 &&
+      count_blocks(s, BLOCK_QUOTE) != block_quote_markers) {
+    lexer->result_symbol = LIST_ITEM_END;
+    s->blocks_to_close = 1;
+    return true;
   }
 
   // Handle the special case of a list item following this,
@@ -1302,114 +1435,6 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-// Scan a `> ` or `>\n`.
-static bool scan_block_quote_marker(Scanner *s, TSLexer *lexer,
-                                    bool *ending_newline) {
-  if (lexer->lookahead != '>') {
-    return false;
-  }
-  advance(s, lexer);
-
-  // Carriage returns should be ignored.
-  if (lexer->lookahead == '\r') {
-    advance(s, lexer);
-  }
-  if (lexer->lookahead == ' ') {
-    advance(s, lexer);
-    return true;
-  } else if (lexer->lookahead == '\n') {
-    advance(s, lexer);
-    *ending_newline = true;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// Parse block quote related things.
-//
-// It's made complicated by the need to match nested quotes,
-// but we still want to keep block quotes separated,
-// so we can't match '> > ' in one go, but in multiple passes.
-//
-// We also need to close any contained paragraphs if there's a mismatch of
-// quote indentation, or if there's an "empty line" (only > on a line).
-//
-// And we also need to close open blocks when we go down a nesting level.
-static bool parse_block_quote(Scanner *s, TSLexer *lexer,
-                              const bool *valid_symbols) {
-  if (!valid_symbols[BLOCK_QUOTE_BEGIN] &&
-      !valid_symbols[BLOCK_QUOTE_CONTINUATION] && !valid_symbols[BLOCK_CLOSE] &&
-      !valid_symbols[CLOSE_PARAGRAPH]) {
-    return false;
-  }
-
-  bool ending_newline = false;
-  // A valid marker is a '> ' or '>\n'.
-  bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
-
-  // If we have a marker but with an empty line,
-  // we need to close the paragraph.
-  if (has_marker && ending_newline && valid_symbols[CLOSE_PARAGRAPH]) {
-    lexer->result_symbol = CLOSE_PARAGRAPH;
-    return true;
-  }
-
-  // Store nesting level on the scanner, to keep it between runs
-  // in the case of multiple `>`, like `> > > txt`.
-  uint8_t marker_count = s->block_quote_level + has_marker;
-  size_t matching_block_pos =
-      number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count);
-  Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
-
-  // There's an open block quote with a higher nesting level.
-  if (highest_block_quote && marker_count < highest_block_quote->level) {
-    // Close the paragraph, but allow lazy continuation (without any `>`).
-    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
-      lexer->result_symbol = CLOSE_PARAGRAPH;
-      return true;
-    }
-    if (valid_symbols[BLOCK_CLOSE]) {
-      // We may need to close more than one block (nested block quotes, lists,
-      // divs, etc).
-      size_t close_pos =
-          number_of_blocks_from_top(s, BLOCK_QUOTE, marker_count + 1);
-      close_blocks(s, lexer, close_pos);
-      return true;
-    }
-  }
-
-  // If we should continue an open block quote.
-  if (valid_symbols[BLOCK_QUOTE_CONTINUATION] && has_marker &&
-      matching_block_pos != 0) {
-    lexer->mark_end(lexer);
-    // It's important to always clear the stored level on newlines.
-    if (ending_newline) {
-      s->block_quote_level = 0;
-    } else {
-      s->block_quote_level = marker_count;
-    }
-    lexer->result_symbol = BLOCK_QUOTE_CONTINUATION;
-    return true;
-  }
-
-  // Finally, start a new block quote if there's any marker.
-  if (valid_symbols[BLOCK_QUOTE_BEGIN] && has_marker) {
-    push_block(s, BLOCK_QUOTE, marker_count);
-    lexer->mark_end(lexer);
-    // It's important to always clear the stored level on newlines.
-    if (ending_newline) {
-      s->block_quote_level = 0;
-    } else {
-      s->block_quote_level = marker_count;
-    }
-    lexer->result_symbol = BLOCK_QUOTE_BEGIN;
-    return true;
-  }
-
-  return false;
-}
-
 static bool parse_open_bracket(Scanner *s, TSLexer *lexer,
                                const bool *valid_symbols) {
   if (!valid_symbols[FOOTNOTE_BEGIN]) {
@@ -1481,20 +1506,14 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
 }
 
 static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
-  Block *top = peek_block(s);
-  if (!top || top->type != BLOCK_QUOTE) {
+  Block *block = find_block(s, BLOCK_QUOTE);
+  if (!block) {
     return false;
   }
 
   // Scan all `> ` markers we can find.
-  bool ending_newline = false;
-  uint8_t marker_count = 0;
-  while (scan_block_quote_marker(s, lexer, &ending_newline)) {
-    ++marker_count;
-    if (ending_newline) {
-      break;
-    }
-  }
+  bool ending_newline;
+  uint8_t marker_count = scan_block_quote_markers(s, lexer, &ending_newline);
 
   // No blockquote marker.
   if (marker_count == 0) {
@@ -1502,13 +1521,39 @@ static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   }
 
   // We've gone down a blockquote level, we need to close the paragraph.
-  if (marker_count < top->level || ending_newline) {
+  if (marker_count < block->level || ending_newline) {
+    return true;
+  }
+
+  if (block != peek_block(s) &&
+      scan_containing_block_closing_marker(s, lexer)) {
     return true;
   }
 
   // Check if there's a blankline following the blockquote marker.
   consume_whitespace(s, lexer);
   return lexer->lookahead == '\n';
+}
+
+static bool close_paragraph(Scanner *s, TSLexer *lexer) {
+  // Workaround for not including the following blankline when closing a
+  // paragraph inside a block.
+  Block *top = peek_block(s);
+  if (top && top->type == BLOCK_QUOTE && lexer->lookahead == '\n') {
+    return true;
+  }
+
+  return scan_containing_block_closing_marker(s, lexer);
+}
+
+static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
+  // TODO merge both functions
+  if (close_paragraph(s, lexer) || end_paragraph_in_block_quote(s, lexer)) {
+    lexer->result_symbol = CLOSE_PARAGRAPH;
+    return true;
+  }
+
+  return false;
 }
 
 // Decide if we should emit a `NEWLINE_INLINE` token.
