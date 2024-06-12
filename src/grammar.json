@@ -2669,7 +2669,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "comment"
+                    "name": "_comment_with_spaces"
                   },
                   {
                     "type": "SYMBOL",
@@ -3510,6 +3510,19 @@
         }
       ]
     },
+    "_comment_with_spaces": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_whitespace1"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "comment"
+        }
+      ]
+    },
     "span": {
       "type": "SEQ",
       "members": [
@@ -3947,6 +3960,14 @@
     [
       "block_attribute",
       "_symbol_fallback"
+    ],
+    [
+      "_inline_element_with_whitespace",
+      "_comment_with_spaces"
+    ],
+    [
+      "_inline_element_with_whitespace_without_newline",
+      "_comment_with_spaces"
     ]
   ],
   "precedences": [],

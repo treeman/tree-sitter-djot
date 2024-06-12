@@ -20,6 +20,8 @@ module.exports = grammar({
     [$.link_text, $.span, $._symbol_fallback],
     [$.link_reference_definition, $.link_text, $.span, $._symbol_fallback],
     [$.block_attribute, $._symbol_fallback],
+    [$._inline_element_with_whitespace, $._comment_with_spaces],
+    [$._inline_element_with_whitespace_without_newline, $._comment_with_spaces],
   ],
 
   rules: {
@@ -554,7 +556,7 @@ module.exports = grammar({
               $.span,
               $._image,
               $._link,
-              $.comment,
+              $._comment_with_spaces,
               $._todo_highlights,
               $._symbol_fallback,
               $._text,
@@ -688,6 +690,7 @@ module.exports = grammar({
     // An inline attribute is only allowed to have surrounding spaces
     // if it only contains a comment.
     comment: ($) => seq("{", $._comment_with_newline, "}"),
+    _comment_with_spaces: ($) => seq($._whitespace1, $.comment),
 
     span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
