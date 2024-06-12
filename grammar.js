@@ -233,7 +233,13 @@ module.exports = grammar({
         choice($._eof_or_blankline, $._close_paragraph),
         alias(
           optional(
-            repeat(seq($._list_item_continuation, $._block_with_heading)),
+            repeat(
+              seq(
+                optional($._block_quote_prefix),
+                $._list_item_continuation,
+                $._block_with_heading,
+              ),
+            ),
           ),
           $.definition,
         ),
@@ -351,10 +357,17 @@ module.exports = grammar({
       seq($.list_marker_upper_roman_parens, $.list_item_content),
 
     list_item_content: ($) =>
-      // TODO introduce an 'list_item_continuation' here?
       seq(
         $._block_with_heading,
-        optional(repeat(seq($._list_item_continuation, $._block_with_heading))),
+        optional(
+          repeat(
+            seq(
+              optional($._block_quote_prefix),
+              $._list_item_continuation,
+              $._block_with_heading,
+            ),
+          ),
+        ),
         $._list_item_end,
       ),
 

@@ -3,7 +3,7 @@
 #include "tree_sitter/parser.h"
 #include <stdio.h>
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include <assert.h>
@@ -674,6 +674,20 @@ static uint8_t scan_block_quote_markers(Scanner *s, TSLexer *lexer,
   return marker_count;
 }
 
+static void output_block_quote_continuation(Scanner *s, TSLexer *lexer,
+                                            uint8_t marker_count,
+                                            bool ending_newline) {
+  lexer->mark_end(lexer);
+  // It's important to always clear the stored level on newlines.
+  if (ending_newline) {
+    s->block_quote_level = 0;
+  } else {
+    s->block_quote_level = marker_count;
+  }
+  lexer->result_symbol = BLOCK_QUOTE_CONTINUATION;
+  s->indent = consume_whitespace(s, lexer);
+}
+
 // Parse block quote related things.
 //
 // It's made complicated by the need to match nested quotes,
@@ -730,14 +744,7 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   // If we should continue an open block quote.
   if (valid_symbols[BLOCK_QUOTE_CONTINUATION] && has_marker &&
       matching_block_pos != 0) {
-    lexer->mark_end(lexer);
-    // It's important to always clear the stored level on newlines.
-    if (ending_newline) {
-      s->block_quote_level = 0;
-    } else {
-      s->block_quote_level = marker_count;
-    }
-    lexer->result_symbol = BLOCK_QUOTE_CONTINUATION;
+    output_block_quote_continuation(s, lexer, marker_count, ending_newline);
     return true;
   }
 
@@ -1207,12 +1214,12 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
       scan_block_quote_markers(s, lexer, &ending_newline);
 
   if (block_quote_markers > 0) {
-    printf("found markers: %d\n", block_quote_markers);
+    // printf("found markers: %d\n", block_quote_markers);
     uint8_t block_quotes = count_blocks(s, BLOCK_QUOTE);
-    printf("block quotes: %d\n", block_quotes);
+    // printf("block quotes: %d\n", block_quotes);
 
     if (block_quotes != block_quote_markers) {
-      printf("CLOSING WITH block quote\n");
+      // printf("CLOSING WITH block quote\n");
       lexer->result_symbol = LIST_ITEM_END;
       s->blocks_to_close = 1;
       return true;
@@ -1226,16 +1233,30 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     //
     // By scanning once again we allow `next_marker` below to find `- b`.
     if (ending_newline) {
-      printf("ending newline\n");
+      // FIXME this solves paragraph indent inside list, but breaks sparse list
+      if (valid_symbols[BLOCK_QUOTE_CONTINUATION]) {
+        output_block_quote_continuation(s, lexer, block_quote_markers,
+                                        ending_newline);
+        return true;
+      }
+
+      // printf("ending newline\n");
       block_quote_markers = scan_block_quote_markers(s, lexer, &ending_newline);
-      printf("found markers: %d\n", block_quote_markers);
+      // printf("found markers: %d\n", block_quote_markers);
 
       if (block_quotes != block_quote_markers) {
-        printf("CLOSING WITH NEXT block quote\n");
+        // printf("CLOSING WITH NEXT block quote\n");
         lexer->result_symbol = LIST_ITEM_END;
         s->blocks_to_close = 1;
         return true;
       }
+    }
+
+    // Check indent again after we've parsed the block quote markers.
+    // This to allow indented paragraphs inside lists.
+    s->indent = consume_whitespace(s, lexer);
+    if (s->indent >= list->level) {
+      return false;
     }
   }
 
@@ -1252,12 +1273,14 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     bool different_indent = list->level != s->indent + 1;
 
     if (different_type || different_indent) {
+      // printf("CLOSING DIFFERENT\n");
       s->blocks_to_close = 1;
     }
     lexer->result_symbol = LIST_ITEM_END;
     return true;
   }
 
+  // printf("CLOSING DEFAULT\n");
   lexer->result_symbol = LIST_ITEM_END;
   s->blocks_to_close = 1;
   return true;
@@ -1578,8 +1601,8 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
   }
 
   // This is a lookahead for the next line, to check if
-  // there's a blankline ending the paragraph or not (in which case we shouldn't
-  // emit a `NEWLINE_INLINE`).
+  // there's a blankline ending the paragraph or not (in which case we
+  // shouldn't emit a `NEWLINE_INLINE`).
   uint8_t next_line_whitespace = consume_whitespace(s, lexer);
   if (lexer->lookahead == '\n') {
     return false;
@@ -1649,7 +1672,8 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
     return true;
   }
 
-  // Something should already have matched, but lets not rely on that shall we?
+  // Something should already have matched, but lets not rely on that shall
+  // we?
   return false;
 }
 
@@ -1811,6 +1835,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // Yeah, the order dependencies aren't very nice.
   if (valid_symbols[BLOCK_CLOSE] &&
       try_close_different_typed_list(s, lexer, ordered_list_marker)) {
+    printf("different list closed\n");
     return true;
   }
 

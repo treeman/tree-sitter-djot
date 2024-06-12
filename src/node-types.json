@@ -395,6 +395,10 @@
           "named": true
         },
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "code_block",
           "named": true
         },
@@ -1604,6 +1608,10 @@
         },
         {
           "type": "block_quote",
+          "named": true
+        },
+        {
+          "type": "block_quote_marker",
           "named": true
         },
         {
