@@ -338,9 +338,8 @@ List: Immediate blockquote
         (block_quote
           (block_quote_marker)
           (content
-            (paragraph)
-            (block_quote_marker)
-            (paragraph)))))))
+            (paragraph
+              (block_quote_marker))))))))
 
 ===============================================================================
 Table: inside blockquote

@@ -1206,15 +1206,37 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   uint8_t block_quote_markers =
       scan_block_quote_markers(s, lexer, &ending_newline);
 
-  // An extra check to make sure that we have a matching block quote level
-  // in the nested lists.
-  // I'm not 100% sure this is required, but it felt weird just blindly
-  // scanning markers without any sanity check that it's correct.
-  if (block_quote_markers > 0 &&
-      count_blocks(s, BLOCK_QUOTE) != block_quote_markers) {
-    lexer->result_symbol = LIST_ITEM_END;
-    s->blocks_to_close = 1;
-    return true;
+  if (block_quote_markers > 0) {
+    printf("found markers: %d\n", block_quote_markers);
+    uint8_t block_quotes = count_blocks(s, BLOCK_QUOTE);
+    printf("block quotes: %d\n", block_quotes);
+
+    if (block_quotes != block_quote_markers) {
+      printf("CLOSING WITH block quote\n");
+      lexer->result_symbol = LIST_ITEM_END;
+      s->blocks_to_close = 1;
+      return true;
+    }
+
+    // With a sparse list we need to scan past one newline:
+    //
+    //   > - a
+    //   >
+    //   > - b
+    //
+    // By scanning once again we allow `next_marker` below to find `- b`.
+    if (ending_newline) {
+      printf("ending newline\n");
+      block_quote_markers = scan_block_quote_markers(s, lexer, &ending_newline);
+      printf("found markers: %d\n", block_quote_markers);
+
+      if (block_quotes != block_quote_markers) {
+        printf("CLOSING WITH NEXT block quote\n");
+        lexer->result_symbol = LIST_ITEM_END;
+        s->blocks_to_close = 1;
+        return true;
+      }
+    }
   }
 
   // Handle the special case of a list item following this,

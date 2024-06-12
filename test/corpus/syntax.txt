@@ -2355,9 +2355,8 @@ List: Immediate blockquote
         (block_quote
           (block_quote_marker)
           (content
-            (paragraph)
-            (block_quote_marker)
-            (paragraph)))))))
+            (paragraph
+              (block_quote_marker))))))))
 
 ===============================================================================
 List: Close contained code block at eof
@@ -3088,6 +3087,32 @@ List: in block quote
             (paragraph)))))))
 
 ===============================================================================
+List: Sparse list in block quote
+===============================================================================
+> - a
+>
+> - b
+>
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (block_quote_marker)
+          (list_marker_dash)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker))))
+
+===============================================================================
 Table: single row
 ===============================================================================
 | a | b |
@@ -3807,22 +3832,3 @@ Div inside block quote
     (content)
     (ERROR
       (list_marker_dash))))
-
-===============================================================================
-Sparse list in block quote
-===============================================================================
-> - a
->
-> - b
->
-
--------------------------------------------------------------------------------
-(document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
-
-
