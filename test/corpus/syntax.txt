@@ -2355,8 +2355,9 @@ List: Immediate blockquote
         (block_quote
           (block_quote_marker)
           (content
-            (paragraph
-              (block_quote_marker))))))))
+            (paragraph)
+            (block_quote_marker)
+            (paragraph)))))))
 
 ===============================================================================
 List: Close contained code block at eof
@@ -3024,6 +3025,69 @@ List: double dash
         (paragraph)))))
 
 ===============================================================================
+List: in block quote
+===============================================================================
+> - a
+> - b
+> * a
+> * b
+> + a
+> + b
+> - [ ] a
+> - [x] b
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_dash)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_star)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_star)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_plus)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_plus)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_task
+            (unchecked))
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_task
+            (checked))
+          (list_item_content
+            (paragraph)))))))
+
+===============================================================================
 Table: single row
 ===============================================================================
 | a | b |
@@ -3664,21 +3728,6 @@ Div in list should be closed before heading
       (content))))
 
 ===============================================================================
-List in block quote
-===============================================================================
-> - a
-> - b
-
--------------------------------------------------------------------------------
-(document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
-
-===============================================================================
 Comment before link def
 ===============================================================================
 {% c %}
@@ -3731,6 +3780,24 @@ Line beginning with \\
 ===============================================================================
 [one_]: /url
 [_two]: /url
+
+-------------------------------------------------------------------------------
+(document
+  (div
+    (div_marker_begin
+      (class_name))
+    (content)
+    (ERROR
+      (list_marker_dash))))
+
+===============================================================================
+Div inside block quote
+===============================================================================
+> :::
+> Inside
+> :::
+>
+> Outside
 
 -------------------------------------------------------------------------------
 (document
