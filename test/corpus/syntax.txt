@@ -3611,12 +3611,13 @@ Comment before link def
 
 -------------------------------------------------------------------------------
 (document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (link_reference_definition
+    (link_label)
+    (link_destination)))
 
 ===============================================================================
 Comment before heading
@@ -3626,12 +3627,14 @@ Comment before heading
 
 -------------------------------------------------------------------------------
 (document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (section
+    (heading1
+      (marker)
+      (content))))
 
 ===============================================================================
 Link defs single underline
