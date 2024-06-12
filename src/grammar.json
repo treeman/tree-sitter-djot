@@ -991,18 +991,6 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_block_quote_prefix"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
           "type": "SYMBOL",
           "name": "list_marker_definition"
         },
@@ -1038,6 +1026,18 @@
                 "content": {
                   "type": "SEQ",
                   "members": [
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "_block_quote_prefix"
+                        },
+                        {
+                          "type": "BLANK"
+                        }
+                      ]
+                    },
                     {
                       "type": "SYMBOL",
                       "name": "_list_item_continuation"
@@ -1588,6 +1588,18 @@
               "content": {
                 "type": "SEQ",
                 "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_block_quote_prefix"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
                   {
                     "type": "SYMBOL",
                     "name": "_list_item_continuation"
