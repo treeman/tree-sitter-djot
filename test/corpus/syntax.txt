@@ -3591,12 +3591,18 @@ Second code
 
 -------------------------------------------------------------------------------
 (document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)))))
+  (code_block
+    (code_block_marker_begin)
+    (code)
+    (code_block_marker_end)))
 
 ===============================================================================
 Raw block in list should be closed before unindented raw block
@@ -3612,12 +3618,24 @@ y
 
 -------------------------------------------------------------------------------
 (document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)))))
+  (raw_block
+    (raw_block_marker_begin)
+    (raw_block_info
+      (language_marker)
+      (language))
+      (content)
+      (raw_block_marker_end)))
 
 ===============================================================================
 Div in list should be closed before heading
