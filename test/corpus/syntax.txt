@@ -3631,12 +3631,19 @@ Div in list should be closed before heading
 
 -------------------------------------------------------------------------------
 (document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (section
+    (heading1
+      (marker)
+      (content))))
 
 ===============================================================================
 List in block quote

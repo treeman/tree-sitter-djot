@@ -1666,22 +1666,21 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  if (parse_block_quote(s, lexer, valid_symbols)) {
-    return true;
-  }
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
   }
   if (parse_footnote_end(s, lexer, valid_symbols)) {
     return true;
   }
-  // End previous list item before opening new ones.
-  if (valid_symbols[LIST_ITEM_END] &&
-      parse_list_item_end(s, lexer, valid_symbols)) {
+
+  if (valid_symbols[BLOCK_CLOSE] &&
+      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
     return true;
   }
 
-  if (parse_heading(s, lexer, valid_symbols)) {
+  // End previous list item before opening new ones.
+  if (valid_symbols[LIST_ITEM_END] &&
+      parse_list_item_end(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -1696,14 +1695,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     }
   }
 
-  if (valid_symbols[BLOCK_CLOSE] &&
-      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
+  if (parse_block_quote(s, lexer, valid_symbols)) {
     return true;
   }
-
-  // End previous list item before opening new ones.
-  if (valid_symbols[LIST_ITEM_END] &&
-      parse_list_item_end(s, lexer, valid_symbols)) {
+  if (parse_heading(s, lexer, valid_symbols)) {
     return true;
   }
 
