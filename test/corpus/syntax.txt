@@ -3130,7 +3130,6 @@ List: List definition in block quote
           (term)
           (definition
             (block_quote_marker)
-            (block_quote_marker)
             (paragraph)))))))
 
 ===============================================================================
@@ -3150,7 +3149,6 @@ List: In block quote with paragraph
           (list_marker_dash)
           (list_item_content
             (paragraph)
-            (block_quote_marker)
             (block_quote_marker)
             (paragraph)))))))
 
