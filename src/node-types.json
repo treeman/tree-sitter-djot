@@ -485,6 +485,10 @@
       "required": true,
       "types": [
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "content",
           "named": true
         },

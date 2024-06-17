@@ -15,7 +15,7 @@ typedef enum {
   IGNORED,
 
   BLOCK_CLOSE,
-  EOF_OR_BLANKLINE,
+  EOF_OR_NEWLINE,
   NEWLINE,
   NEWLINE_INLINE,
 
@@ -1654,7 +1654,7 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
 
   // Various different newline types share the `\n` consumption.
   if (!valid_symbols[NEWLINE] && !valid_symbols[NEWLINE_INLINE] &&
-      !valid_symbols[EOF_OR_BLANKLINE]) {
+      !valid_symbols[EOF_OR_NEWLINE]) {
     return false;
   }
 
@@ -1667,7 +1667,7 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
 
   // Prefer NEWLINE_INLINE for newlines in inline context.
   // When they're no longer accepted, this marks the end of a paragraph
-  // and a regular NEWLINE (or EOF_OR_BLANKLINE) can be emitted.
+  // and a regular NEWLINE (or EOF_OR_NEWLINE) can be emitted.
   if (valid_symbols[NEWLINE_INLINE] &&
       emit_newline_inline(s, lexer, newline_column)) {
     lexer->result_symbol = NEWLINE_INLINE;
@@ -1682,8 +1682,8 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[EOF_OR_BLANKLINE]) {
-    lexer->result_symbol = EOF_OR_BLANKLINE;
+  if (valid_symbols[EOF_OR_NEWLINE]) {
+    lexer->result_symbol = EOF_OR_NEWLINE;
     return true;
   }
 
@@ -1853,8 +1853,8 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[EOF_OR_BLANKLINE] && lexer->eof(lexer)) {
-    lexer->result_symbol = EOF_OR_BLANKLINE;
+  if (valid_symbols[EOF_OR_NEWLINE] && lexer->eof(lexer)) {
+    lexer->result_symbol = EOF_OR_NEWLINE;
     return true;
   }
 
@@ -1934,8 +1934,8 @@ static char *token_type_s(TokenType t) {
   switch (t) {
   case BLOCK_CLOSE:
     return "BLOCK_CLOSE";
-  case EOF_OR_BLANKLINE:
-    return "EOF_OR_BLANKLINE";
+  case EOF_OR_NEWLINE:
+    return "EOF_OR_NEWLINE";
   case NEWLINE:
     return "NEWLINE";
   case NEWLINE_INLINE:
@@ -2172,7 +2172,9 @@ static void dump_valid_symbols(const bool *valid_symbols) {
     // case LIST_MARKER_PLUS:
     case LIST_ITEM_CONTINUATION:
     case LIST_ITEM_END:
-    case EOF_OR_BLANKLINE:
+    case EOF_OR_NEWLINE:
+    case DIV_BEGIN:
+    case DIV_END:
       // case TABLE_CAPTION_BEGIN:
       // case TABLE_CAPTION_END:
       if (valid_symbols[i]) {
