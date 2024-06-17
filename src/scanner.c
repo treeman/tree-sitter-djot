@@ -236,9 +236,7 @@ static BlockType list_marker_to_block(TokenType type) {
 
 static void advance(Scanner *s, TSLexer *lexer) {
   lexer->advance(lexer, false);
-  // Carriage returns should simply be ignored,
-  // consuming the carriage return here takes care of almost all
-  // special case handling.
+  // Carriage returns should simply be ignored.
   if (lexer->lookahead == '\r') {
     lexer->advance(lexer, false);
   }
@@ -259,6 +257,8 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
     if (lexer->lookahead == ' ') {
       advance(s, lexer);
       ++indent;
+    } else if (lexer->lookahead == '\r') {
+      advance(s, lexer);
     } else if (lexer->lookahead == '\t') {
       advance(s, lexer);
       indent += 4;
@@ -1005,8 +1005,8 @@ static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
 static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
   if (lexer->eof(lexer)) {
     return true;
-    // We've already parsed any leading whitespace in the beginning of the scan
-    // function.
+    // We've already parsed any leading whitespace in the beginning of the
+    // scan function.
   } else if (lexer->lookahead == '\n') {
     advance(s, lexer);
     return true;
@@ -1712,6 +1712,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we mark it again to make it consume.
   // I found it easier to opt-in to consume tokens.
   lexer->mark_end(lexer);
+  // Important to remember to skip all carriage returns.
+  if (lexer->lookahead == '\r') {
+    advance(s, lexer);
+  }
   if (lexer->get_column(lexer) == 0) {
     s->indent = consume_whitespace(s, lexer);
   }
