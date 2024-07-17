@@ -3417,3 +3417,22 @@ Unclosed List in Div
     (ERROR
       (list_marker_dash))))
 
+===============================================================================
+Heading after list
+===============================================================================
+- list
+
+# Heading
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph))))
+  (section
+    (heading1
+      (marker)
+      (content))))
+
