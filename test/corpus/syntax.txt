@@ -1041,6 +1041,48 @@ Block attribute: before thematic break
   (thematic_break))
 
 ===============================================================================
+Block attribute: inside list
+===============================================================================
+- Before
+
+  {.class}
+
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (block_attribute
+          (args
+            (class)))))))
+
+===============================================================================
+Block attribute: inside block quote
+===============================================================================
+> x
+>
+> {.class}
+> a
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (paragraph)
+      (block_quote_marker)
+      (block_quote_marker)
+      (block_attribute (args (class)))
+      (block_quote_marker)
+      (paragraph))))
+
+
+===============================================================================
 Inline attribute: mixed
 ===============================================================================
 text{.one .two #id author="with spaces"}
@@ -2376,6 +2418,76 @@ x
   (paragraph))
 
 ===============================================================================
+List: code block should ignore nested list
+===============================================================================
+- a
+
+  ```
+  x: 1
+  ```
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))))))
+
+===============================================================================
+List: raw block at end
+===============================================================================
+- a
+
+  ```=html
+  x
+  ```
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)
+          (raw_block_marker_end))))))
+
+===============================================================================
+List: div at end
+===============================================================================
+- a
+
+  :::
+  x
+  :::
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))
+          (div_marker_end))))))
+
+===============================================================================
 List: Close contained div at eof
 ===============================================================================
 - ::: mydiv
@@ -2912,6 +3024,192 @@ List: double dash
         (paragraph)))))
 
 ===============================================================================
+List: in block quote
+===============================================================================
+> - a
+> - b
+> * a
+> * b
+> + a
+> + b
+> - [ ] a
+> - [x] b
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_dash)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_star)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_star)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_plus)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_plus)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_task
+            (unchecked))
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (list_marker_task
+            (checked))
+          (list_item_content
+            (paragraph)))))))
+
+===============================================================================
+List: Sparse list in block quote
+===============================================================================
+> - a
+>
+> - b
+>
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))
+        (list_item
+          (block_quote_marker)
+          (block_quote_marker)
+          (list_marker_dash)
+          (list_item_content
+            (paragraph))))
+      (block_quote_marker))))
+
+===============================================================================
+List: List definition in block quote
+===============================================================================
+> : x
+>
+>  a
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_definition)
+          (term)
+          (definition
+            (block_quote_marker)
+            (paragraph)))))))
+
+===============================================================================
+List: In block quote with paragraph
+===============================================================================
+> - a
+>
+>  b
+
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)
+            (block_quote_marker)
+            (paragraph)))))))
+
+===============================================================================
+List: Unclosed List in Blockquote
+===============================================================================
+> a
+>
+> - b
+-------------------------------------------------------------------------------
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (paragraph)
+      (block_quote_marker)
+      (block_quote_marker)
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))))))
+
+===============================================================================
+List: Unclosed List in Section
+===============================================================================
+# a
+
+- b
+-------------------------------------------------------------------------------
+(document
+  (section
+    (heading1
+      (marker)
+      (content))
+    (section_content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))))))
+
+===============================================================================
+List: Unclosed List in Div
+===============================================================================
+::: a
+
+- b
+-------------------------------------------------------------------------------
+(document
+  (div
+    (div_marker_begin
+      (class_name))
+    (content
+      (list
+        (list_item
+          (list_marker_dash)
+          (list_item_content
+            (paragraph)))))))
+
+===============================================================================
 Table: single row
 ===============================================================================
 | a | b |
@@ -3370,54 +3668,6 @@ x
   (paragraph))
 
 ===============================================================================
-Unclosed List in Blockquote
-===============================================================================
-> a
->
-> - b
--------------------------------------------------------------------------------
-(document
-  (block_quote
-    (block_quote_marker)
-    (content
-      (paragraph)
-      (block_quote_marker)
-      (block_quote_marker))
-    (ERROR
-      (list_marker_dash))))
-
-===============================================================================
-Unclosed List in Section
-===============================================================================
-# a
-
-- b
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading1
-      (marker)
-      (content))
-    (section_content)
-    (ERROR
-      (list_marker_dash))))
-
-===============================================================================
-Unclosed List in Div
-===============================================================================
-::: a
-
-- b
--------------------------------------------------------------------------------
-(document
-  (div
-    (div_marker_begin
-      (class_name))
-    (content)
-    (ERROR
-      (list_marker_dash))))
-
-===============================================================================
 Heading after list
 ===============================================================================
 - list
@@ -3436,3 +3686,150 @@ Heading after list
       (marker)
       (content))))
 
+===============================================================================
+Div in list should be closed before unindented div
+===============================================================================
+- List
+
+  :::
+  nested div
+
+:::
+outside div
+:::
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (div
+    (div_marker_begin)
+    (content
+      (paragraph))
+    (div_marker_end)))
+
+===============================================================================
+Code block in list should be closed before unindented code block
+===============================================================================
+- List
+
+  ```
+  First code
+
+```
+Second code
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)))))
+  (code_block
+    (code_block_marker_begin)
+    (code)
+    (code_block_marker_end)))
+
+===============================================================================
+Raw block in list should be closed before unindented raw block
+===============================================================================
+- a
+
+  ```=html
+  x
+
+```=html
+y
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)))))
+  (raw_block
+    (raw_block_marker_begin)
+    (raw_block_info
+      (language_marker)
+      (language))
+      (content)
+      (raw_block_marker_end)))
+
+===============================================================================
+Div in list should be closed before heading
+===============================================================================
+- List
+
+  :::
+  unclosed div
+
+# heading
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (section
+    (heading1
+      (marker)
+      (content))))
+
+===============================================================================
+Comment before link def
+===============================================================================
+{% c %}
+[def]: /url
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (link_reference_definition
+    (link_label)
+    (link_destination)))
+
+===============================================================================
+Comment before heading
+===============================================================================
+{% c %}
+# one
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (section
+    (heading1
+      (marker)
+      (content))))

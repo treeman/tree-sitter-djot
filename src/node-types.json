@@ -395,6 +395,10 @@
           "named": true
         },
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "code_block",
           "named": true
         },
@@ -480,6 +484,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        },
         {
           "type": "content",
           "named": true
@@ -1492,6 +1500,10 @@
       "required": true,
       "types": [
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -1600,6 +1612,10 @@
         },
         {
           "type": "block_quote",
+          "named": true
+        },
+        {
+          "type": "block_quote_marker",
           "named": true
         },
         {

@@ -20,6 +20,8 @@ module.exports = grammar({
     [$.link_text, $.span, $._symbol_fallback],
     [$.link_reference_definition, $.link_text, $.span, $._symbol_fallback],
     [$.block_attribute, $._symbol_fallback],
+    [$._inline_element_with_whitespace, $._comment_with_spaces],
+    [$._inline_element_with_whitespace_without_newline, $._comment_with_spaces],
   ],
 
   rules: {
@@ -55,7 +57,6 @@ module.exports = grammar({
         $.thematic_break,
         $.block_quote,
         $.link_reference_definition,
-        // NOTE Maybe the block attribute should be included inside all blocks?
         $.block_attribute,
         $._paragraph,
       ),
@@ -84,7 +85,7 @@ module.exports = grammar({
         alias($._heading1_begin, $.marker),
         alias($._heading1_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading1_content: ($) =>
       seq(
@@ -96,7 +97,7 @@ module.exports = grammar({
         alias($._heading2_begin, $.marker),
         alias($._heading2_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading2_content: ($) =>
       seq(
@@ -108,7 +109,7 @@ module.exports = grammar({
         alias($._heading3_begin, $.marker),
         alias($._heading5_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading3_content: ($) =>
       seq(
@@ -120,7 +121,7 @@ module.exports = grammar({
         alias($._heading4_begin, $.marker),
         alias($._heading5_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading4_content: ($) =>
       seq(
@@ -132,7 +133,7 @@ module.exports = grammar({
         alias($._heading5_begin, $.marker),
         alias($._heading5_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading5_content: ($) =>
       seq(
@@ -144,7 +145,7 @@ module.exports = grammar({
         alias($._heading6_begin, $.marker),
         alias($._heading6_content, $.content),
         $._block_close,
-        optional($._eof_or_blankline),
+        optional($._eof_or_newline),
       ),
     _heading6_content: ($) =>
       seq(
@@ -181,19 +182,39 @@ module.exports = grammar({
       ),
     _list_dash: ($) =>
       seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
-    _list_item_dash: ($) => seq($.list_marker_dash, $.list_item_content),
+    _list_item_dash: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_dash,
+        $.list_item_content,
+      ),
 
     _list_plus: ($) =>
       seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
-    _list_item_plus: ($) => seq($.list_marker_plus, $.list_item_content),
+    _list_item_plus: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_plus,
+        $.list_item_content,
+      ),
 
     _list_star: ($) =>
       seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
-    _list_item_star: ($) => seq($.list_marker_star, $.list_item_content),
+    _list_item_star: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_star,
+        $.list_item_content,
+      ),
 
     _list_task: ($) =>
       seq(repeat1(alias($._list_item_task, $.list_item)), $._block_close),
-    _list_item_task: ($) => seq($.list_marker_task, $.list_item_content),
+    _list_item_task: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        $.list_marker_task,
+        $.list_item_content,
+      ),
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
@@ -209,8 +230,19 @@ module.exports = grammar({
       seq(
         $.list_marker_definition,
         alias($._paragraph_content, $.term),
-        choice($._eof_or_blankline, $._close_paragraph),
-        alias(optional(repeat($._block_with_heading)), $.definition),
+        choice($._eof_or_newline, $._close_paragraph),
+        alias(
+          optional(
+            repeat(
+              seq(
+                optional($._block_quote_prefix),
+                $._list_item_continuation,
+                $._block_with_heading,
+              ),
+            ),
+          ),
+          $.definition,
+        ),
         $._list_item_end,
       ),
 
@@ -325,7 +357,19 @@ module.exports = grammar({
       seq($.list_marker_upper_roman_parens, $.list_item_content),
 
     list_item_content: ($) =>
-      seq(repeat1($._block_with_heading), $._list_item_end),
+      seq(
+        $._block_with_heading,
+        optional(
+          repeat(
+            seq(
+              optional($._block_quote_prefix),
+              $._list_item_continuation,
+              $._block_with_heading,
+            ),
+          ),
+        ),
+        $._list_item_end,
+      ),
 
     table: ($) =>
       prec.right(
@@ -388,8 +432,9 @@ module.exports = grammar({
         $.div_marker_begin,
         $._newline,
         alias(repeat($._block_with_heading), $.content),
+        optional($._block_quote_prefix),
         $._block_close,
-        optional(alias($._div_end, $.div_marker_end)),
+        optional(seq(alias($._div_end, $.div_marker_end), $._newline)),
       ),
     div_marker_begin: ($) =>
       seq($._div_begin, optional(seq($._whitespace1, $.class_name))),
@@ -403,7 +448,9 @@ module.exports = grammar({
         $._newline,
         optional($.code),
         $._block_close,
-        optional(alias($._code_block_end, $.code_block_marker_end)),
+        optional(
+          seq(alias($._code_block_end, $.code_block_marker_end), $._newline),
+        ),
       ),
     raw_block: ($) =>
       seq(
@@ -413,7 +460,9 @@ module.exports = grammar({
         $._newline,
         optional(alias($.code, $.content)),
         $._block_close,
-        optional(alias($._code_block_end, $.raw_block_marker_end)),
+        optional(
+          seq(alias($._code_block_end, $.raw_block_marker_end), $._newline),
+        ),
       ),
     raw_block_info: ($) => seq(alias("=", $.language_marker), $.language),
 
@@ -493,9 +542,9 @@ module.exports = grammar({
         // Blankline is split out from paragraph to enable textobject
         // to not select newline up to following text.
         alias($._paragraph_content, $.paragraph),
-        choice($._eof_or_blankline, $._close_paragraph),
+        choice($._eof_or_newline, $._close_paragraph),
       ),
-    _paragraph_content: ($) => seq($._inline, $._newline),
+    _paragraph_content: ($) => seq($._inline, $._eof_or_newline),
 
     _one_or_two_newlines: ($) =>
       prec.left(choice("\0", seq($._newline, $._newline), $._newline)),
@@ -541,7 +590,7 @@ module.exports = grammar({
               $.span,
               $._image,
               $._link,
-              $.comment,
+              $._comment_with_spaces,
               $._todo_highlights,
               $._symbol_fallback,
               $._text,
@@ -573,6 +622,8 @@ module.exports = grammar({
 
     _smart_punctuation: ($) =>
       choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
+    // NOTE it would be nice to be able to mark bare " and ', but then we'd have to be smarter
+    // so we don't mark the ' in `it's`.
     quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
     ellipsis: (_) => "...",
     em_dash: (_) => "---",
@@ -673,6 +724,7 @@ module.exports = grammar({
     // An inline attribute is only allowed to have surrounding spaces
     // if it only contains a comment.
     comment: ($) => seq("{", $._comment_with_newline, "}"),
+    _comment_with_spaces: ($) => seq($._whitespace1, $.comment),
 
     span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
@@ -771,7 +823,7 @@ module.exports = grammar({
 
     // Different kinds of newlines are handled by the external scanner so
     // we can manually track indent (and reset it on newlines).
-    $._eof_or_blankline,
+    $._eof_or_newline,
     // `_newline` is a regular newline, and is used to end paragraphs and other blocks.
     $._newline,
     // `_newline_inline` is a newline that's only valid inside an inline context.
@@ -835,6 +887,8 @@ module.exports = grammar({
     $.list_marker_upper_alpha_parens,
     $.list_marker_lower_roman_parens,
     $.list_marker_upper_roman_parens,
+    // List item continuation consumes whitespace indentation for lists.
+    $._list_item_continuation,
     // `_list_item_end` is responsible for closing an open list,
     // if indent or list markers are mismatched.
     $._list_item_end,
