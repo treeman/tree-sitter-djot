@@ -65,59 +65,34 @@ Second
   (paragraph))
 
 ===============================================================================
-Heading 1
+Heading: 1
 ===============================================================================
 # Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
+
 ===============================================================================
-Heading 2
+Heading: 2
 ===============================================================================
 ## Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading2 (marker) (content))))
+    (heading (marker) (content))))
+
 ===============================================================================
-Heading 3
+Heading: very long
 ===============================================================================
-### Heading
+######################################### Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading3 (marker) (content))))
-===============================================================================
-Heading 4
-===============================================================================
-#### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading4 (marker) (content))))
-===============================================================================
-Heading 5
-===============================================================================
-##### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading5 (marker) (content))))
-===============================================================================
-Heading 6
-===============================================================================
-###### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading6 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Heading: multiple lines
@@ -132,7 +107,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -152,7 +127,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -172,7 +147,7 @@ A paragraph
 
 (document
   (section
-    (heading2
+    (heading
       (marker)
       (content
         (marker)
@@ -189,12 +164,12 @@ Heading: closed by higher heading on the next line
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
       (section
-        (heading2
+        (heading
           (marker)
           (content))))))
 
@@ -208,11 +183,11 @@ Heading: closed by lower heading on the next line
 
 (document
   (section
-    (heading2
+    (heading
       (marker)
       (content)))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -231,7 +206,7 @@ stop
   (div
     (div_marker_begin)
     (content
-      (heading4 (marker) (content)))
+      (heading (marker) (content)))
     (div_marker_end))
   (paragraph))
 
@@ -245,7 +220,7 @@ Heading 6: list closes
 
 (document
   (section
-    (heading6 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
@@ -263,7 +238,7 @@ Heading: followed by list
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
@@ -281,10 +256,10 @@ Section: closed by the same level
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Section: closed by a lower level
@@ -297,10 +272,10 @@ Section: closed by a lower level
 
 (document
   (section
-    (heading2 (marker) (content))
+    (heading (marker) (content))
     (section_content))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Section: not closed by higher level
@@ -315,15 +290,15 @@ Section: not closed by higher level
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
       (section
-        (heading2 (marker) (content))
+        (heading (marker) (content))
         (section_content
           (section
-            (heading3 (marker) (content))))))))
+            (heading (marker) (content))))))))
 
 ===============================================================================
 Section: only allow sections on top level
@@ -338,14 +313,14 @@ Section: only allow sections on top level
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
             (paragraph)
-            (heading1 (marker) (content))))))))
+            (heading (marker) (content))))))))
 
 ===============================================================================
 Block quote: oneline
@@ -465,9 +440,7 @@ Block quote: with hard line break
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph
-        (hard_line_break)
-        (block_quote_marker)))))
+      (paragraph))))
 
 ===============================================================================
 Block quote: contain code block
@@ -746,7 +719,6 @@ After
   (thematic_break)
   (paragraph))
 
-
 ===============================================================================
 Link: ref def
 ===============================================================================
@@ -759,7 +731,6 @@ Link: ref def
     (link_label)
     (link_destination)))
 
-
 ===============================================================================
 Link: ref def middle
 ===============================================================================
@@ -768,6 +739,42 @@ Some text
 [ref]: /url
 
 More text
+
+(document
+  (paragraph)
+  (link_reference_definition
+    (link_label)
+    (link_destination))
+  (paragraph))
+
+===============================================================================
+Link: ref def with emphasis
+===============================================================================
+[ref_]: /url
+[ref_]: /url
+
+-------------------------------------------------------------------------------
+
+(document
+  (link_reference_definition
+    (link_label)
+    (link_destination))
+  (link_reference_definition
+    (link_label)
+    (link_destination)))
+
+===============================================================================
+Link: ref def no newlines
+===============================================================================
+[ref
+one]: /url
+[ref
+two]: /url
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
 
 ===============================================================================
 Link: ref defs
@@ -914,7 +921,7 @@ Block attribute: before heading
     (args
       (identifier)))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -1083,608 +1090,6 @@ Block attribute: inside block quote
 
 
 ===============================================================================
-Inline attribute: mixed
-===============================================================================
-text{.one .two #id author="with spaces"}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)
-        (key_value
-          (key)
-          (value))))))
-
-===============================================================================
-Inline attribute: casing
-===============================================================================
-text{.snake_case .cebab-case}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)))))
-
-===============================================================================
-Inline attribute: key casing
-===============================================================================
-text{snake_case=2 kebab-case=3}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (key_value
-          (key)
-          (value))
-        (key_value
-          (key)
-          (value))))))
-
-===============================================================================
-Inline attribute: surrounding spaces
-===============================================================================
-text{ .class }
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)))))
-
-===============================================================================
-Inline attribute: with newlines
-===============================================================================
-text{.one
-.two
-#three}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)))))
-
-===============================================================================
-Inline attribute: with comment
-===============================================================================
-text{#ident % later we'll add a class %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content))))))
-
-===============================================================================
-Inline attribute: comment
-===============================================================================
-text{%
-some text here
-%}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (comment
-          (content))))))
-
-===============================================================================
-Inline attribute: standalone comment
-===============================================================================
-Foo bar {% This is a comment, spanning
-multiple lines %} baz.
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (comment
-      (content))))
-
-===============================================================================
-Inline attribute: comment escape %
-===============================================================================
-Before {% escape \% %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (comment
-      (content
-        (backslash_escape)))))
-
-===============================================================================
-Inline attribute: mixed comment escape %
-===============================================================================
-Before{#id % escape \% %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content
-            (backslash_escape)))))))
-
-===============================================================================
-Span
-===============================================================================
-One [two three]{.class
-#id}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (span
-      (inline_attribute
-        (args
-          (class)
-          (identifier))))))
-
-===============================================================================
-Autolink
-===============================================================================
-With </url> link
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (autolink)))
-
-===============================================================================
-Emphasis
-===============================================================================
-With _emphasis_ here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Strong
-===============================================================================
-With *strong* here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong (strong_begin) (content) (strong_end))))
-
-===============================================================================
-Emphasis and strong
-===============================================================================
-With _*strong* emphasis_ here
-
-With *_emphasis_ strong* here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (strong (strong_begin) (content) (strong_end)))
-      (emphasis_end)))
-  (paragraph
-    (strong
-      (strong_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (strong_end))))
-
-===============================================================================
-Emphasis and strong two chars
-===============================================================================
-*bc a*
-_bc a_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
-
-===============================================================================
-Emphasis and strong with newlines
-===============================================================================
-*a
-b*
-_a
-b_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
-
-===============================================================================
-Emphasis: various weird tests
-===============================================================================
-_a b c_
-
-_a b_
-
-_a_
-
-_a
-b c_
-
-_ai
-b c_
-
-_a
-b
-c_
-
-_a
-b_
-
-_ab
-cd_
-
-_ab
-x
-cd_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Superscipt: various weird tests
-===============================================================================
-^a b c^
-
-^a b^
-
-^a^
-
-^a
-b c^
-
-^ai
-b c^
-
-^a
-b
-c^
-
-^a
-b^
-
-^ab
-cd^
-
-^ab
-x
-cd^
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
-
-===============================================================================
-Emphasis: nested
-===============================================================================
-With __nested_ emphasis_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (emphasis_end))))
-
-===============================================================================
-Emphasis: forced despite spaces
-===============================================================================
-{_yes_}
-
-{_ yes _}
-
-_yes _}
-
-{_ yes_}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Strong: forced despite spaces
-===============================================================================
-{*yes*}
-
-*yes *}
-
-{* yes*
-
-{* yes *}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end))))
-
-===============================================================================
-Subscript
-===============================================================================
-~sub~
-
-{~many sub~}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (subscript (content)))
-  (paragraph (subscript (content))))
-
-===============================================================================
-Superscript
-===============================================================================
-^sup^
-
-{^many sup^}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
-
-===============================================================================
-Highlighted
-===============================================================================
-With {=mark=} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (highlighted (content))))
-
-===============================================================================
-Insert
-===============================================================================
-With {+insert+} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (insert (content))))
-
-===============================================================================
-Delete
-===============================================================================
-With {-delete-} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (delete (content))))
-
-===============================================================================
-Inline with newlines
-===============================================================================
-{=a
-b=}
-
-{+a
-b+}
-
-{-a
-b-}
-
-^a
-b^
-
-~a
-b~
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (highlighted
-      (content)))
-  (paragraph
-    (insert
-      (content)))
-  (paragraph
-    (delete
-      (content)))
-  (paragraph
-    (superscript
-      (content)))
-  (paragraph
-    (subscript
-      (content))))
-
-===============================================================================
-Hard line break
-===============================================================================
-With \
-break
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (hard_line_break)))
-
-===============================================================================
-Symbol
-===============================================================================
-With :wink: here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (symbol)))
-
-===============================================================================
-Link: inline
-===============================================================================
-With [link](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: with newline
-===============================================================================
-With [link
-newline](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: begin
-===============================================================================
-[link](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: collapsed reference link
-===============================================================================
-With [a reference][]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (collapsed_reference_link
-      (link_text))))
-
-===============================================================================
-Link: full reference single
-===============================================================================
-With [a reference][ref]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label))))
-
-
-===============================================================================
-Link: full reference
-===============================================================================
-With [a reference][ref]
-
-[ref]: /url
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label)))
-  (link_reference_definition
-    (link_label)
-    (link_destination)))
-
-===============================================================================
 Link: inside list
 ===============================================================================
 - [label](#ref)
@@ -1698,69 +1103,12 @@ Link: inside list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph
-          (inline_link
-            (link_text)
-            (inline_link_destination))))))
+        (paragraph))))
   (list
     (list_item
       (list_marker_plus)
       (list_item_content
-        (paragraph
-          (inline_link
-            (link_text)
-            (inline_link_destination)))))))
-
-===============================================================================
-Image: inline
-===============================================================================
-![descr](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_image
-      (image_description)
-      (inline_link_destination))))
-
-===============================================================================
-Image: empty inline
-===============================================================================
-![](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_image
-      (inline_link_destination))))
-
-===============================================================================
-Image: collapsed reference link
-===============================================================================
-![img][]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (collapsed_reference_image
-      (image_description))))
-
-===============================================================================
-Image: full reference
-===============================================================================
-![descr][ref]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (full_reference_image
-      (image_description)
-      (link_label))))
-
+        (paragraph)))))
 
 ===============================================================================
 Div: simple
@@ -1915,82 +1263,6 @@ Div: close nested div
     (div_marker_end)))
 
 ===============================================================================
-Footnote: reference
-===============================================================================
-
-Here's a ref.[^foo]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (footnote_reference
-      (footnote_marker_begin)
-      (reference_label)
-      (footnote_marker_end))))
-
-===============================================================================
-Smart punctuation
-===============================================================================
-
-Ellipsis...
-
-Em---dash
-Eh--dash
-
-Some{"quotes"} be{'here'}yo
-
- \"Straight\" \'quotes\'
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (ellipsis))
-  (paragraph
-    (em_dash)
-    (en_dash))
-  (paragraph
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks))
-  (paragraph
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)))
-
-===============================================================================
-Backslash escape
-===============================================================================
-
-No \_emphasis\_
-
-No \_strong\_
-
-No \<autolink>
-
-Regular \.\.\. dots
-
-Inside _x\_y_
-
-No \{+insert\*}
-
-\> no quote
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape) (backslash_escape))
-  (paragraph (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end)))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape)))
-
-===============================================================================
 Paragraph: not recognized
 ===============================================================================
 Before
@@ -2003,7 +1275,7 @@ After
 
 (document
   (paragraph)
-  (paragraph (en_dash))
+  (paragraph)
   (paragraph))
 
 ===============================================================================
@@ -2021,146 +1293,6 @@ After
   (paragraph)
   (paragraph)
   (paragraph))
-
-===============================================================================
-Verbatim: single
-===============================================================================
-Simple `verbatim` here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: double with single inside
-===============================================================================
-``verbatim with a backtick ` characters``
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: with triple inside
-===============================================================================
-`verbatim with three backtick ``` characters`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: newline closes
-===============================================================================
-`verbatim
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: can contain newlines
-===============================================================================
-`verbatim
-with
-newlines`
-
-trailing
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end)))
-  (paragraph))
-
-
-===============================================================================
-Verbatim: multiple
-===============================================================================
-`x` `y`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: with hash
-===============================================================================
-Don't consume `#` in heading parser code
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-
-===============================================================================
-Raw inline
-===============================================================================
-`<? php echo 'yoyo' ?>`{=html}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (raw_inline
-      (raw_inline_marker_begin)
-      (content)
-      (raw_inline_marker_end)
-      (raw_inline_attribute
-        (language)))))
-
-===============================================================================
-Math
-===============================================================================
-$`1 + 2`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (math
-      (math_marker)
-      (math_marker_begin)
-      (content)
-      (math_marker_end))))
 
 ===============================================================================
 List: single dash
@@ -3181,7 +2313,7 @@ List: Unclosed List in Section
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
@@ -3221,7 +2353,6 @@ Table: single row
     (table_row
       (table_cell)
       (table_cell))))
-
 
 ===============================================================================
 Table: before paragraph
@@ -3363,8 +2494,8 @@ Table: with inline styling
 (document
   (table
     (table_row
-      (table_cell (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (table_cell (strong (strong_begin) (content) (strong_end))))))
+      (table_cell)
+      (table_cell))))
 
 ===============================================================================
 Table: with caption
@@ -3383,8 +2514,7 @@ Next paragraph
       (table_cell))
     (table_caption
       (marker)
-      (content
-        (emphasis (emphasis_begin) (content) (emphasis_end)))))
+      (content)))
   (paragraph))
 
 ===============================================================================
@@ -3403,8 +2533,7 @@ Next paragraph
       (table_cell))
     (table_caption
       (marker)
-      (content
-        (emphasis (emphasis_begin) (content) (emphasis_end)))))
+      (content)))
   (paragraph))
 
 ===============================================================================
@@ -3460,7 +2589,7 @@ Footnote: before heading
     (footnote_content
       (paragraph)))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Footnote: multiline
@@ -3578,25 +2707,11 @@ x * x*
   (paragraph)
   (paragraph)
   (paragraph)
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end)))
+  (paragraph)
   (paragraph)
   (paragraph)
   (paragraph)
   (paragraph))
-
-===============================================================================
-Paragraph: todo note fixme
-===============================================================================
-Higlight TODO NOTE and FIXME
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (todo) (note) (fixme)))
 
 ===============================================================================
 Paragraph: Not list items
@@ -3682,7 +2797,7 @@ Heading after list
       (list_item_content
         (paragraph))))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -3797,7 +2912,7 @@ Div in list should be closed before heading
           (content
             (paragraph))))))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -3830,6 +2945,6 @@ Comment before heading
       (comment
         (content))))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))

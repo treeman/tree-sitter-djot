@@ -21,18 +21,8 @@ typedef enum {
 
   FRONTMATTER_MARKER,
 
-  HEADING1_BEGIN,
-  HEADING1_CONTINUATION,
-  HEADING2_BEGIN,
-  HEADING2_CONTINUATION,
-  HEADING3_BEGIN,
-  HEADING3_CONTINUATION,
-  HEADING4_BEGIN,
-  HEADING4_CONTINUATION,
-  HEADING5_BEGIN,
-  HEADING5_CONTINUATION,
-  HEADING6_BEGIN,
-  HEADING6_CONTINUATION,
+  HEADING_BEGIN,
+  HEADING_CONTINUATION,
   DIV_BEGIN,
   DIV_END,
   CODE_BLOCK_BEGIN,
@@ -1349,44 +1339,6 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 }
 
-static TokenType heading_start_token(uint8_t level) {
-  switch (level) {
-  case 1:
-    return HEADING1_BEGIN;
-  case 2:
-    return HEADING2_BEGIN;
-  case 3:
-    return HEADING3_BEGIN;
-  case 4:
-    return HEADING4_BEGIN;
-  case 5:
-    return HEADING5_BEGIN;
-  case 6:
-    return HEADING6_BEGIN;
-  default:
-    return ERROR;
-  }
-}
-
-static TokenType heading_continuation_token(uint8_t level) {
-  switch (level) {
-  case 1:
-    return HEADING1_CONTINUATION;
-  case 2:
-    return HEADING2_CONTINUATION;
-  case 3:
-    return HEADING3_CONTINUATION;
-  case 4:
-    return HEADING4_CONTINUATION;
-  case 5:
-    return HEADING5_CONTINUATION;
-  case 6:
-    return HEADING6_CONTINUATION;
-  default:
-    return ERROR;
-  }
-}
-
 static bool parse_heading(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
   // Note that headings don't contain other blocks, only inline.
@@ -1403,21 +1355,18 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
   // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
-    TokenType start_token = heading_start_token(hash_count);
-    TokenType continuation_token = heading_continuation_token(hash_count);
-
-    if (!valid_symbols[start_token] && !valid_symbols[continuation_token] &&
+    if (!valid_symbols[HEADING_BEGIN] && !valid_symbols[HEADING_CONTINUATION] &&
         !valid_symbols[BLOCK_CLOSE]) {
       return false;
     }
 
     advance(s, lexer); // Consume the ' '.
 
-    if (valid_symbols[continuation_token] && top_heading &&
+    if (valid_symbols[HEADING_CONTINUATION] && top_heading &&
         top->level == hash_count) {
       // We're in a heading matching the same number of '#'.
       lexer->mark_end(lexer);
-      lexer->result_symbol = continuation_token;
+      lexer->result_symbol = HEADING_CONTINUATION;
       return true;
     }
 
@@ -1430,7 +1379,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     // Open a new heading.
-    if (valid_symbols[start_token]) {
+    if (valid_symbols[HEADING_BEGIN]) {
       // Sections are created on the root level (or nested inside other
       // sections). They should be closed when a header with the same or fewer
       // `#` is encountered, and then a new section should be started.
@@ -1446,7 +1395,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
       push_block(s, HEADING, hash_count);
       lexer->mark_end(lexer);
-      lexer->result_symbol = start_token;
+      lexer->result_symbol = HEADING_BEGIN;
       return true;
     }
   } else if (hash_count == 0 && top_heading) {
@@ -1465,9 +1414,8 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     // We should continue the heading, if it's open.
-    TokenType res = heading_continuation_token(top->level);
-    if (valid_symbols[res]) {
-      lexer->result_symbol = res;
+    if (valid_symbols[HEADING_CONTINUATION]) {
+      lexer->result_symbol = HEADING_CONTINUATION;
       return true;
     }
   }
@@ -1948,30 +1896,10 @@ static char *token_type_s(TokenType t) {
   case FRONTMATTER_MARKER:
     return "FRONTMATTER_MARKER";
 
-  case HEADING1_BEGIN:
-    return "HEADING1_BEGIN";
-  case HEADING1_CONTINUATION:
-    return "HEADING1_CONTINUATION";
-  case HEADING2_BEGIN:
-    return "HEADING2_BEGIN";
-  case HEADING2_CONTINUATION:
-    return "HEADING2_CONTINUATION";
-  case HEADING3_BEGIN:
-    return "HEADING3_BEGIN";
-  case HEADING3_CONTINUATION:
-    return "HEADING3_CONTINUATION";
-  case HEADING4_BEGIN:
-    return "HEADING4_BEGIN";
-  case HEADING4_CONTINUATION:
-    return "HEADING4_CONTINUATION";
-  case HEADING5_BEGIN:
-    return "HEADING5_BEGIN";
-  case HEADING5_CONTINUATION:
-    return "HEADING5_CONTINUATION";
-  case HEADING6_BEGIN:
-    return "HEADING6_BEGIN";
-  case HEADING6_CONTINUATION:
-    return "HEADING6_CONTINUATION";
+  case HEADING_BEGIN:
+    return "HEADING_BEGIN";
+  case HEADING_CONTINUATION:
+    return "HEADING_CONTINUATION";
   case DIV_BEGIN:
     return "DIV_BEGIN";
   case DIV_END:

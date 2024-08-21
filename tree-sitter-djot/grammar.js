@@ -5,23 +5,8 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$._table_content],
-    [$._inline_no_surrounding_spaces],
-    [$._inline_element_with_whitespace, $._inline_no_surrounding_spaces],
-    [$.emphasis_begin, $._symbol_fallback],
-    [$.strong_begin, $._symbol_fallback],
-    [$.highlighted, $._symbol_fallback],
-    [$.superscript, $._symbol_fallback],
-    [$.subscript, $._symbol_fallback],
-    [$.insert, $._symbol_fallback],
-    [$.delete, $._symbol_fallback],
+    [$.link_reference_definition, $._symbol_fallback],
     [$.table_row, $._symbol_fallback],
-    [$._image_description, $._symbol_fallback],
-    [$.math, $._symbol_fallback],
-    [$.link_text, $.span, $._symbol_fallback],
-    [$.link_reference_definition, $.link_text, $.span, $._symbol_fallback],
-    [$.block_attribute, $._symbol_fallback],
-    [$._inline_element_with_whitespace, $._comment_with_spaces],
-    [$._inline_element_with_whitespace_without_newline, $._comment_with_spaces],
   ],
 
   rules: {
@@ -43,8 +28,7 @@ module.exports = grammar({
     // A section is only valid on the top level, or nested inside other sections.
     // Otherwise standalone headings are used (inside divs for example).
     _block_with_section: ($) => choice($.section, $._block_element, $._newline),
-    _block_with_heading: ($) =>
-      choice($._heading, $._block_element, $._newline),
+    _block_with_heading: ($) => choice($.heading, $._block_element, $._newline),
 
     _block_element: ($) =>
       choice(
@@ -61,99 +45,30 @@ module.exports = grammar({
         $._paragraph,
       ),
 
-    // Section should end by a new header with the same or fewer amount of '#'.
+    // Section should end by a new header with the same or fewer amount of `#`.
     section: ($) =>
       seq(
-        $._heading,
+        $.heading,
         alias(repeat($._block_with_section), $.section_content),
         $._block_close,
       ),
 
-    // Headings can't be mixed, this verbose description (together with the external scanner)
-    // ensures that they're not.
-    _heading: ($) =>
-      choice(
-        $.heading1,
-        $.heading2,
-        $.heading3,
-        $.heading4,
-        $.heading5,
-        $.heading6,
-      ),
-    heading1: ($) =>
+    // The external scanner allows for an arbitrary number of `#`
+    // that can be continued on the next line.
+    heading: ($) =>
       seq(
-        alias($._heading1_begin, $.marker),
-        alias($._heading1_content, $.content),
+        alias($._heading_begin, $.marker),
+        alias($._heading_content, $.content),
         $._block_close,
         optional($._eof_or_newline),
       ),
-    _heading1_content: ($) =>
+    _heading_content: ($) =>
       seq(
         $._inline_line,
-        repeat(seq(alias($._heading1_continuation, $.marker), $._inline_line)),
-      ),
-    heading2: ($) =>
-      seq(
-        alias($._heading2_begin, $.marker),
-        alias($._heading2_content, $.content),
-        $._block_close,
-        optional($._eof_or_newline),
-      ),
-    _heading2_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading2_continuation, $.marker), $._inline_line)),
-      ),
-    heading3: ($) =>
-      seq(
-        alias($._heading3_begin, $.marker),
-        alias($._heading5_content, $.content),
-        $._block_close,
-        optional($._eof_or_newline),
-      ),
-    _heading3_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading3_continuation, $.marker), $._inline_line)),
-      ),
-    heading4: ($) =>
-      seq(
-        alias($._heading4_begin, $.marker),
-        alias($._heading5_content, $.content),
-        $._block_close,
-        optional($._eof_or_newline),
-      ),
-    _heading4_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading4_continuation, $.marker), $._inline_line)),
-      ),
-    heading5: ($) =>
-      seq(
-        alias($._heading5_begin, $.marker),
-        alias($._heading5_content, $.content),
-        $._block_close,
-        optional($._eof_or_newline),
-      ),
-    _heading5_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading5_continuation, $.marker), $._inline_line)),
-      ),
-    heading6: ($) =>
-      seq(
-        alias($._heading6_begin, $.marker),
-        alias($._heading6_content, $.content),
-        $._block_close,
-        optional($._eof_or_newline),
-      ),
-    _heading6_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading6_continuation, $.marker), $._inline_line)),
+        repeat(seq(alias($._heading_continuation, $.marker), $._inline_line)),
       ),
 
-    // Djot has a crazy number of different list types,
+    // Djot has a crazy number of different list types
     // that we need to keep separate from each other.
     list: ($) =>
       prec.left(
@@ -407,9 +322,8 @@ module.exports = grammar({
           $._newline,
         ),
       ),
-    table_cell_alignment: (_) => token.immediate(prec(100, /:?-+:?/)),
-    table_cell: ($) =>
-      prec.left(repeat1($._inline_element_with_whitespace_without_newline)),
+    table_cell_alignment: (_) => token.immediate(prec(100, /\s*:?-+:?\s*/)),
+    table_cell: ($) => $._inline,
     table_caption: ($) =>
       seq(
         alias($._table_caption_begin, $.marker),
@@ -482,7 +396,7 @@ module.exports = grammar({
       ),
     _block_quote_content: ($) =>
       seq(
-        choice($._heading, $._block_element),
+        choice($.heading, $._block_element),
         repeat(seq($._block_quote_prefix, optional($._block_element))),
       ),
     _block_quote_prefix: ($) =>
@@ -493,13 +407,15 @@ module.exports = grammar({
     link_reference_definition: ($) =>
       seq(
         "[",
-        alias($._inline, $.link_label),
+        $.link_label,
         "]",
         ":",
         $._whitespace1,
         $.link_destination,
+        $._whitespace,
         $._one_or_two_newlines,
       ),
+    link_label: ($) => $._inline,
     link_destination: (_) => /\S+/,
 
     block_attribute: ($) =>
@@ -539,270 +455,69 @@ module.exports = grammar({
     // token can be emitted which closes the paragraph content.
     _paragraph: ($) =>
       seq(
+        alias($._paragraph_content, $.paragraph),
         // Blankline is split out from paragraph to enable textobject
         // to not select newline up to following text.
-        alias($._paragraph_content, $.paragraph),
         choice($._eof_or_newline, $._close_paragraph),
       ),
-    _paragraph_content: ($) => seq($._inline, $._eof_or_newline),
+    _paragraph_content: ($) =>
+      // Newlines inside inline blocks should be of the `_newline_inline` type.
+      seq(
+        $._inline,
+        repeat(seq($._newline_inline, $._inline)),
+        // Last newline can be of the normal variant to signal the end of the paragraph.
+        $._eof_or_newline,
+      ),
 
     _one_or_two_newlines: ($) =>
-      prec.left(choice("\0", seq($._newline, $._newline), $._newline)),
+      prec.left(
+        choice(seq($._eof_or_newline, $._eof_or_newline), $._eof_or_newline),
+      ),
 
     _whitespace: (_) => token.immediate(/[ \t]*/),
     _whitespace1: (_) => token.immediate(/[ \t]+/),
 
-    _inline: ($) => prec.left(repeat1($._inline_element_with_whitespace)),
+    // Use repeat1 over /[^\n]+/ regex to not gobble up everything
+    // and allow other tokens to interrupt the inline capture.
+    _inline: ($) => prec.left(repeat1(choice(/[^\n]/, $._symbol_fallback))),
+    _inline_line: ($) => seq($._inline, $._eof_or_newline),
 
-    _inline_element_with_whitespace: ($) =>
-      choice($._inline_element_with_newline, $._whitespace1),
-    _inline_element_with_whitespace_without_newline: ($) =>
-      choice($._inline_core_element, $._whitespace1),
-    _inline_element_without_whitespace: ($) =>
-      choice($._inline_element_with_newline, $._whitespace1),
-    _inline_element_with_newline: ($) =>
-      choice(
-        $._inline_core_element,
-        seq($._newline_inline, optional($._block_quote_prefix)),
-      ),
-
-    _inline_core_element: ($) =>
-      prec.left(
+    _symbol_fallback: ($) =>
+      prec.dynamic(
+        -1000,
         choice(
-          seq(
-            choice(
-              $._hard_line_break,
-              $._smart_punctuation,
-              $.backslash_escape,
-              $.autolink,
-              $.emphasis,
-              $.strong,
-              $.highlighted,
-              $.superscript,
-              $.subscript,
-              $.insert,
-              $.delete,
-              $.verbatim,
-              $.math,
-              $.raw_inline,
-              $.footnote_reference,
-              $.symbol,
-              $.span,
-              $._image,
-              $._link,
-              $._comment_with_spaces,
-              $._todo_highlights,
-              $._symbol_fallback,
-              $._text,
-            ),
-            optional($.inline_attribute),
-          ),
-          $.span,
+          // "![",
+          // "*",
+          "[",
+          // "[^",
+          // "^",
+          // "_",
+          "{",
+          // "{*",
+          // "{+",
+          "{-",
+          // "{=",
+          // "{^",
+          // "{_",
+          // "{~",
+          "|",
+          // "~",
+          // "<",
+          // "$",
         ),
       ),
-
-    // Emphasis and strong markers aren't allowed to exist next a space.
-    // This incarnation exists to ensure that the content doesn't start or end
-    // with a space.
-    _inline_no_surrounding_spaces: ($) =>
-      choice(
-        $._inline_element_with_newline,
-        seq(
-          $._inline_element_with_newline,
-          repeat($._inline_element_with_whitespace),
-          $._inline_element_with_newline,
-        ),
-      ),
-
-    _inline_line: ($) => seq($._inline, choice($._newline, "\0")),
-
-    _hard_line_break: ($) =>
-      seq($.hard_line_break, optional($._block_quote_prefix)),
-    hard_line_break: ($) => seq("\\", $._newline),
-
-    _smart_punctuation: ($) =>
-      choice($.quotation_marks, $.ellipsis, $.em_dash, $.en_dash),
-    // NOTE it would be nice to be able to mark bare " and ', but then we'd have to be smarter
-    // so we don't mark the ' in `it's`.
-    quotation_marks: (_) => token(choice('{"', '"}', "{'", "'}", '\\"', "\\'")),
-    ellipsis: (_) => "...",
-    em_dash: (_) => "---",
-    en_dash: (_) => "--",
 
     backslash_escape: (_) => /\\[^\\\r\n]/,
-
-    autolink: (_) => seq("<", /[^>\s]+/, ">"),
-
-    emphasis: ($) =>
-      seq(
-        $.emphasis_begin,
-        alias($._inline_no_surrounding_spaces, $.content),
-        $.emphasis_end,
-      ),
-
-    // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
-    // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
-    emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
-    emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
-
-    strong: ($) =>
-      seq(
-        $.strong_begin,
-        alias($._inline_no_surrounding_spaces, $.content),
-        $.strong_end,
-      ),
-    strong_begin: (_) => choice(seq("{*", repeat(" ")), "*"),
-    strong_end: (_) => choice(token(seq(repeat(" "), "*}")), "*"),
-
-    highlighted: ($) => seq("{=", alias($._inline, $.content), "=}"),
-    insert: ($) => seq("{+", alias($._inline, $.content), "+}"),
-    delete: ($) => seq("{-", alias($._inline, $.content), "-}"),
-    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
-
-    // The syntax description isn't clear about if non-bracket can contain surrounding spaces?
-    // The live playground suggests that yes they can.
-    superscript: ($) =>
-      seq(choice("{^", "^"), alias($._inline, $.content), choice("^}", "^")),
-    subscript: ($) =>
-      seq(choice("{~", "~"), alias($._inline, $.content), choice("~}", "~")),
-
-    footnote_reference: ($) =>
-      seq(
-        alias("[^", $.footnote_marker_begin),
-        $.reference_label,
-        alias("]", $.footnote_marker_end),
-      ),
 
     reference_label: ($) => $._id,
     _id: (_) => /[\w_-]+/,
 
-    _image: ($) =>
-      choice(
-        $.full_reference_image,
-        $.collapsed_reference_image,
-        $.inline_image,
-      ),
-    full_reference_image: ($) => seq($._image_description, $._link_label),
-    collapsed_reference_image: ($) =>
-      seq($._image_description, token.immediate("[]")),
-    inline_image: ($) => seq($._image_description, $.inline_link_destination),
-
-    _image_description: ($) =>
-      seq("![", optional(alias($._inline, $.image_description)), "]"),
-
-    _link: ($) =>
-      choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
-    full_reference_link: ($) => seq($.link_text, $._link_label),
-    collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
-    inline_link: ($) => seq($.link_text, $.inline_link_destination),
-
-    link_text: ($) => seq("[", $._inline, "]"),
-
-    _link_label: ($) =>
-      seq("[", alias($._inline, $.link_label), token.immediate("]")),
-    inline_link_destination: (_) => seq("(", /[^\n\)]+/, ")"),
-
-    inline_attribute: ($) =>
-      seq(
-        token.immediate("{"),
-        alias(
-          repeat(
-            choice(
-              $.class,
-              $.identifier,
-              $.key_value,
-              alias($._comment_with_newline, $.comment),
-              $._whitespace1,
-              $._newline,
-            ),
-          ),
-          $.args,
-        ),
-        "}",
-      ),
-
-    // An inline attribute is only allowed to have surrounding spaces
-    // if it only contains a comment.
-    comment: ($) => seq("{", $._comment_with_newline, "}"),
-    _comment_with_spaces: ($) => seq($._whitespace1, $.comment),
-
-    span: ($) => seq("[", $._inline, "]", $.inline_attribute),
-
-    _comment_with_newline: ($) =>
-      seq(
-        "%",
-        // With a whitespace here there's weirdly enough no conflict with
-        // `_comment_no_newline` despite only a single choice difference.
-        $._whitespace,
-        alias(
-          repeat(choice($.backslash_escape, /[^%\n]/, $._newline)),
-          $.content,
-        ),
-        "%",
-      ),
     _comment_no_newline: ($) =>
       seq(
         "%",
         alias(repeat(choice($.backslash_escape, /[^%\n]/)), $.content),
         "%",
       ),
-
-    raw_inline: ($) =>
-      seq(
-        alias($._verbatim_begin, $.raw_inline_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.raw_inline_marker_end),
-        $.raw_inline_attribute,
-      ),
-    raw_inline_attribute: ($) => seq(token.immediate("{="), $.language, "}"),
-    math: ($) =>
-      seq(
-        alias("$", $.math_marker),
-        alias($._verbatim_begin, $.math_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.math_marker_end),
-      ),
-    verbatim: ($) =>
-      seq(
-        alias($._verbatim_begin, $.verbatim_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.verbatim_marker_end),
-      ),
-
-    _todo_highlights: ($) => choice($.todo, $.note, $.fixme),
-    todo: (_) => choice("TODO", "WIP"),
-    note: (_) => choice("NOTE", "INFO", "XXX"),
-    fixme: (_) => "FIXME",
-
-    // These exists to explicit trigger an LR collision with existing
-    // prefixes. A collision isn't detected with a string and the
-    // catch-all `_text` regex.
-    _symbol_fallback: ($) =>
-      prec.dynamic(
-        -1000,
-        choice(
-          "![",
-          "*",
-          "[",
-          "[^",
-          "^",
-          "_",
-          "{",
-          "{*",
-          "{+",
-          "{-",
-          "{=",
-          "{^",
-          "{_",
-          "{~",
-          "|",
-          "~",
-          "<",
-          "$",
-        ),
-      ),
-    // It's a bit faster with repeat1 here.
-    _text: (_) => repeat1(/\S/),
   },
 
   externals: ($) => [
@@ -842,20 +557,10 @@ module.exports = grammar({
 
     // Headings open and close sections, but they're not exposed to `grammar.js`
     // but is used by the external scanner internally.
-    $._heading1_begin,
+    $._heading_begin,
     // Heading continuation can continue a heading, but only if
     // they match the number of `#` (or there's no `#`).
-    $._heading1_continuation,
-    $._heading2_begin,
-    $._heading2_continuation,
-    $._heading3_begin,
-    $._heading3_continuation,
-    $._heading4_begin,
-    $._heading4_continuation,
-    $._heading5_begin,
-    $._heading5_continuation,
-    $._heading6_begin,
-    $._heading6_continuation,
+    $._heading_continuation,
     // Matches div markers with varying number of `:`.
     $._div_begin,
     $._div_end,

@@ -27,11 +27,6 @@
     }
   },
   {
-    "type": "autolink",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "block_attribute",
     "named": true,
     "fields": {},
@@ -123,36 +118,6 @@
     }
   },
   {
-    "type": "collapsed_reference_image",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "image_description",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "collapsed_reference_link",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "link_text",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "comment",
     "named": true,
     "fields": {},
@@ -176,10 +141,6 @@
       "required": false,
       "types": [
         {
-          "type": "autolink",
-          "named": true
-        },
-        {
           "type": "backslash_escape",
           "named": true
         },
@@ -200,43 +161,7 @@
           "named": true
         },
         {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
           "type": "div",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
           "named": true
         },
         {
@@ -244,63 +169,7 @@
           "named": true
         },
         {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
+          "type": "heading",
           "named": true
         },
         {
@@ -316,47 +185,11 @@
           "named": true
         },
         {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
           "type": "paragraph",
           "named": true
         },
         {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
           "type": "raw_block",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
           "named": true
         },
         {
@@ -365,14 +198,6 @@
         },
         {
           "type": "thematic_break",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
           "named": true
         }
       ]
@@ -411,27 +236,7 @@
           "named": true
         },
         {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
+          "type": "heading",
           "named": true
         },
         {
@@ -456,21 +261,6 @@
         },
         {
           "type": "thematic_break",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "delete",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
           "named": true
         }
       ]
@@ -582,39 +372,6 @@
     }
   },
   {
-    "type": "emphasis",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "emphasis_begin",
-          "named": true
-        },
-        {
-          "type": "emphasis_end",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "emphasis_begin",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "emphasis_end",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "footnote",
     "named": true,
     "fields": {},
@@ -670,27 +427,7 @@
           "named": true
         },
         {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
+          "type": "heading",
           "named": true
         },
         {
@@ -715,29 +452,6 @@
         },
         {
           "type": "thematic_break",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "footnote_reference",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "footnote_marker_begin",
-          "named": true
-        },
-        {
-          "type": "footnote_marker_end",
-          "named": true
-        },
-        {
-          "type": "reference_label",
           "named": true
         }
       ]
@@ -772,50 +486,7 @@
     "fields": {}
   },
   {
-    "type": "full_reference_image",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "image_description",
-          "named": true
-        },
-        {
-          "type": "link_label",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "full_reference_link",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "link_label",
-          "named": true
-        },
-        {
-          "type": "link_text",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "hard_line_break",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "heading1",
+    "type": "heading",
     "named": true,
     "fields": {},
     "children": {
@@ -828,328 +499,6 @@
         },
         {
           "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "heading2",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "heading3",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "heading4",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "heading5",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "heading6",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "marker",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "highlighted",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "image_description",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "inline_attribute",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "args",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "inline_image",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "image_description",
-          "named": true
-        },
-        {
-          "type": "inline_link_destination",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "inline_link",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "inline_link_destination",
-          "named": true
-        },
-        {
-          "type": "link_text",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "inline_link_destination",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "insert",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
           "named": true
         }
       ]
@@ -1182,141 +531,7 @@
   {
     "type": "link_label",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "link_reference_definition",
@@ -1332,145 +547,6 @@
         },
         {
           "type": "link_label",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "link_text",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
           "named": true
         }
       ]
@@ -1631,27 +707,7 @@
           "named": true
         },
         {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
+          "type": "heading",
           "named": true
         },
         {
@@ -1701,175 +757,9 @@
     }
   },
   {
-    "type": "math",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "math_marker",
-          "named": true
-        },
-        {
-          "type": "math_marker_begin",
-          "named": true
-        },
-        {
-          "type": "math_marker_end",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "note",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "paragraph",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "raw_block",
@@ -1918,48 +808,6 @@
     }
   },
   {
-    "type": "raw_inline",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "raw_inline_attribute",
-          "named": true
-        },
-        {
-          "type": "raw_inline_marker_begin",
-          "named": true
-        },
-        {
-          "type": "raw_inline_marker_end",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "raw_inline_attribute",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "language",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "reference_label",
     "named": true,
     "fields": {}
@@ -1973,27 +821,7 @@
       "required": true,
       "types": [
         {
-          "type": "heading1",
-          "named": true
-        },
-        {
-          "type": "heading2",
-          "named": true
-        },
-        {
-          "type": "heading3",
-          "named": true
-        },
-        {
-          "type": "heading4",
-          "named": true
-        },
-        {
-          "type": "heading5",
-          "named": true
-        },
-        {
-          "type": "heading6",
+          "type": "heading",
           "named": true
         },
         {
@@ -2063,208 +891,6 @@
     }
   },
   {
-    "type": "span",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "strong",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "strong_begin",
-          "named": true
-        },
-        {
-          "type": "strong_end",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "strong_begin",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "strong_end",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "subscript",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "superscript",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "table",
     "named": true,
     "fields": {},
@@ -2313,141 +939,7 @@
   {
     "type": "table_cell",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "table_header",
@@ -2509,149 +1001,10 @@
   {
     "type": "term",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
-          "named": true
-        },
-        {
-          "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "thematic_break",
-    "named": true,
     "fields": {}
   },
   {
-    "type": "todo",
+    "type": "thematic_break",
     "named": true,
     "fields": {}
   },
@@ -2666,29 +1019,6 @@
     "fields": {}
   },
   {
-    "type": "verbatim",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "content",
-          "named": true
-        },
-        {
-          "type": "verbatim_marker_begin",
-          "named": true
-        },
-        {
-          "type": "verbatim_marker_end",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "\u0000",
     "named": false
   },
@@ -2697,39 +1027,11 @@
     "named": false
   },
   {
-    "type": "![",
-    "named": false
-  },
-  {
     "type": "\"",
     "named": false
   },
   {
-    "type": "$",
-    "named": false
-  },
-  {
     "type": "%",
-    "named": false
-  },
-  {
-    "type": "(",
-    "named": false
-  },
-  {
-    "type": ")",
-    "named": false
-  },
-  {
-    "type": "*",
-    "named": false
-  },
-  {
-    "type": "+}",
-    "named": false
-  },
-  {
-    "type": "-}",
     "named": false
   },
   {
@@ -2741,35 +1043,7 @@
     "named": false
   },
   {
-    "type": "<",
-    "named": false
-  },
-  {
     "type": "=",
-    "named": false
-  },
-  {
-    "type": "=}",
-    "named": false
-  },
-  {
-    "type": ">",
-    "named": false
-  },
-  {
-    "type": "INFO",
-    "named": false
-  },
-  {
-    "type": "NOTE",
-    "named": false
-  },
-  {
-    "type": "TODO",
-    "named": false
-  },
-  {
-    "type": "WIP",
     "named": false
   },
   {
@@ -2777,39 +1051,11 @@
     "named": false
   },
   {
-    "type": "XXX",
-    "named": false
-  },
-  {
     "type": "[",
     "named": false
   },
   {
-    "type": "[]",
-    "named": false
-  },
-  {
-    "type": "[^",
-    "named": false
-  },
-  {
-    "type": "\\",
-    "named": false
-  },
-  {
     "type": "]",
-    "named": false
-  },
-  {
-    "type": "^",
-    "named": false
-  },
-  {
-    "type": "^}",
-    "named": false
-  },
-  {
-    "type": "_",
     "named": false
   },
   {
@@ -2830,22 +1076,6 @@
   },
   {
     "type": "div_marker_end",
-    "named": true
-  },
-  {
-    "type": "ellipsis",
-    "named": true
-  },
-  {
-    "type": "em_dash",
-    "named": true
-  },
-  {
-    "type": "en_dash",
-    "named": true
-  },
-  {
-    "type": "fixme",
     "named": true
   },
   {
@@ -2957,22 +1187,6 @@
     "named": true
   },
   {
-    "type": "math_marker",
-    "named": true
-  },
-  {
-    "type": "math_marker_begin",
-    "named": true
-  },
-  {
-    "type": "math_marker_end",
-    "named": true
-  },
-  {
-    "type": "quotation_marks",
-    "named": true
-  },
-  {
     "type": "raw_block_marker_begin",
     "named": true
   },
@@ -2981,27 +1195,7 @@
     "named": true
   },
   {
-    "type": "raw_inline_marker_begin",
-    "named": true
-  },
-  {
-    "type": "raw_inline_marker_end",
-    "named": true
-  },
-  {
-    "type": "symbol",
-    "named": true
-  },
-  {
     "type": "table_cell_alignment",
-    "named": true
-  },
-  {
-    "type": "verbatim_marker_begin",
-    "named": true
-  },
-  {
-    "type": "verbatim_marker_end",
     "named": true
   },
   {
@@ -3013,31 +1207,7 @@
     "named": false
   },
   {
-    "type": "{*",
-    "named": false
-  },
-  {
-    "type": "{+",
-    "named": false
-  },
-  {
     "type": "{-",
-    "named": false
-  },
-  {
-    "type": "{=",
-    "named": false
-  },
-  {
-    "type": "{^",
-    "named": false
-  },
-  {
-    "type": "{_",
-    "named": false
-  },
-  {
-    "type": "{~",
     "named": false
   },
   {
@@ -3046,14 +1216,6 @@
   },
   {
     "type": "}",
-    "named": false
-  },
-  {
-    "type": "~",
-    "named": false
-  },
-  {
-    "type": "~}",
     "named": false
   }
 ]
