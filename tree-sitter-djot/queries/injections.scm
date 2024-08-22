@@ -15,4 +15,4 @@
 ((link_label) @injection.content (#set! injection.language "djot_inline"))
 ((paragraph) @injection.content (#set! injection.language "djot_inline"))
 ((table_caption (content) @injection.content (#set! injection.language "djot_inline")))
-; TODO heading content
+((heading (content) @injection.content (#set! injection.language "djot_inline")))

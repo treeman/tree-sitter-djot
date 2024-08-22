@@ -759,7 +759,17 @@
   {
     "type": "paragraph",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "raw_block",
@@ -1001,7 +1011,17 @@
   {
     "type": "term",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block_quote_marker",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "thematic_break",

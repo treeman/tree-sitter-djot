@@ -28,8 +28,11 @@ module.exports = grammar({
     // A section is only valid on the top level, or nested inside other sections.
     // Otherwise standalone headings are used (inside divs for example).
     _block_with_section: ($) => choice($.section, $._block_element, $._newline),
-    _block_with_heading: ($) => choice($.heading, $._block_element, $._newline),
-
+    _block_with_heading: ($) =>
+      seq(
+        optional($._block_quote_continuation),
+        choice($.heading, $._block_element, $._newline),
+      ),
     _block_element: ($) =>
       choice(
         $.list,
@@ -401,7 +404,9 @@ module.exports = grammar({
       ),
     _block_quote_prefix: ($) =>
       prec.left(
-        repeat1(alias($._block_quote_continuation, $.block_quote_marker)),
+        repeat1(
+          prec.left(alias($._block_quote_continuation, $.block_quote_marker)),
+        ),
       ),
 
     link_reference_definition: ($) =>
@@ -463,8 +468,11 @@ module.exports = grammar({
     _paragraph_content: ($) =>
       // Newlines inside inline blocks should be of the `_newline_inline` type.
       seq(
+        optional($._block_quote_prefix),
         $._inline,
-        repeat(seq($._newline_inline, $._inline)),
+        repeat(
+          seq($._newline_inline, optional($._block_quote_prefix), $._inline),
+        ),
         // Last newline can be of the normal variant to signal the end of the paragraph.
         $._eof_or_newline,
       ),
@@ -482,30 +490,7 @@ module.exports = grammar({
     _inline: ($) => prec.left(repeat1(choice(/[^\n]/, $._symbol_fallback))),
     _inline_line: ($) => seq($._inline, $._eof_or_newline),
 
-    _symbol_fallback: ($) =>
-      prec.dynamic(
-        -1000,
-        choice(
-          // "![",
-          // "*",
-          "[",
-          // "[^",
-          // "^",
-          // "_",
-          "{",
-          // "{*",
-          // "{+",
-          "{-",
-          // "{=",
-          // "{^",
-          // "{_",
-          // "{~",
-          "|",
-          // "~",
-          // "<",
-          // "$",
-        ),
-      ),
+    _symbol_fallback: ($) => prec.dynamic(-1000, choice("[", "{", "{-", "|")),
 
     backslash_escape: (_) => /\\[^\\\r\n]/,
 

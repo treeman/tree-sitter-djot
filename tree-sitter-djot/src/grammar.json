@@ -91,19 +91,36 @@
       ]
     },
     "_block_with_heading": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "heading"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_block_quote_continuation"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_block_element"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_newline"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "heading"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_block_element"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_newline"
+            }
+          ]
         }
       ]
     },
@@ -1922,13 +1939,17 @@
       "content": {
         "type": "REPEAT1",
         "content": {
-          "type": "ALIAS",
+          "type": "PREC_LEFT",
+          "value": 0,
           "content": {
-            "type": "SYMBOL",
-            "name": "_block_quote_continuation"
-          },
-          "named": true,
-          "value": "block_quote_marker"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_block_quote_continuation"
+            },
+            "named": true,
+            "value": "block_quote_marker"
+          }
         }
       }
     },
@@ -2147,6 +2168,18 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_block_quote_prefix"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
           "type": "SYMBOL",
           "name": "_inline"
         },
@@ -2158,6 +2191,18 @@
               {
                 "type": "SYMBOL",
                 "name": "_newline_inline"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_block_quote_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               },
               {
                 "type": "SYMBOL",

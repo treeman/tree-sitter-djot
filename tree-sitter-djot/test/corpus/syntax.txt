@@ -336,6 +336,23 @@ Block quote: oneline
       (paragraph))))
 
 ===============================================================================
+Block quote: directly after
+===============================================================================
+> One
+> Two
+> Three
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (paragraph
+        (block_quote_marker)
+        (block_quote_marker)))))
+
+===============================================================================
 Block quote: long
 ===============================================================================
 > This is a block quote.
@@ -1261,6 +1278,27 @@ Div: close nested div
         (content
           (paragraph))))
     (div_marker_end)))
+
+===============================================================================
+Div: inside block quote
+===============================================================================
+> :::
+> a
+> :::
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (div
+        (div_marker_begin)
+        (content
+          (paragraph
+            (block_quote_marker)))
+        (block_quote_marker)
+        (div_marker_end)))))
 
 ===============================================================================
 Paragraph: not recognized
