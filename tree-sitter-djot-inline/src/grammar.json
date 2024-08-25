@@ -1263,18 +1263,6 @@
         ]
       }
     },
-    "_verbatim_begin": {
-      "type": "STRING",
-      "value": "`"
-    },
-    "_verbatim_end": {
-      "type": "STRING",
-      "value": "`"
-    },
-    "_verbatim_content": {
-      "type": "PATTERN",
-      "value": "[^`]*"
-    },
     "language": {
       "type": "PATTERN",
       "value": "[^\\n\\t \\{\\}=]+"
@@ -1447,7 +1435,28 @@
     ]
   ],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "_ignored"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_verbatim_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_verbatim_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_verbatim_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_error"
+    }
+  ],
   "inline": [],
   "supertypes": []
 }

@@ -1010,16 +1010,6 @@
     }
   },
   {
-    "type": "math_marker_begin",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "math_marker_end",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "note",
     "named": true,
     "fields": {}
@@ -1065,16 +1055,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "raw_inline_marker_begin",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "raw_inline_marker_end",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "reference_label",
@@ -1313,16 +1293,6 @@
     }
   },
   {
-    "type": "verbatim_marker_begin",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "verbatim_marker_end",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": " ",
     "named": false
   },
@@ -1435,10 +1405,6 @@
     "named": false
   },
   {
-    "type": "`",
-    "named": false
-  },
-  {
     "type": "backslash_escape",
     "named": true
   },
@@ -1479,11 +1445,35 @@
     "named": true
   },
   {
+    "type": "math_marker_begin",
+    "named": true
+  },
+  {
+    "type": "math_marker_end",
+    "named": true
+  },
+  {
     "type": "quotation_marks",
     "named": true
   },
   {
+    "type": "raw_inline_marker_begin",
+    "named": true
+  },
+  {
+    "type": "raw_inline_marker_end",
+    "named": true
+  },
+  {
     "type": "symbol",
+    "named": true
+  },
+  {
+    "type": "verbatim_marker_begin",
+    "named": true
+  },
+  {
+    "type": "verbatim_marker_end",
     "named": true
   },
   {

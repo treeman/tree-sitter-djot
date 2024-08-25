@@ -18,12 +18,11 @@ Simple `verbatim` here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Verbatim: double with single inside
@@ -32,12 +31,11 @@ Verbatim: double with single inside
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Verbatim: with triple inside
@@ -46,12 +44,11 @@ Verbatim: with triple inside
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Verbatim: newline closes
@@ -60,12 +57,11 @@ Verbatim: newline closes
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Verbatim: can contain newlines
@@ -74,17 +70,13 @@ Verbatim: can contain newlines
 with
 newlines`
 
-trailing
-
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end)))
-  (paragraph))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 
 ===============================================================================
@@ -94,16 +86,15 @@ Verbatim: multiple
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end))
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Verbatim: with hash
@@ -112,12 +103,11 @@ Don't consume `#` in heading parser code
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+(inline
+  (verbatim
+    (verbatim_marker_begin)
+    (content)
+    (verbatim_marker_end)))
 
 ===============================================================================
 Paragraph: todo note fixme
@@ -126,69 +116,55 @@ Higlight TODO NOTE and FIXME
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (todo) (note) (fixme)))
+(inline (todo) (note) (fixme))
 
 ===============================================================================
 Smart punctuation
 ===============================================================================
 
 Ellipsis...
-
 Em---dash
 Eh--dash
-
 Some{"quotes"} be{'here'}yo
-
  \"Straight\" \'quotes\'
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (ellipsis))
-  (paragraph
+(inline
+  (ellipsis)
     (em_dash)
-    (en_dash))
-  (paragraph
+    (en_dash)
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks)
+    (quotation_marks)
     (quotation_marks)
     (quotation_marks)
     (quotation_marks)
     (quotation_marks))
-  (paragraph
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)))
 
 ===============================================================================
 Backslash escape
 ===============================================================================
 
 No \_emphasis\_
-
 No \_strong\_
-
 No \<autolink>
-
 Regular \.\.\. dots
-
 Inside _x\_y_
-
 No \{+insert\*}
-
 \> no quote
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape) (backslash_escape))
-  (paragraph (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end)))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape)))
+(inline
+  (backslash_escape) (backslash_escape)
+  (backslash_escape) (backslash_escape)
+  (backslash_escape)
+  (backslash_escape) (backslash_escape) (backslash_escape)
+  (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end))
+  (backslash_escape) (backslash_escape)
+  (backslash_escape))
 
 ===============================================================================
 Image: inline
@@ -197,11 +173,10 @@ Image: inline
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_image
-      (image_description)
-      (inline_link_destination))))
+(inline
+  (inline_image
+    (image_description)
+    (inline_link_destination)))
 
 ===============================================================================
 Image: empty inline
@@ -210,10 +185,9 @@ Image: empty inline
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_image
-      (inline_link_destination))))
+(inline
+  (inline_image
+    (inline_link_destination)))
 
 ===============================================================================
 Image: collapsed reference link
@@ -222,10 +196,9 @@ Image: collapsed reference link
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (collapsed_reference_image
-      (image_description))))
+(inline
+  (collapsed_reference_image
+    (image_description)))
 
 ===============================================================================
 Image: full reference
@@ -234,11 +207,10 @@ Image: full reference
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (full_reference_image
-      (image_description)
-      (link_label))))
+(inline
+  (full_reference_image
+    (image_description)
+    (link_label)))
 
 ===============================================================================
 Emphasis
@@ -247,9 +219,8 @@ With _emphasis_ here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (emphasis (emphasis_begin) (content) (emphasis_end))))
+(inline
+  (emphasis (emphasis_begin) (content) (emphasis_end)))
 
 ===============================================================================
 Strong
@@ -258,30 +229,26 @@ With *strong* here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (strong (strong_begin) (content) (strong_end))))
+(inline
+  (strong (strong_begin) (content) (strong_end)))
 
 ===============================================================================
 Emphasis and strong
 ===============================================================================
 With _*strong* emphasis_ here
-
 With *_emphasis_ strong* here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (strong (strong_begin) (content) (strong_end)))
-      (emphasis_end)))
-  (paragraph
-    (strong
-      (strong_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (strong_end))))
+(inline
+  (emphasis
+    (emphasis_begin)
+    (content (strong (strong_begin) (content) (strong_end)))
+    (emphasis_end))
+  (strong
+    (strong_begin)
+    (content (emphasis (emphasis_begin) (content) (emphasis_end)))
+    (strong_end)))
 
 ===============================================================================
 Emphasis and strong two chars
@@ -291,16 +258,15 @@ _bc a_
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
+(inline
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end))
+  (emphasis
+    (emphasis_begin)
+    (content)
+    (emphasis_end)))
 
 ===============================================================================
 Emphasis and strong with newlines
@@ -312,100 +278,195 @@ b_
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
+(inline
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end))
+  (emphasis
+    (emphasis_begin)
+    (content)
+    (emphasis_end)))
 
 ===============================================================================
-Emphasis: various weird tests
+Emphasis: three chars with spaces
 ===============================================================================
 _a b c_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: two chars with spaces
+===============================================================================
 _a b_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: one char between
+===============================================================================
 _a_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: three chars with a newline
+===============================================================================
 _a
 b c_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+
+===============================================================================
+Emphasis: three chars with a newline 2
+===============================================================================
 _ai
 b c_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: three chars with a two newlines
+===============================================================================
 _a
 b
 c_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: two chars with a newline
+===============================================================================
 _a
 b_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: two chars with a newline 2
+===============================================================================
 _ab
 cd_
 
+-------------------------------------------------------------------------------
+
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
+
+===============================================================================
+Emphasis: two chars with a newline 3
+===============================================================================
 _ab
 x
 cd_
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+(inline (emphasis (emphasis_begin) (content) (emphasis_end)))
 
 ===============================================================================
-Superscipt: various weird tests
+Superscript: three chars with spaces
 ===============================================================================
 ^a b c^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: two chars with spaces
+===============================================================================
 ^a b^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: one char between
+===============================================================================
 ^a^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: three chars with a newline
+===============================================================================
 ^a
 b c^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+
+===============================================================================
+Superscript: three chars with a newline 2
+===============================================================================
 ^ai
 b c^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: three chars with a two newlines
+===============================================================================
 ^a
 b
 c^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: two chars with a newline
+===============================================================================
 ^a
 b^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: two chars with a newline 2
+===============================================================================
 ^ab
 cd^
 
+-------------------------------------------------------------------------------
+
+(inline (superscript (content)))
+
+===============================================================================
+Superscript: two chars with a newline 3
+===============================================================================
 ^ab
 x
 cd^
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
+(inline (superscript (content)))
 
 ===============================================================================
 Emphasis: nested
@@ -414,76 +475,67 @@ With __nested_ emphasis_
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (emphasis_end))))
+(inline
+  (emphasis
+    (emphasis_begin)
+    (content (emphasis (emphasis_begin) (content) (emphasis_end)))
+    (emphasis_end)))
 
 ===============================================================================
 Emphasis: forced despite spaces
 ===============================================================================
 {_yes_}
-
 {_ yes _}
-
 _yes _}
-
 {_ yes_}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+(inline
+  (emphasis (emphasis_begin) (content) (emphasis_end))
+  (emphasis (emphasis_begin) (content) (emphasis_end))
+  (emphasis (emphasis_begin) (content) (emphasis_end))
+  (emphasis (emphasis_begin) (content) (emphasis_end)))
 
 ===============================================================================
 Strong: forced despite spaces
 ===============================================================================
 {*yes*}
-
 *yes *}
-
 {* yes*
-
 {* yes *}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end))))
+(inline
+  (strong (strong_begin) (content) (strong_end))
+  (strong (strong_begin) (content) (strong_end))
+  (strong (strong_begin) (content) (strong_end))
+  (strong (strong_begin) (content) (strong_end)))
 
 ===============================================================================
 Subscript
 ===============================================================================
 ~sub~
-
 {~many sub~}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (subscript (content)))
-  (paragraph (subscript (content))))
+(inline
+  (subscript (content))
+  (subscript (content)))
 
 ===============================================================================
 Superscript
 ===============================================================================
 ^sup^
-
 {^many sup^}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
+(inline
+  (superscript (content))
+  (superscript (content)))
 
 ===============================================================================
 Highlighted
@@ -492,9 +544,8 @@ With {=mark=} here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (highlighted (content))))
+(inline
+  (highlighted (content)))
 
 ===============================================================================
 Insert
@@ -503,9 +554,8 @@ With {+insert+} here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (insert (content))))
+(inline
+  (insert (content)))
 
 ===============================================================================
 Delete
@@ -514,46 +564,36 @@ With {-delete-} here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (delete (content))))
+(inline
+  (delete (content)))
 
 ===============================================================================
 Inline with newlines
 ===============================================================================
 {=a
 b=}
-
 {+a
 b+}
-
 {-a
 b-}
-
 ^a
 b^
-
 ~a
 b~
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (highlighted
-      (content)))
-  (paragraph
+(inline
+  (highlighted
+    (content))
     (insert
-      (content)))
-  (paragraph
+      (content))
     (delete
-      (content)))
-  (paragraph
+      (content))
     (superscript
-      (content)))
-  (paragraph
+      (content))
     (subscript
-      (content))))
+      (content)))
 
 ===============================================================================
 Hard line break
@@ -563,9 +603,8 @@ break
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (hard_line_break)))
+(inline
+  (hard_line_break))
 
 ===============================================================================
 Symbol
@@ -574,9 +613,8 @@ With :wink: here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (symbol)))
+(inline
+  (symbol))
 
 ===============================================================================
 Link: inline
@@ -585,11 +623,10 @@ With [link](/url)
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
+(inline
+  (inline_link
+    (link_text)
+    (inline_link_destination)))
 
 ===============================================================================
 Link: with newline
@@ -599,11 +636,10 @@ newline](/url)
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
+(inline
+  (inline_link
+    (link_text)
+    (inline_link_destination)))
 
 ===============================================================================
 Link: begin
@@ -612,11 +648,10 @@ Link: begin
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
+(inline
+  (inline_link
+    (link_text)
+    (inline_link_destination)))
 
 ===============================================================================
 Link: collapsed reference link
@@ -625,10 +660,9 @@ With [a reference][]
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (collapsed_reference_link
-      (link_text))))
+(inline
+  (collapsed_reference_link
+    (link_text)))
 
 ===============================================================================
 Link: full reference single
@@ -637,29 +671,22 @@ With [a reference][ref]
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label))))
+(inline
+  (full_reference_link
+    (link_text)
+    (link_label)))
 
 ===============================================================================
 Link: full reference
 ===============================================================================
 With [a reference][ref]
 
-[ref]: /url
-
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label)))
-  (link_reference_definition
-    (link_label)
-    (link_destination)))
+(inline
+  (full_reference_link
+    (link_text)
+    (link_label)))
 
 ===============================================================================
 Inline attribute: mixed
@@ -668,16 +695,15 @@ text{.one .two #id author="with spaces"}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)
-        (key_value
-          (key)
-          (value))))))
+(inline
+  (inline_attribute
+    (args
+      (class)
+      (class)
+      (identifier)
+      (key_value
+        (key)
+        (value)))))
 
 ===============================================================================
 Inline attribute: casing
@@ -686,12 +712,11 @@ text{.snake_case .cebab-case}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)))))
+(inline
+  (inline_attribute
+    (args
+      (class)
+      (class))))
 
 ===============================================================================
 Inline attribute: key casing
@@ -700,16 +725,15 @@ text{snake_case=2 kebab-case=3}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (key_value
-          (key)
-          (value))
-        (key_value
-          (key)
-          (value))))))
+(inline
+  (inline_attribute
+    (args
+      (key_value
+        (key)
+        (value))
+      (key_value
+        (key)
+        (value)))))
 
 ===============================================================================
 Inline attribute: surrounding spaces
@@ -718,11 +742,10 @@ text{ .class }
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)))))
+(inline
+  (inline_attribute
+    (args
+      (class))))
 
 ===============================================================================
 Inline attribute: with newlines
@@ -733,13 +756,12 @@ text{.one
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)))))
+(inline
+  (inline_attribute
+    (args
+      (class)
+      (class)
+      (identifier))))
 
 ===============================================================================
 Inline attribute: with comment
@@ -748,13 +770,12 @@ text{#ident % later we'll add a class %}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content))))))
+(inline
+  (inline_attribute
+    (args
+      (identifier)
+      (comment
+        (content)))))
 
 ===============================================================================
 Inline attribute: comment
@@ -765,12 +786,11 @@ some text here
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (comment
-          (content))))))
+(inline
+  (inline_attribute
+    (args
+      (comment
+        (content)))))
 
 ===============================================================================
 Inline attribute: standalone comment
@@ -780,10 +800,9 @@ multiple lines %} baz.
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (comment
-      (content))))
+(inline
+  (comment
+    (content)))
 
 ===============================================================================
 Inline attribute: comment escape %
@@ -792,11 +811,10 @@ Before {% escape \% %}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (comment
-      (content
-        (backslash_escape)))))
+(inline
+  (comment
+    (content
+      (backslash_escape))))
 
 ===============================================================================
 Inline attribute: mixed comment escape %
@@ -805,14 +823,13 @@ Before{#id % escape \% %}
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content
-            (backslash_escape)))))))
+(inline
+  (inline_attribute
+    (args
+      (identifier)
+      (comment
+        (content
+          (backslash_escape))))))
 
 ===============================================================================
 Span
@@ -822,13 +839,12 @@ One [two three]{.class
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (span
-      (inline_attribute
-        (args
-          (class)
-          (identifier))))))
+(inline
+  (span
+    (inline_attribute
+      (args
+        (class)
+        (identifier)))))
 
 ===============================================================================
 Autolink
@@ -837,9 +853,8 @@ With </url> link
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (autolink)))
+(inline
+  (autolink))
 
 ===============================================================================
 Footnote: reference
@@ -849,12 +864,11 @@ Here's a ref.[^foo]
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (footnote_reference
-      (footnote_marker_begin)
-      (reference_label)
-      (footnote_marker_end))))
+(inline
+  (footnote_reference
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)))
 
 ===============================================================================
 Raw inline
@@ -863,14 +877,13 @@ Raw inline
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (raw_inline
-      (raw_inline_marker_begin)
-      (content)
-      (raw_inline_marker_end)
-      (raw_inline_attribute
-        (language)))))
+(inline
+  (raw_inline
+    (raw_inline_marker_begin)
+    (content)
+    (raw_inline_marker_end)
+    (raw_inline_attribute
+      (language))))
 
 ===============================================================================
 Math
@@ -879,11 +892,10 @@ $`1 + 2`
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (math
-      (math_marker)
-      (math_marker_begin)
-      (content)
-      (math_marker_end))))
+(inline
+  (math
+    (math_marker)
+    (math_marker_begin)
+    (content)
+    (math_marker_end)))
 

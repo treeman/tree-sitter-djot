@@ -233,7 +233,7 @@ module.exports = grammar({
     // These exists to explicit trigger an LR collision with existing
     // prefixes. A collision isn't detected with a string and the
     // catch-all `_text` regex.
-    _symbol_fallback: ($) =>
+    _symbol_fallback: (_) =>
       prec.dynamic(
         -1000,
         choice(
@@ -258,10 +258,6 @@ module.exports = grammar({
         ),
       ),
 
-    _verbatim_begin: (_) => "`",
-    _verbatim_end: (_) => "`",
-    _verbatim_content: (_) => /[^`]*/,
-
     language: (_) => /[^\n\t \{\}=]+/,
 
     _whitespace: (_) => token.immediate(/[ \t]*/),
@@ -277,4 +273,18 @@ module.exports = grammar({
     key: ($) => $._id,
     value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
   },
+
+  externals: ($) => [
+    // Used as default value in scanner, should never be referenced.
+    $._ignored,
+
+    // Verbatim is handled externally to match a varying number of `,
+    // and to close open verbatim when a paragraph ends with a blankline.
+    $._verbatim_begin,
+    $._verbatim_end,
+    $._verbatim_content,
+
+    // Never valid and is only used to signal an internal scanner error.
+    $._error,
+  ],
 });

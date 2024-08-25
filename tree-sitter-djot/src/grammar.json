@@ -2557,18 +2557,6 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_verbatim_begin"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_verbatim_end"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_verbatim_content"
-    },
-    {
-      "type": "SYMBOL",
       "name": "_error"
     }
   ],

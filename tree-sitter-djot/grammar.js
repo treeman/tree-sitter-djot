@@ -602,14 +602,6 @@ module.exports = grammar({
     $._table_caption_begin,
     $._table_caption_end,
 
-    // Inline elements.
-
-    // Verbatim is handled externally to match a varying number of `,
-    // and to close open verbatim when a paragraph ends with a blankline.
-    $._verbatim_begin,
-    $._verbatim_end,
-    $._verbatim_content,
-
     // Never valid and is only used to signal an internal scanner error.
     $._error,
   ],

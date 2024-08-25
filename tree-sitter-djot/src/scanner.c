@@ -59,10 +59,6 @@ typedef enum {
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
 
-  VERBATIM_BEGIN,
-  VERBATIM_END,
-  VERBATIM_CONTENT,
-
   ERROR,
 } TokenType;
 
@@ -522,76 +518,6 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   return true;
 }
 
-static void output_verbatim_begin(Scanner *s, TSLexer *lexer, uint8_t ticks) {
-  lexer->mark_end(lexer);
-  s->verbatim_tick_count = ticks;
-  lexer->result_symbol = VERBATIM_BEGIN;
-}
-
-static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
-  if (s->verbatim_tick_count > 0) {
-    s->verbatim_tick_count = 0;
-    lexer->result_symbol = VERBATIM_END;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// Parsing verbatim content is also responsible for parsing VERBATIM_END.
-static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
-  if (s->verbatim_tick_count == 0) {
-    return false;
-  }
-
-  uint8_t ticks = 0;
-  while (!lexer->eof(lexer)) {
-    if (lexer->lookahead == '\n') {
-      // We should only end verbatim if the paragraph is ended by a
-      // blankline.
-
-      // Advance over the first newline.
-      advance(s, lexer);
-      // Remove any whitespace on the next line.
-      consume_whitespace(s, lexer);
-      if (lexer->eof(lexer) || lexer->lookahead == '\n') {
-        // Found a blankline, meaning the paragraph containing the varbatim
-        // should be closed. So now we can close the verbatim.
-        break;
-      } else {
-        // No blankline, continue parsing.
-        lexer->mark_end(lexer);
-        ticks = 0;
-      }
-    } else if (lexer->lookahead == '`') {
-      // If we find a `, we need to count them to see if we should stop.
-      uint8_t current = consume_chars(s, lexer, '`');
-      if (current == s->verbatim_tick_count) {
-        // We found a matching number of `
-        // We need to return VERBATIM_CONTENT then VERBATIM_END in the next
-        // scan.
-        s->verbatim_tick_count = 0;
-        set_delayed_token(s, VERBATIM_END, current);
-        break;
-      } else {
-        // Found a number of ` that doesn't match the start,
-        // we should consume them.
-        lexer->mark_end(lexer);
-        ticks = 0;
-      }
-    } else {
-      // Non-` token found, this we should consume.
-      advance(s, lexer);
-      lexer->mark_end(lexer);
-      ticks = 0;
-    }
-  }
-
-  // Scanned all the verbatim.
-  lexer->result_symbol = VERBATIM_CONTENT;
-  return true;
-}
-
 static bool parse_backtick(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
   uint8_t ticks = consume_chars(s, lexer, '`');
@@ -606,12 +532,7 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
       return true;
     }
   }
-  // VERBATIM_END is handled by `parse_verbatim_content`.
-  // Don't capture leading whitespace for prettier conceal.
-  if (valid_symbols[VERBATIM_BEGIN] && s->indent == 0) {
-    output_verbatim_begin(s, lexer, ticks);
-    return true;
-  }
+
   return false;
 }
 
@@ -1596,10 +1517,6 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
 
 static bool parse_newline(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
-  if (valid_symbols[VERBATIM_END] && try_close_verbatim(s, lexer)) {
-    return true;
-  }
-
   // Various different newline types share the `\n` consumption.
   if (!valid_symbols[NEWLINE] && !valid_symbols[NEWLINE_INLINE] &&
       !valid_symbols[EOF_OR_NEWLINE]) {
@@ -1720,17 +1637,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (valid_symbols[LIST_ITEM_END] &&
       parse_list_item_end(s, lexer, valid_symbols)) {
     return true;
-  }
-
-  // Verbatim content parsing is responsible for setting VERBATIM_END
-  // for normal instances as well.
-  if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
-    return true;
-  }
-  if (valid_symbols[VERBATIM_END] && lexer->eof) {
-    if (try_close_verbatim(s, lexer)) {
-      return true;
-    }
   }
 
   if (parse_block_quote(s, lexer, valid_symbols)) {
@@ -1970,13 +1876,6 @@ static char *token_type_s(TokenType t) {
     return "TABLE_CAPTION_BEGIN";
   case TABLE_CAPTION_END:
     return "TABLE_CAPTION_END";
-
-  case VERBATIM_BEGIN:
-    return "VERBATIM_BEGIN";
-  case VERBATIM_END:
-    return "VERBATIM_END";
-  case VERBATIM_CONTENT:
-    return "VERBATIM_CONTENT";
 
   case ERROR:
     return "ERROR";
