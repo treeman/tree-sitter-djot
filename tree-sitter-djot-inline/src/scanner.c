@@ -23,6 +23,7 @@ typedef enum {
   EMPHASIS_END_CHECK,
   IN_REAL_EMPHASIS,
   IN_FALLBACK,
+  NON_WHITESPACE_CHECK,
 
   ERROR,
 } TokenType;
@@ -149,13 +150,12 @@ static bool emphasis_end_check(Scanner *s, TSLexer *lexer) {
 }
 
 // IN_FALLBACK will only be valid during symbol fallback
-// 0. `_` can start/end
-// 1. `_ ` cannot start
-// 2. ` _` cannot end
-// 3. `_}` will end
 
 static bool parse_emphasis(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
+  if (valid_symbols[EMPHASIS_END_CHECK] && emphasis_end_check(s, lexer)) {
+    return true;
+  }
   if (valid_symbols[EMPHASIS_BEGIN_CHECK]) {
     if (valid_symbols[IN_FALLBACK]) {
       // If we can find an open emphasis element that means we should choose
@@ -176,10 +176,20 @@ static bool parse_emphasis(Scanner *s, TSLexer *lexer,
       return true;
     }
   }
-  if (valid_symbols[EMPHASIS_END_CHECK] && emphasis_end_check(s, lexer)) {
+  return false;
+}
+
+static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
+  switch (lexer->lookahead) {
+  case ' ':
+  case '\t':
+  case '\r':
+  case '\n':
+    return false;
+  default:
+    lexer->result_symbol = NON_WHITESPACE_CHECK;
     return true;
   }
-  return false;
 }
 
 bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
@@ -208,6 +218,10 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
     }
   }
 
+  if (valid_symbols[NON_WHITESPACE_CHECK] && check_non_whitespace(s, lexer)) {
+    return true;
+  }
+
   if (parse_emphasis(s, lexer, valid_symbols)) {
     return true;
   }
@@ -215,6 +229,9 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   switch (lexer->lookahead) {
   case '`':
     if (valid_symbols[VERBATIM_BEGIN] && parse_verbatim_start(s, lexer)) {
+      return true;
+    }
+    if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
       return true;
     }
     break;

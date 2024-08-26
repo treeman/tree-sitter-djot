@@ -16,6 +16,9 @@ module.exports = grammar({
     [$.math, $._symbol_fallback],
     [$.link_text, $.span, $._symbol_fallback],
     [$._inline, $._comment_with_spaces],
+    [$._inline_without_trailing_space, $._comment_with_spaces],
+    [$._inline_without_trailing_space],
+    [$._comment_with_spaces],
   ],
 
   rules: {
@@ -24,6 +27,12 @@ module.exports = grammar({
 
     _inline: ($) =>
       prec.left(repeat1(choice($._element, $._newline, $._whitespace1))),
+
+    _inline_without_trailing_space: ($) =>
+      seq(
+        prec.left(repeat(choice($._element, $._newline, $._whitespace1))),
+        $._element,
+      ),
 
     _element: ($) =>
       prec.left(
@@ -83,14 +92,13 @@ module.exports = grammar({
       seq(
         $.emphasis_begin,
         $._emphasis_begin_check,
-        alias($._inline, $.content),
-        // FIXME no space before closing `_` marker
+        alias($._inline_without_trailing_space, $.content),
         $.emphasis_end,
         $._emphasis_end_check,
       ),
 
-    emphasis_begin: (_) => "{_",
-    emphasis_end: (_) => "_",
+    emphasis_begin: ($) => choice("{_", seq("_", $._non_whitespace_check)),
+    emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
 
     // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
     // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
@@ -260,7 +268,11 @@ module.exports = grammar({
           "{=",
           "{^",
           seq("{_", choice($._emphasis_begin_check, $._in_fallback)),
-          // "{_",
+          seq(
+            "_",
+            $._non_whitespace_check,
+            choice($._emphasis_begin_check, $._in_fallback),
+          ),
           "{~",
           "|",
           "~",
@@ -303,6 +315,7 @@ module.exports = grammar({
     $._emphasis_end_check,
     $._in_real_emphasis,
     $._in_fallback,
+    $._non_whitespace_check,
 
     // Never valid and is only used to signal an internal scanner error.
     $._error,
