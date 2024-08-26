@@ -91,8 +91,9 @@ module.exports = grammar({
     emphasis: ($) =>
       seq(
         $.emphasis_begin,
-        $._emphasis_begin_check,
+        $._emphasis_mark_begin,
         alias($._inline_without_trailing_space, $.content),
+        // NOTE end and end_check could be combined
         $.emphasis_end,
         $._emphasis_end_check,
       ),
@@ -267,11 +268,9 @@ module.exports = grammar({
           "{-",
           "{=",
           "{^",
-          seq("{_", choice($._emphasis_begin_check, $._in_fallback)),
           seq(
-            "_",
-            $._non_whitespace_check,
-            choice($._emphasis_begin_check, $._in_fallback),
+            choice("{_", seq("_", $._non_whitespace_check)),
+            choice($._emphasis_mark_begin, $._in_fallback),
           ),
           "{~",
           "|",
@@ -307,13 +306,8 @@ module.exports = grammar({
     $._verbatim_end,
     $._verbatim_content,
 
-    $.emphasis_begin_2,
-    $.emphasis_end_2,
-    $.strong_begin_2,
-    $.strong_end_2,
-    $._emphasis_begin_check,
+    $._emphasis_mark_begin,
     $._emphasis_end_check,
-    $._in_real_emphasis,
     $._in_fallback,
     $._non_whitespace_check,
 

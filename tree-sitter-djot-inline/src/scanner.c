@@ -14,14 +14,8 @@ typedef enum {
   VERBATIM_END,
   VERBATIM_CONTENT,
 
-  EMPHASIS_BEGIN,
-  EMPHASIS_END,
-  STRONG_BEGIN,
-  STRONG_END,
-
-  EMPHASIS_BEGIN_CHECK,
+  EMPHASIS_MARK_BEGIN,
   EMPHASIS_END_CHECK,
-  IN_REAL_EMPHASIS,
   IN_FALLBACK,
   NON_WHITESPACE_CHECK,
 
@@ -134,7 +128,7 @@ static bool find_element(Scanner *s, ElementType e) {
 }
 
 static bool emphasis_begin_check(Scanner *s, TSLexer *lexer) {
-  lexer->result_symbol = EMPHASIS_BEGIN_CHECK;
+  lexer->result_symbol = EMPHASIS_MARK_BEGIN;
   array_push(s->open_elements, EMPHASIS);
   return true;
 }
@@ -156,8 +150,11 @@ static bool parse_emphasis(Scanner *s, TSLexer *lexer,
   if (valid_symbols[EMPHASIS_END_CHECK] && emphasis_end_check(s, lexer)) {
     return true;
   }
-  if (valid_symbols[EMPHASIS_BEGIN_CHECK]) {
+  if (valid_symbols[EMPHASIS_MARK_BEGIN]) {
     if (valid_symbols[IN_FALLBACK]) {
+      // FIXME
+      // this doesn't hold if we're seeing `__`...!
+      //
       // If we can find an open emphasis element that means we should choose
       // this one instead because we should prefer the shorter emphasis if two
       // are valid. By issuing an error we'll prune this branch
@@ -169,7 +166,7 @@ static bool parse_emphasis(Scanner *s, TSLexer *lexer,
       } else {
         // We need to output the token common to both the fallback symbol and
         // the emphasis so the resolver will branch.
-        lexer->result_symbol = EMPHASIS_BEGIN_CHECK;
+        lexer->result_symbol = EMPHASIS_MARK_BEGIN;
         return true;
       }
     } else if (emphasis_begin_check(s, lexer)) {
@@ -310,21 +307,10 @@ static char *token_type_s(TokenType t) {
   case VERBATIM_CONTENT:
     return "VERBATIM_CONTENT";
 
-  case EMPHASIS_BEGIN:
-    return "EMPHASIS_BEGIN";
-  case EMPHASIS_END:
-    return "EMPHASIS_END";
-  case STRONG_BEGIN:
-    return "STRONG_BEGIN";
-  case STRONG_END:
-    return "STRONG_END";
-
-  case EMPHASIS_BEGIN_CHECK:
-    return "EMPHASIS_BEGIN_CHECK";
+  case EMPHASIS_MARK_BEGIN:
+    return "EMPHASIS_MARK_BEGIN";
   case EMPHASIS_END_CHECK:
     return "EMPHASIS_END_CHECK";
-  case IN_REAL_EMPHASIS:
-    return "IN_REAL_EMPHASIS";
   case IN_FALLBACK:
     return "IN_FALLBACK";
 

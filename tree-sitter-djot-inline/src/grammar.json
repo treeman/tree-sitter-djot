@@ -256,7 +256,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_emphasis_begin_check"
+          "name": "_emphasis_mark_begin"
         },
         {
           "type": "ALIAS",
@@ -1278,41 +1278,33 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "STRING",
-                "value": "{_"
-              },
-              {
                 "type": "CHOICE",
                 "members": [
                   {
-                    "type": "SYMBOL",
-                    "name": "_emphasis_begin_check"
+                    "type": "STRING",
+                    "value": "{_"
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "_in_fallback"
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": "_"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "_non_whitespace_check"
+                      }
+                    ]
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "_"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_non_whitespace_check"
               },
               {
                 "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "_emphasis_begin_check"
+                    "name": "_emphasis_mark_begin"
                   },
                   {
                     "type": "SYMBOL",
@@ -1546,31 +1538,11 @@
     },
     {
       "type": "SYMBOL",
-      "name": "emphasis_begin_2"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "emphasis_end_2"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "strong_begin_2"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "strong_end_2"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_emphasis_begin_check"
+      "name": "_emphasis_mark_begin"
     },
     {
       "type": "SYMBOL",
       "name": "_emphasis_end_check"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_in_real_emphasis"
     },
     {
       "type": "SYMBOL",
