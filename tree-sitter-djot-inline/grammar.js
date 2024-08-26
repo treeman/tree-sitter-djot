@@ -80,12 +80,22 @@ module.exports = grammar({
       ),
 
     emphasis: ($) =>
-      seq($.emphasis_begin, alias($._inline, $.content), $.emphasis_end),
+      seq(
+        $.emphasis_begin,
+        $._emphasis_begin_check,
+        alias($._inline, $.content),
+        // FIXME no space before closing `_` marker
+        $.emphasis_end,
+        $._emphasis_end_check,
+      ),
+
+    emphasis_begin: (_) => "{_",
+    emphasis_end: (_) => "_",
 
     // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
     // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
-    emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
-    emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
+    // emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
+    // emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
 
     strong: ($) =>
       seq($.strong_begin, alias($._inline, $.content), $.strong_end),
@@ -233,7 +243,7 @@ module.exports = grammar({
     // These exists to explicit trigger an LR collision with existing
     // prefixes. A collision isn't detected with a string and the
     // catch-all `_text` regex.
-    _symbol_fallback: (_) =>
+    _symbol_fallback: ($) =>
       prec.dynamic(
         -1000,
         choice(
@@ -249,7 +259,8 @@ module.exports = grammar({
           "{-",
           "{=",
           "{^",
-          "{_",
+          seq("{_", choice($._emphasis_begin_check, $._in_fallback)),
+          // "{_",
           "{~",
           "|",
           "~",
@@ -283,6 +294,15 @@ module.exports = grammar({
     $._verbatim_begin,
     $._verbatim_end,
     $._verbatim_content,
+
+    $.emphasis_begin_2,
+    $.emphasis_end_2,
+    $.strong_begin_2,
+    $.strong_end_2,
+    $._emphasis_begin_check,
+    $._emphasis_end_check,
+    $._in_real_emphasis,
+    $._in_fallback,
 
     // Never valid and is only used to signal an internal scanner error.
     $._error,
