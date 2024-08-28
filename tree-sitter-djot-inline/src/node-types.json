@@ -221,15 +221,28 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "delete_begin",
+          "named": true
+        },
+        {
+          "type": "delete_end",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "delete_begin",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "emphasis",
@@ -330,15 +343,28 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "highlighted_begin",
+          "named": true
+        },
+        {
+          "type": "highlighted_end",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "highlighted_begin",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "image_description",
@@ -673,15 +699,28 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "insert_begin",
+          "named": true
+        },
+        {
+          "type": "insert_end",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "insert_begin",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "key",
@@ -1220,39 +1259,60 @@
     "fields": {}
   },
   {
-    "type": "strong_end",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "subscript",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "subscript_begin",
+          "named": true
+        },
+        {
+          "type": "subscript_end",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "subscript_begin",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "superscript",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "superscript_begin",
+          "named": true
+        },
+        {
+          "type": "superscript_end",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "superscript_begin",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "todo",
@@ -1288,10 +1348,6 @@
     }
   },
   {
-    "type": " ",
-    "named": false
-  },
-  {
     "type": "![",
     "named": false
   },
@@ -1320,14 +1376,6 @@
     "named": false
   },
   {
-    "type": "+}",
-    "named": false
-  },
-  {
-    "type": "-}",
-    "named": false
-  },
-  {
     "type": ".",
     "named": false
   },
@@ -1337,10 +1385,6 @@
   },
   {
     "type": "=",
-    "named": false
-  },
-  {
-    "type": "=}",
     "named": false
   },
   {
@@ -1392,15 +1436,15 @@
     "named": false
   },
   {
-    "type": "^}",
-    "named": false
-  },
-  {
     "type": "_",
     "named": false
   },
   {
     "type": "backslash_escape",
+    "named": true
+  },
+  {
+    "type": "delete_end",
     "named": true
   },
   {
@@ -1432,7 +1476,15 @@
     "named": true
   },
   {
+    "type": "highlighted_end",
+    "named": true
+  },
+  {
     "type": "identifier",
+    "named": true
+  },
+  {
+    "type": "insert_end",
     "named": true
   },
   {
@@ -1461,6 +1513,18 @@
   },
   {
     "type": "raw_inline_marker_end",
+    "named": true
+  },
+  {
+    "type": "strong_end",
+    "named": true
+  },
+  {
+    "type": "subscript_end",
+    "named": true
+  },
+  {
+    "type": "superscript_end",
     "named": true
   },
   {
@@ -1508,19 +1572,11 @@
     "named": false
   },
   {
-    "type": "|",
-    "named": false
-  },
-  {
     "type": "}",
     "named": false
   },
   {
     "type": "~",
-    "named": false
-  },
-  {
-    "type": "~}",
     "named": false
   }
 ]

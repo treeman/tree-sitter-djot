@@ -392,7 +392,7 @@ cd_
 (inline (emphasis (emphasis_begin) (content) (emphasis_end)))
 
 ===============================================================================
-Emphasis: Prefer start token
+Emphasis: Shorter span
 ===============================================================================
 
 {_*s*{_b_
@@ -404,13 +404,29 @@ Emphasis: Prefer start token
   (emphasis (emphasis_begin) (content) (emphasis_end)))
 
 ===============================================================================
+Superscript: Shorter span
+===============================================================================
+
+{^*s*{^b^
+
+-------------------------------------------------------------------------------
+
+(inline
+  (strong (strong_begin) (content) (strong_end))
+  (superscript (superscript_begin) (content) (superscript_end)))
+
+===============================================================================
 Superscript: three chars with spaces
 ===============================================================================
 ^a b c^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: two chars with spaces
@@ -419,7 +435,11 @@ Superscript: two chars with spaces
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: one char between
@@ -428,7 +448,11 @@ Superscript: one char between
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: three chars with a newline
@@ -438,7 +462,11 @@ b c^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 
 ===============================================================================
@@ -449,7 +477,11 @@ b c^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: three chars with a two newlines
@@ -460,7 +492,11 @@ c^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: two chars with a newline
@@ -470,7 +506,11 @@ b^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: two chars with a newline 2
@@ -480,7 +520,11 @@ cd^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Superscript: two chars with a newline 3
@@ -491,7 +535,11 @@ cd^
 
 -------------------------------------------------------------------------------
 
-(inline (superscript (content)))
+(inline
+  (superscript
+  (superscript_begin)
+  (content)
+  (superscript_end)))
 
 ===============================================================================
 Emphasis: nested
@@ -611,6 +659,60 @@ _________a
 (inline)
 
 ===============================================================================
+Superscript: 2 not emphasis
+===============================================================================
+^^ a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
+Superscript: 3 not emphasis
+===============================================================================
+^^^ a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
+Superscript: long not emphasis
+===============================================================================
+^^^^^^^^^ a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
+Superscript: begin 2 not emphasis
+===============================================================================
+^^a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
+Superscript: begin 3 not emphasis
+===============================================================================
+^^^a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
+Superscript: begin long not emphasis
+===============================================================================
+^^^^^^^^^a
+
+-------------------------------------------------------------------------------
+
+(inline)
+
+===============================================================================
 Strong: forced despite spaces
 ===============================================================================
 {*yes*}
@@ -635,8 +737,8 @@ Subscript
 -------------------------------------------------------------------------------
 
 (inline
-  (subscript (content))
-  (subscript (content)))
+  (subscript (subscript_begin) (content) (subscript_end))
+  (subscript (subscript_begin) (content) (subscript_end)))
 
 ===============================================================================
 Superscript
@@ -647,8 +749,14 @@ Superscript
 -------------------------------------------------------------------------------
 
 (inline
-  (superscript (content))
-  (superscript (content)))
+  (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))
+  (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end)))
 
 ===============================================================================
 Highlighted
@@ -658,7 +766,22 @@ With {=mark=} here
 -------------------------------------------------------------------------------
 
 (inline
-  (highlighted (content)))
+  (highlighted
+    (highlighted_begin)
+    (content)
+    (highlighted_end)))
+
+===============================================================================
+Highlighted: Shorter span
+===============================================================================
+
+{=*s*{=b=}
+
+-------------------------------------------------------------------------------
+
+(inline
+  (strong (strong_begin) (content) (strong_end))
+  (highlighted (highlighted_begin) (content) (highlighted_end)))
 
 ===============================================================================
 Insert
@@ -668,7 +791,10 @@ With {+insert+} here
 -------------------------------------------------------------------------------
 
 (inline
-  (insert (content)))
+  (insert
+    (insert_begin)
+    (content)
+    (insert_end)))
 
 ===============================================================================
 Delete
@@ -678,7 +804,10 @@ With {-delete-} here
 -------------------------------------------------------------------------------
 
 (inline
-  (delete (content)))
+  (delete
+  (delete_begin)
+  (content)
+  (delete_end)))
 
 ===============================================================================
 Inline with newlines
@@ -698,15 +827,25 @@ b~
 
 (inline
   (highlighted
-    (content))
+    (highlighted_begin)
+    (content)
+    (highlighted_end))
     (insert
-      (content))
+      (insert_begin)
+      (content)
+      (insert_end))
     (delete
-      (content))
+      (delete_begin)
+      (content)
+      (delete_end))
     (superscript
-      (content))
+      (superscript_begin)
+      (content)
+      (superscript_end))
     (subscript
-      (content)))
+      (subscript_begin)
+      (content)
+      (subscript_end)))
 
 ===============================================================================
 Hard line break

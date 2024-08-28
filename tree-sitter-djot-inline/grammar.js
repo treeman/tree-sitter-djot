@@ -6,15 +6,16 @@ module.exports = grammar({
   conflicts: ($) => [
     [$.emphasis_begin, $._symbol_fallback],
     [$.strong_begin, $._symbol_fallback],
+    [$.superscript_begin, $._symbol_fallback],
+    [$.subscript_begin, $._symbol_fallback],
+    [$.highlighted_begin, $._symbol_fallback],
+    [$.insert_begin, $._symbol_fallback],
+    [$.delete_begin, $._symbol_fallback],
 
-    [$.highlighted, $._symbol_fallback],
-    [$.superscript, $._symbol_fallback],
-    [$.subscript, $._symbol_fallback],
-    [$.insert, $._symbol_fallback],
-    [$.delete, $._symbol_fallback],
     [$._image_description, $._symbol_fallback],
     [$.math, $._symbol_fallback],
     [$.link_text, $.span, $._symbol_fallback],
+
     [$._inline, $._comment_with_spaces],
     [$._inline_without_trailing_space, $._comment_with_spaces],
     [$._comment_with_spaces],
@@ -38,7 +39,7 @@ module.exports = grammar({
         choice(
           seq(
             choice(
-              $._hard_line_break,
+              $.hard_line_break,
               $._smart_punctuation,
               $.backslash_escape,
               $.autolink,
@@ -87,6 +88,14 @@ module.exports = grammar({
         "}",
       ),
 
+    // Emphasis and strong are a little special as they don't allow spaces next
+    // to begin and end markers unless using the bracketed variant.
+    // The strategy to solve this:
+    //
+    // Begin: Use the zero-width `$._non_whitespace_check` token to avoid the `_ ` case.
+    // End: Use `$._inline_without_trailing_space` to match inline without a trailing space
+    //      and let the end token in the external scanner consume space for the `_}` case
+    //      and not for the `_` case.
     emphasis: ($) =>
       seq(
         $.emphasis_begin,
@@ -97,14 +106,59 @@ module.exports = grammar({
     emphasis_begin: ($) => choice("{_", seq("_", $._non_whitespace_check)),
 
     strong: ($) =>
-      seq($.strong_begin, alias($._inline, $.content), $.strong_end),
-    strong_begin: (_) => choice(seq("{*", repeat(" ")), "*"),
-    strong_end: (_) =>
-      prec.dynamic(1000, choice(token(seq(repeat(" "), "*}")), "*")),
+      seq(
+        $.strong_begin,
+        $._strong_mark_begin,
+        alias($._inline_without_trailing_space, $.content),
+        prec.dynamic(1000, $.strong_end),
+      ),
+    strong_begin: ($) => choice("{*", seq("*", $._non_whitespace_check)),
 
-    _hard_line_break: ($) =>
-      // seq($.hard_line_break, optional($._block_quote_prefix)),
-      $.hard_line_break,
+    // The syntax description isn't clear about if non-bracket can contain surrounding spaces.
+    // The live playground suggests that yes they can, although it's a bit inconsistent.
+    superscript: ($) =>
+      seq(
+        $.superscript_begin,
+        $._superscript_mark_begin,
+        alias($._inline, $.content),
+        prec.dynamic(1000, $.superscript_end),
+      ),
+    superscript_begin: (_) => choice("{^", "^"),
+
+    subscript: ($) =>
+      seq(
+        $.subscript_begin,
+        $._subscript_mark_begin,
+        alias($._inline, $.content),
+        prec.dynamic(1000, $.subscript_end),
+      ),
+    subscript_begin: (_) => choice("{~", "~"),
+
+    highlighted: ($) =>
+      seq(
+        $.highlighted_begin,
+        $._highlighted_mark_begin,
+        alias($._inline, $.content),
+        prec.dynamic(1000, $.highlighted_end),
+      ),
+    highlighted_begin: (_) => "{=",
+    insert: ($) =>
+      seq(
+        $.insert_begin,
+        $._insert_mark_begin,
+        alias($._inline, $.content),
+        prec.dynamic(1000, $.insert_end),
+      ),
+    insert_begin: (_) => "{+",
+    delete: ($) =>
+      seq(
+        $.delete_begin,
+        $._delete_mark_begin,
+        alias($._inline, $.content),
+        prec.dynamic(1000, $.delete_end),
+      ),
+    delete_begin: (_) => "{-",
+
     hard_line_break: ($) => seq("\\", $._newline),
 
     _smart_punctuation: ($) =>
@@ -120,17 +174,7 @@ module.exports = grammar({
 
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
-    highlighted: ($) => seq("{=", alias($._inline, $.content), "=}"),
-    insert: ($) => seq("{+", alias($._inline, $.content), "+}"),
-    delete: ($) => seq("{-", alias($._inline, $.content), "-}"),
     symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
-
-    // The syntax description isn't clear about if non-bracket can contain surrounding spaces?
-    // The live playground suggests that yes they can.
-    superscript: ($) =>
-      seq(choice("{^", "^"), alias($._inline, $.content), choice("^}", "^")),
-    subscript: ($) =>
-      seq(choice("{~", "~"), alias($._inline, $.content), choice("~}", "~")),
 
     footnote_reference: ($) =>
       seq(
@@ -250,26 +294,33 @@ module.exports = grammar({
     _symbol_fallback: ($) =>
       choice(
         "![",
-        "*",
         "[",
         "[^",
-        "^",
-        "_",
         "{",
-        "{*",
-        "{+",
-        "{-",
-        "{=",
-        "{^",
+        "<",
+        "$",
+        // Standalone emphasis and strong markers are required for backtracking
+        "_",
+        "*",
+        // Whitespace sensitive
         seq(
           choice("{_", seq("_", $._non_whitespace_check)),
           choice($._emphasis_mark_begin, $._in_fallback),
         ),
-        "{~",
-        "|",
-        "~",
-        "<",
-        "$",
+        seq(
+          choice("{*", seq("*", $._non_whitespace_check)),
+          choice($._strong_mark_begin, $._in_fallback),
+        ),
+        // Not sensitive to whitespace
+        seq(
+          choice("{^", "^"),
+          choice($._superscript_mark_begin, $._in_fallback),
+        ),
+        seq(choice("{~", "~"), choice($._subscript_mark_begin, $._in_fallback)),
+        // Only bracketed versions
+        seq("{=", choice($._highlighted_mark_begin, $._in_fallback)),
+        seq("{+", choice($._insert_mark_begin, $._in_fallback)),
+        seq("{-", choice($._delete_mark_begin, $._in_fallback)),
       ),
 
     language: (_) => /[^\n\t \{\}=]+/,
@@ -300,6 +351,18 @@ module.exports = grammar({
 
     $._emphasis_mark_begin,
     $.emphasis_end,
+    $._strong_mark_begin,
+    $.strong_end,
+    $._superscript_mark_begin,
+    $.superscript_end,
+    $._subscript_mark_begin,
+    $.subscript_end,
+    $._highlighted_mark_begin,
+    $.highlighted_end,
+    $._insert_mark_begin,
+    $.insert_end,
+    $._delete_mark_begin,
+    $.delete_end,
 
     $._in_fallback,
     $._non_whitespace_check,

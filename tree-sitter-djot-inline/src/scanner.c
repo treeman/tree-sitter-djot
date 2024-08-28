@@ -21,6 +21,18 @@ typedef enum {
   // stack.
   EMPHASIS_MARK_BEGIN,
   EMPHASIS_END,
+  STRONG_MARK_BEGIN,
+  STRONG_END,
+  SUPERSCRIPT_MARK_BEGIN,
+  SUPERSCRIPT_END,
+  SUBSCRIPT_MARK_BEGIN,
+  SUBSCRIPT_END,
+  HIGHLIGHTED_MARK_BEGIN,
+  HIGHLIGHTED_END,
+  INSERT_MARK_BEGIN,
+  INSERT_END,
+  DELETE_MARK_BEGIN,
+  DELETE_END,
 
   // If we're scanning a fallback token then we should accept the beginning
   // markers, but not push anything on the stack.
@@ -35,6 +47,11 @@ typedef enum {
   VERBATIM,
   EMPHASIS,
   STRONG,
+  SUPERSCRIPT,
+  SUBSCRIPT,
+  HIGHLIGHTED,
+  INSERT,
+  DELETE,
 } ElementType;
 
 typedef struct {
@@ -202,6 +219,19 @@ static Element *find_element(Scanner *s, ElementType type) {
   return NULL;
 }
 
+// Match a `_}` style token.
+static bool scan_bracketed_span_end(TSLexer *lexer, char marker) {
+  if (lexer->lookahead != marker) {
+    return false;
+  }
+  advance(lexer);
+  if (lexer->lookahead != '}') {
+    return false;
+  }
+  advance(lexer);
+  return true;
+}
+
 // Scan an ending token for a span (`_` or `_}`) if marker == '_'.
 //
 // This routine is responsible for parsing the trailing whitespace in a span,
@@ -226,44 +256,7 @@ static bool scan_span_end(TSLexer *lexer, char marker,
   }
 
   // Only match `_}`.
-  if (lexer->lookahead != marker) {
-    return false;
-  }
-  advance(lexer);
-  if (lexer->lookahead != '}') {
-    return false;
-  }
-  advance(lexer);
-  return true;
-}
-
-static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
-                           TokenType token, char marker,
-                           bool whitespace_sensitive) {
-  // Only close the topmost element, so in:
-  //
-  //    _a *b_
-  //
-  // The `*` isn't allowed to open a span, and that branch should not be valid.
-  Element *top = peek_element(s);
-  if (!top || top->type != element) {
-    return false;
-  }
-
-  // If we've chosen any fallback symbols inside the span then we
-  // should not accept the span.
-  if (top->data > 0) {
-    return false;
-  }
-
-  if (!scan_span_end(lexer, marker, whitespace_sensitive)) {
-    return false;
-  }
-
-  lexer->mark_end(lexer);
-  lexer->result_symbol = token;
-  array_pop(s->open_elements);
-  return true;
+  return scan_bracketed_span_end(lexer, marker);
 }
 
 static bool mark_span_begin(Scanner *s, TSLexer *lexer,
@@ -305,13 +298,51 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
   }
 }
 
+// Parse a span ending token, either `_` or `_}`.
+static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
+                           TokenType token, char marker,
+                           bool whitespace_sensitive, bool bracketed_only) {
+  // Only close the topmost element, so in:
+  //
+  //    _a *b_
+  //
+  // The `*` isn't allowed to open a span, and that branch should not be valid.
+  Element *top = peek_element(s);
+  if (!top || top->type != element) {
+    return false;
+  }
+
+  // If we've chosen any fallback symbols inside the span then we
+  // should not accept the span.
+  if (top->data > 0) {
+    return false;
+  }
+
+  if (bracketed_only) {
+    if (!scan_bracketed_span_end(lexer, marker)) {
+      return false;
+    }
+  } else {
+    if (!scan_span_end(lexer, marker, whitespace_sensitive)) {
+      return false;
+    }
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = token;
+  array_pop(s->open_elements);
+  return true;
+}
+
+// Parse a span delimited with `marker`, with `_`, `{_`, and `_}` being valid
+// delimiters.
 static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
                        ElementType element, TokenType begin_token,
                        TokenType end_token, char marker,
-                       bool whitespace_sensitive) {
+                       bool whitespace_sensitive, bool bracketed_only) {
   if (valid_symbols[end_token] &&
-      parse_span_end(s, lexer, element, end_token, marker,
-                     whitespace_sensitive)) {
+      parse_span_end(s, lexer, element, end_token, marker, whitespace_sensitive,
+                     bracketed_only)) {
     return true;
   }
   if (valid_symbols[begin_token] &&
@@ -324,7 +355,37 @@ static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
 static bool parse_emphasis(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, EMPHASIS, EMPHASIS_MARK_BEGIN,
-                    EMPHASIS_END, '_', true);
+                    EMPHASIS_END, '_', true, false);
+}
+static bool parse_strong(Scanner *s, TSLexer *lexer,
+                         const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, STRONG, STRONG_MARK_BEGIN,
+                    STRONG_END, '*', true, false);
+}
+static bool parse_superscript(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, SUPERSCRIPT,
+                    SUPERSCRIPT_MARK_BEGIN, SUPERSCRIPT_END, '^', false, false);
+}
+static bool parse_subscript(Scanner *s, TSLexer *lexer,
+                            const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, SUBSCRIPT, SUBSCRIPT_MARK_BEGIN,
+                    SUBSCRIPT_END, '~', false, false);
+}
+static bool parse_highlighted(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, HIGHLIGHTED,
+                    HIGHLIGHTED_MARK_BEGIN, HIGHLIGHTED_END, '=', false, true);
+}
+static bool parse_insert(Scanner *s, TSLexer *lexer,
+                         const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, INSERT, INSERT_MARK_BEGIN,
+                    INSERT_END, '+', false, true);
+}
+static bool parse_delete(Scanner *s, TSLexer *lexer,
+                         const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, DELETE, DELETE_MARK_BEGIN,
+                    DELETE_END, '-', false, true);
 }
 
 static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
@@ -378,6 +439,24 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   if (parse_emphasis(s, lexer, valid_symbols)) {
     return true;
   }
+  if (parse_strong(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_superscript(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_subscript(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_highlighted(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_insert(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_delete(s, lexer, valid_symbols)) {
+    return true;
+  }
 
   switch (lexer->lookahead) {
   case '`':
@@ -388,16 +467,6 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
       return true;
     }
     break;
-  // case '*':
-  //   if (parse_strong(s, lexer, valid_symbols)) {
-  //     return true;
-  //   }
-  //   break;
-  // case '_':
-  //   if (parse_emphasis(s, lexer, valid_symbols)) {
-  //     return true;
-  //   }
-  //   break;
   default:
     break;
   }
@@ -464,6 +533,30 @@ static char *token_type_s(TokenType t) {
     return "EMPHASIS_MARK_BEGIN";
   case EMPHASIS_END:
     return "EMPHASIS_END";
+  case STRONG_MARK_BEGIN:
+    return "STRONG_MARK_BEGIN";
+  case STRONG_END:
+    return "STRONG_END";
+  case SUPERSCRIPT_MARK_BEGIN:
+    return "SUPERSCRIPT_MARK_BEGIN";
+  case SUPERSCRIPT_END:
+    return "SUPERSCRIPT_END";
+  case SUBSCRIPT_MARK_BEGIN:
+    return "SUBSCRIPT_MARK_BEGIN";
+  case SUBSCRIPT_END:
+    return "SUBSCRIPT_END";
+  case HIGHLIGHTED_MARK_BEGIN:
+    return "HIGHLIGHTED_MARK_BEGIN";
+  case HIGHLIGHTED_END:
+    return "HIGHLIGHTED_END";
+  case INSERT_MARK_BEGIN:
+    return "INSERT_MARK_BEGIN";
+  case INSERT_END:
+    return "INSERT_END";
+  case DELETE_MARK_BEGIN:
+    return "DELETE_MARK_BEGIN";
+  case DELETE_END:
+    return "DELETE_END";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";
@@ -479,10 +572,22 @@ static char *token_type_s(TokenType t) {
 
 static char *element_type_s(ElementType t) {
   switch (t) {
+  case VERBATIM:
+    return "VERBATIM";
   case EMPHASIS:
     return "EMPHASIS";
   case STRONG:
     return "STRONG";
+  case SUPERSCRIPT:
+    return "SUPERSCRIPT";
+  case SUBSCRIPT:
+    return "SUBSCRIPT";
+  case HIGHLIGHTED:
+    return "HIGHLIGHTED";
+  case INSERT:
+    return "INSERT";
+  case DELETE:
+    return "DELETE";
   }
 }
 
@@ -490,11 +595,8 @@ static void dump_scanner(Scanner *s) {
   printf("--- Open elements: %u (last -> first)\n", s->open_elements->size);
   for (size_t i = 0; i < s->open_elements->size; ++i) {
     Element *e = *array_get(s->open_elements, i);
-    printf("  %s data: %u ignore_end: %u\n", element_type_s(e->type), e->data,
-           e->ignore_end);
+    printf("  %s data: %u\n", element_type_s(e->type), e->data);
   }
-  printf("---\n");
-  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
   printf("===\n");
 }
 
