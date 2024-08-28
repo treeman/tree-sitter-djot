@@ -202,8 +202,17 @@ static Element *find_element(Scanner *s, ElementType type) {
   return NULL;
 }
 
+// Scan an ending token for a span (`_` or `_}`) if marker == '_'.
+//
+// This routine is responsible for parsing the trailing whitespace in a span,
+// so the token may become a `  _}`.
+//
+// If `whitespace_sensitive == true` then we should not allow a space
+// before the single marker (` _` isn't a valid ending token)
+// and only allow spaces with the bracketed variant.
 static bool scan_span_end(TSLexer *lexer, char marker,
                           bool whitespace_sensitive) {
+  // Match `_` or `_}`
   if (lexer->lookahead == marker) {
     advance(lexer);
     if (lexer->lookahead == '}') {
@@ -216,6 +225,7 @@ static bool scan_span_end(TSLexer *lexer, char marker,
     return false;
   }
 
+  // Only match `_}`.
   if (lexer->lookahead != marker) {
     return false;
   }
@@ -230,11 +240,18 @@ static bool scan_span_end(TSLexer *lexer, char marker,
 static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
                            TokenType token, char marker,
                            bool whitespace_sensitive) {
+  // Only close the topmost element, so in:
+  //
+  //    _a *b_
+  //
+  // The `*` isn't allowed to open a span, and that branch should not be valid.
   Element *top = peek_element(s);
   if (!top || top->type != element) {
     return false;
   }
 
+  // If we've chosen any fallback symbols inside the span then we
+  // should not accept the span.
   if (top->data > 0) {
     return false;
   }
