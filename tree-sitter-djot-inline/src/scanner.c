@@ -243,6 +243,7 @@ static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
     return false;
   }
 
+  lexer->mark_end(lexer);
   lexer->result_symbol = token;
   array_pop(s->open_elements);
   return true;
@@ -333,6 +334,11 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   dump(s, lexer);
   dump_valid_symbols(valid_symbols);
 #endif
+
+  // Mark end right from the start and then when outputting results
+  // we mark it again to make it consume.
+  // I found it easier to opt-in to consume tokens.
+  lexer->mark_end(lexer);
 
   if (valid_symbols[ERROR]) {
     lexer->result_symbol = ERROR;
