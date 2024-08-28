@@ -3,7 +3,7 @@
 #include "tree_sitter/parser.h"
 #include <stdio.h>
 
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #include <assert.h>

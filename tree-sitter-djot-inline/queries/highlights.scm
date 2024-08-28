@@ -77,50 +77,21 @@
 
 (subscript) @markup.subscript
 
-; We need to target tokens specifically because `{=` etc can exist as fallback symbols in
-; regular text, which we don't want to highlight or conceal.
-(highlighted
-  [
-    "{="
-    "=}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(insert
-  [
-    "{+"
-    "+}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(delete
-  [
-    "{-"
-    "-}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(superscript
-  [
-    "^"
-    "{^"
-    "^}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(subscript
-  [
-    "~"
-    "{~"
-    "~}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
 ([
   (emphasis_begin)
   (emphasis_end)
   (strong_begin)
   (strong_end)
+  (superscript_begin)
+  (superscript_end)
+  (subscript_begin)
+  (subscript_end)
+  (highlighted_begin)
+  (highlighted_end)
+  (insert_begin)
+  (insert_end)
+  (delete_begin)
+  (delete_end)
   (verbatim_marker_begin)
   (verbatim_marker_end)
   (math_marker)

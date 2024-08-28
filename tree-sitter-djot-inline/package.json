@@ -33,6 +33,7 @@
   "tree-sitter": [
     {
       "scope": "source.djot_inline",
+      "injection-regex": "djot_inline",
       "highlights": [
         "queries/highlights.scm"
       ]
