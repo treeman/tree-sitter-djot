@@ -260,11 +260,6 @@
     "fields": {}
   },
   {
-    "type": "emphasis_end",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "footnote_reference",
     "named": true,
     "fields": {},
@@ -1414,6 +1409,10 @@
   },
   {
     "type": "em_dash",
+    "named": true
+  },
+  {
+    "type": "emphasis_end",
     "named": true
   },
   {

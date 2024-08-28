@@ -3,7 +3,7 @@
 #include "tree_sitter/parser.h"
 #include <stdio.h>
 
-#define DEBUG
+// #define DEBUG
 
 // The different tokens the external scanner support
 // See `externals` in `grammar.js` for a description of most of them.
@@ -14,9 +14,18 @@ typedef enum {
   VERBATIM_END,
   VERBATIM_CONTENT,
 
+  // The different spans.
+  // Begin is marked by a zero-width token to push elements on the open stack
+  // (unless when we're parsing a fallback token).
+  // End scans an actual ending token (such as `_}` or `_`) and checks the open
+  // stack.
   EMPHASIS_MARK_BEGIN,
-  EMPHASIS_END_CHECK,
+  EMPHASIS_END,
+
+  // If we're scanning a fallback token then we should accept the beginning
+  // markers, but not push anything on the stack.
   IN_FALLBACK,
+  // Zero-width check for a non-whitespace token.
   NON_WHITESPACE_CHECK,
 
   ERROR,
@@ -28,9 +37,17 @@ typedef enum {
 } ElementType;
 
 typedef struct {
-  Array(ElementType) * open_elements;
+  ElementType type;
+  // Different types may use data differently.
+  // For differe
+  uint8_t data;
+} Element;
+
+typedef struct {
+  Array(Element *) * open_elements;
 
   // The number of ` we are currently matching, or 0 when not inside.
+  // TODO move into open_elements
   uint8_t verbatim_tick_count;
 } Scanner;
 
@@ -55,6 +72,55 @@ static uint8_t consume_chars(TSLexer *lexer, char c) {
     ++count;
   }
   return count;
+}
+
+static bool is_whitespace(char c) {
+  switch (c) {
+  case ' ':
+  case '\t':
+  case '\r':
+  case '\n':
+    return true;
+  default:
+    return false;
+  }
+}
+
+static uint8_t consume_whitespace(TSLexer *lexer) {
+  uint8_t indent = 0;
+  for (;;) {
+    if (lexer->lookahead == ' ') {
+      advance(lexer);
+      ++indent;
+    } else if (lexer->lookahead == '\r') {
+      advance(lexer);
+    } else if (lexer->lookahead == '\t') {
+      advance(lexer);
+      indent += 4;
+    } else {
+      break;
+    }
+  }
+  return indent;
+}
+
+static Element *create_element(ElementType type, uint8_t data) {
+  Element *e = ts_malloc(sizeof(Element));
+  e->type = type;
+  e->data = data;
+  return e;
+}
+
+static void push_block(Scanner *s, ElementType type, uint8_t data) {
+  array_push(s->open_elements, create_element(type, data));
+}
+
+static Element *peek_element(Scanner *s) {
+  if (s->open_elements->size > 0) {
+    return *array_back(s->open_elements);
+  } else {
+    return NULL;
+  }
 }
 
 static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
@@ -114,66 +180,126 @@ static bool parse_verbatim_start(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
-static bool element_on_top(Scanner *s, ElementType e) {
-  return s->open_elements->size > 0 && *array_back(s->open_elements) == e;
+static bool element_on_top(Scanner *s, ElementType type) {
+  return s->open_elements->size > 0 &&
+         (*array_back(s->open_elements))->type == type;
 }
 
-static bool find_element(Scanner *s, ElementType e) {
+static Element *find_element(Scanner *s, ElementType type) {
   for (int i = s->open_elements->size - 1; i >= 0; --i) {
-    if (*array_get(s->open_elements, i) == e) {
-      return true;
+    Element *e = *array_get(s->open_elements, i);
+    if (e->type == type) {
+      return e;
     }
   }
-  return false;
+  return NULL;
 }
 
-static bool emphasis_begin_check(Scanner *s, TSLexer *lexer) {
-  lexer->result_symbol = EMPHASIS_MARK_BEGIN;
-  array_push(s->open_elements, EMPHASIS);
-  return true;
-}
+static bool scan_span_end(TSLexer *lexer, char marker,
+                          bool whitespace_sensitive) {
+  if (lexer->lookahead == marker) {
+    advance(lexer);
+    if (lexer->lookahead == '}') {
+      advance(lexer);
+    }
+    return true;
+  }
 
-static bool emphasis_end_check(Scanner *s, TSLexer *lexer) {
-  if (!element_on_top(s, EMPHASIS)) {
+  if (whitespace_sensitive && consume_whitespace(lexer) == 0) {
     return false;
   }
 
-  lexer->result_symbol = EMPHASIS_END_CHECK;
+  if (lexer->lookahead != marker) {
+    return false;
+  }
+  advance(lexer);
+  if (lexer->lookahead != '}') {
+    return false;
+  }
+  advance(lexer);
+  return true;
+}
+
+static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
+                           TokenType token, char marker,
+                           bool whitespace_sensitive) {
+  Element *top = peek_element(s);
+  if (!top || top->type != element) {
+    return false;
+  }
+
+  if (top->data > 0) {
+    return false;
+  }
+
+  if (!scan_span_end(lexer, marker, whitespace_sensitive)) {
+    return false;
+  }
+
+  lexer->result_symbol = token;
   array_pop(s->open_elements);
   return true;
 }
 
-// IN_FALLBACK will only be valid during symbol fallback
+static bool mark_span_begin(Scanner *s, TSLexer *lexer,
+                            const bool *valid_symbols, ElementType element,
+                            TokenType token, char marker) {
+  // If IN_FALLBACK is valid then it means we're processing the
+  // `_symbol_fallback` branch (see `grammar.js`).
+  if (valid_symbols[IN_FALLBACK]) {
+    // If there's multiple valid opening spans, for example:
+    //
+    //      {_ {_ a_
+    //
+    // Then we should choose the shorter one and the first `{_`
+    // should be regarded as regular text.
+    // To handle this case we count the number of opening tags
+    // an open element has and when we try to close an element with
+    // open tags then we issue an error (in `parse_span_end`).
+    //
+    // The reason we're not immediately issuing an error here
+    // is that spans might be nested, for example:
+    //
+    //      _a _b_ a_
+    //
+    // If we issue an error here at `_b` then we won't find the nested emphasis.
+    // The solution i found was to do the check when closing the span instead.
+    Element *open = find_element(s, element);
+    if (open != NULL) {
+      ++open->data;
+    }
+    // We need to output the token common to both the fallback symbol and
+    // the span so the resolver will detect the collision.
+    lexer->result_symbol = token;
+    return true;
+  } else {
+    lexer->mark_end(lexer);
+    lexer->result_symbol = token;
+    push_block(s, element, 0);
+    return true;
+  }
+}
+
+static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
+                       ElementType element, TokenType begin_token,
+                       TokenType end_token, char marker,
+                       bool whitespace_sensitive) {
+  if (valid_symbols[end_token] &&
+      parse_span_end(s, lexer, element, end_token, marker,
+                     whitespace_sensitive)) {
+    return true;
+  }
+  if (valid_symbols[begin_token] &&
+      mark_span_begin(s, lexer, valid_symbols, element, begin_token, marker)) {
+    return true;
+  }
+  return false;
+}
 
 static bool parse_emphasis(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
-  if (valid_symbols[EMPHASIS_END_CHECK] && emphasis_end_check(s, lexer)) {
-    return true;
-  }
-  if (valid_symbols[EMPHASIS_MARK_BEGIN]) {
-    if (valid_symbols[IN_FALLBACK]) {
-      // FIXME
-      // this doesn't hold if we're seeing `__`...!
-      //
-      // If we can find an open emphasis element that means we should choose
-      // this one instead because we should prefer the shorter emphasis if two
-      // are valid. By issuing an error we'll prune this branch
-      // and make the resolver choose the other branch where we chose the
-      // fallback for the previous begin marker instead.
-      if (find_element(s, EMPHASIS)) {
-        lexer->result_symbol = ERROR;
-        return true;
-      } else {
-        // We need to output the token common to both the fallback symbol and
-        // the emphasis so the resolver will branch.
-        lexer->result_symbol = EMPHASIS_MARK_BEGIN;
-        return true;
-      }
-    } else if (emphasis_begin_check(s, lexer)) {
-      return true;
-    }
-  }
-  return false;
+  return parse_span(s, lexer, valid_symbols, EMPHASIS, EMPHASIS_MARK_BEGIN,
+                    EMPHASIS_END, '_', true);
 }
 
 static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
@@ -274,8 +400,9 @@ unsigned tree_sitter_djot_inline_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->verbatim_tick_count;
 
   for (size_t i = 0; i < s->open_elements->size; ++i) {
-    ElementType e = *array_get(s->open_elements, i);
-    buffer[size++] = (char)e;
+    Element *e = *array_get(s->open_elements, i);
+    buffer[size++] = (char)e->type;
+    buffer[size++] = (char)e->data;
   }
   return size;
 }
@@ -290,8 +417,9 @@ void tree_sitter_djot_inline_external_scanner_deserialize(void *payload,
     s->verbatim_tick_count = (uint8_t)buffer[size++];
 
     while (size < length) {
-      ElementType e = (ElementType)buffer[size++];
-      array_push(s->open_elements, e);
+      ElementType type = (ElementType)buffer[size++];
+      uint8_t data = (uint8_t)buffer[size++];
+      array_push(s->open_elements, create_element(type, data));
     }
   }
 }
@@ -309,17 +437,18 @@ static char *token_type_s(TokenType t) {
 
   case EMPHASIS_MARK_BEGIN:
     return "EMPHASIS_MARK_BEGIN";
-  case EMPHASIS_END_CHECK:
-    return "EMPHASIS_END_CHECK";
+  case EMPHASIS_END:
+    return "EMPHASIS_END";
+
   case IN_FALLBACK:
     return "IN_FALLBACK";
+  case NON_WHITESPACE_CHECK:
+    return "NON_WHITESPACE_CHECK";
 
   case ERROR:
     return "ERROR";
   case IGNORED:
     return "IGNORED";
-  default:
-    return "NOT IMPLEMENTED";
   }
 }
 
@@ -329,16 +458,15 @@ static char *element_type_s(ElementType t) {
     return "EMPHASIS";
   case STRONG:
     return "STRONG";
-  default:
-    return "NOT IMPLEMENTED";
   }
 }
 
 static void dump_scanner(Scanner *s) {
   printf("--- Open elements: %u (last -> first)\n", s->open_elements->size);
   for (size_t i = 0; i < s->open_elements->size; ++i) {
-    ElementType e = *array_get(s->open_elements, i);
-    printf("  %s\n", element_type_s(e));
+    Element *e = *array_get(s->open_elements, i);
+    printf("  %s data: %u ignore_end: %u\n", element_type_s(e->type), e->data,
+           e->ignore_end);
   }
   printf("---\n");
   printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);

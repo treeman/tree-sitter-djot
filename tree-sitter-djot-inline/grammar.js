@@ -17,7 +17,6 @@ module.exports = grammar({
     [$.link_text, $.span, $._symbol_fallback],
     [$._inline, $._comment_with_spaces],
     [$._inline_without_trailing_space, $._comment_with_spaces],
-    [$._inline_without_trailing_space],
     [$._comment_with_spaces],
   ],
 
@@ -93,23 +92,15 @@ module.exports = grammar({
         $.emphasis_begin,
         $._emphasis_mark_begin,
         alias($._inline_without_trailing_space, $.content),
-        // NOTE end and end_check could be combined
-        $.emphasis_end,
-        $._emphasis_end_check,
+        prec.dynamic(1000, $.emphasis_end),
       ),
-
     emphasis_begin: ($) => choice("{_", seq("_", $._non_whitespace_check)),
-    emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
-
-    // Use explicit begin/end to be able to capture ending tokens with arbitrary whitespace.
-    // Note that I couldn't replace repeat(" ") with $._whitespace for some reason...
-    // emphasis_begin: (_) => choice(seq("{_", repeat(" ")), "_"),
-    // emphasis_end: (_) => choice(token(seq(repeat(" "), "_}")), "_"),
 
     strong: ($) =>
       seq($.strong_begin, alias($._inline, $.content), $.strong_end),
     strong_begin: (_) => choice(seq("{*", repeat(" ")), "*"),
-    strong_end: (_) => choice(token(seq(repeat(" "), "*}")), "*"),
+    strong_end: (_) =>
+      prec.dynamic(1000, choice(token(seq(repeat(" "), "*}")), "*")),
 
     _hard_line_break: ($) =>
       // seq($.hard_line_break, optional($._block_quote_prefix)),
@@ -252,32 +243,33 @@ module.exports = grammar({
     // These exists to explicit trigger an LR collision with existing
     // prefixes. A collision isn't detected with a string and the
     // catch-all `_text` regex.
+    //
+    // Don't use dynamic precedence on the fallback, instead use it
+    // on span end tokens to prevent these branches from getting pruned
+    // when the tree grows large.
     _symbol_fallback: ($) =>
-      prec.dynamic(
-        -1000,
-        choice(
-          "![",
-          "*",
-          "[",
-          "[^",
-          "^",
-          "_",
-          "{",
-          "{*",
-          "{+",
-          "{-",
-          "{=",
-          "{^",
-          seq(
-            choice("{_", seq("_", $._non_whitespace_check)),
-            choice($._emphasis_mark_begin, $._in_fallback),
-          ),
-          "{~",
-          "|",
-          "~",
-          "<",
-          "$",
+      choice(
+        "![",
+        "*",
+        "[",
+        "[^",
+        "^",
+        "_",
+        "{",
+        "{*",
+        "{+",
+        "{-",
+        "{=",
+        "{^",
+        seq(
+          choice("{_", seq("_", $._non_whitespace_check)),
+          choice($._emphasis_mark_begin, $._in_fallback),
         ),
+        "{~",
+        "|",
+        "~",
+        "<",
+        "$",
       ),
 
     language: (_) => /[^\n\t \{\}=]+/,
@@ -307,7 +299,8 @@ module.exports = grammar({
     $._verbatim_content,
 
     $._emphasis_mark_begin,
-    $._emphasis_end_check,
+    $.emphasis_end,
+
     $._in_fallback,
     $._non_whitespace_check,
 
