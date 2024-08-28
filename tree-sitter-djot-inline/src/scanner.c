@@ -32,23 +32,22 @@ typedef enum {
 } TokenType;
 
 typedef enum {
+  VERBATIM,
   EMPHASIS,
   STRONG,
 } ElementType;
 
 typedef struct {
   ElementType type;
-  // Different types may use data differently.
-  // For differe
+  // Different types may use `data` differently.
+  // Spans use it to count how many fallback symbols was returned after the
+  // opening tag.
+  // Verbatim counts the number of open and closing ticks.
   uint8_t data;
 } Element;
 
 typedef struct {
   Array(Element *) * open_elements;
-
-  // The number of ` we are currently matching, or 0 when not inside.
-  // TODO move into open_elements
-  uint8_t verbatim_tick_count;
 } Scanner;
 
 #ifdef DEBUG
@@ -111,7 +110,7 @@ static Element *create_element(ElementType type, uint8_t data) {
   return e;
 }
 
-static void push_block(Scanner *s, ElementType type, uint8_t data) {
+static void push_element(Scanner *s, ElementType type, uint8_t data) {
   array_push(s->open_elements, create_element(type, data));
 }
 
@@ -125,11 +124,17 @@ static Element *peek_element(Scanner *s) {
 
 static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
   uint8_t ticks = 0;
+  Element *top = peek_element(s);
+  if (!top || top->type != VERBATIM) {
+    // Should always have the top element, but crashing is not great.
+    return false;
+  }
+
   while (!lexer->eof(lexer)) {
     if (lexer->lookahead == '`') {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(lexer, '`');
-      if (current == s->verbatim_tick_count) {
+      if (current == top->data) {
         // We found a matching number of `
         break;
       } else {
@@ -152,20 +157,22 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
 }
 
 static bool parse_verbatim_end(Scanner *s, TSLexer *lexer) {
+  Element *top = peek_element(s);
+  if (!top || top->type != VERBATIM) {
+    return false;
+  }
   if (lexer->eof(lexer)) {
     lexer->result_symbol = VERBATIM_END;
+    array_pop(s->open_elements);
     return true;
   }
-  if (s->verbatim_tick_count == 0) {
-    return false;
-  }
   uint8_t ticks = consume_chars(lexer, '`');
-  if (ticks != s->verbatim_tick_count) {
+  if (ticks != top->data) {
     return false;
   }
-  s->verbatim_tick_count = 0;
   lexer->mark_end(lexer);
   lexer->result_symbol = VERBATIM_END;
+  array_pop(s->open_elements);
   return true;
 }
 
@@ -174,9 +181,9 @@ static bool parse_verbatim_start(Scanner *s, TSLexer *lexer) {
   if (ticks == 0) {
     return false;
   }
-  s->verbatim_tick_count = ticks;
   lexer->mark_end(lexer);
   lexer->result_symbol = VERBATIM_BEGIN;
+  push_element(s, VERBATIM, ticks);
   return true;
 }
 
@@ -275,7 +282,7 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
   } else {
     lexer->mark_end(lexer);
     lexer->result_symbol = token;
-    push_block(s, element, 0);
+    push_element(s, element, 0);
     return true;
   }
 }
@@ -375,10 +382,7 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   return false;
 }
 
-void init(Scanner *s) {
-  array_init(s->open_elements);
-  s->verbatim_tick_count = 0;
-}
+void init(Scanner *s) { array_init(s->open_elements); }
 
 void *tree_sitter_djot_inline_external_scanner_create() {
   Scanner *s = (Scanner *)ts_malloc(sizeof(Scanner));
@@ -397,7 +401,6 @@ unsigned tree_sitter_djot_inline_external_scanner_serialize(void *payload,
                                                             char *buffer) {
   Scanner *s = (Scanner *)payload;
   unsigned size = 0;
-  buffer[size++] = (char)s->verbatim_tick_count;
 
   for (size_t i = 0; i < s->open_elements->size; ++i) {
     Element *e = *array_get(s->open_elements, i);
@@ -414,7 +417,6 @@ void tree_sitter_djot_inline_external_scanner_deserialize(void *payload,
   init(s);
   if (length > 0) {
     size_t size = 0;
-    s->verbatim_tick_count = (uint8_t)buffer[size++];
 
     while (size < length) {
       ElementType type = (ElementType)buffer[size++];
