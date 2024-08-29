@@ -32,10 +32,13 @@
   },
   "tree-sitter": [
     {
-      "scope": "source.djot_inline",
+      "scope": "text.djot_inline",
       "injection-regex": "djot_inline",
       "highlights": [
         "queries/highlights.scm"
+      ],
+      "injections": [
+        "queries/injections.scm"
       ]
     }
   ],

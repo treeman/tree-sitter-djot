@@ -134,6 +134,19 @@
     "}"
   ] @punctuation.bracket)
 
+(class) @type
+
+(identifier) @tag
+
+(key_value
+  "=" @operator)
+
+(key_value
+  (key) @property)
+
+(key_value
+  (value) @string)
+
 (link_text
   [
     "["

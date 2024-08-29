@@ -32,13 +32,16 @@
   },
   "tree-sitter": [
     {
-      "scope": "source.djot",
+      "scope": "text.djot",
       "file-types": [
         "dj"
       ],
       "injection-regex": "djot",
       "highlights": [
         "queries/highlights.scm"
+      ],
+      "injections": [
+        "queries/injections.scm"
       ]
     }
   ],

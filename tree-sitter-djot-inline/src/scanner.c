@@ -5,6 +5,10 @@
 
 // #define DEBUG
 
+// TODO elements we need to handle in the scanner
+// (precedence problems where the first closing element should get priority)
+// footnote_reference
+
 // The different tokens the external scanner support
 // See `externals` in `grammar.js` for a description of most of them.
 typedef enum {
@@ -34,6 +38,13 @@ typedef enum {
   DELETE_MARK_BEGIN,
   DELETE_END,
 
+  IMAGE_DESCRIPTION_MARK_BEGIN,
+  IMAGE_DESCRIPTION_END,
+  BRACKETED_TEXT_MARK_BEGIN,
+  BRACKETED_TEXT_END,
+  INLINE_ATTRIBUTE_MARK_BEGIN,
+  INLINE_ATTRIBUTE_END,
+
   // If we're scanning a fallback token then we should accept the beginning
   // markers, but not push anything on the stack.
   IN_FALLBACK,
@@ -52,6 +63,11 @@ typedef enum {
   HIGHLIGHTED,
   INSERT,
   DELETE,
+  // Covers the `![text]` part in images.
+  IMAGE_DESCRIPTION,
+  // Covers the initial `[text]` part in spans and links.
+  BRACKETED_TEXT,
+  INLINE_ATTRIBUTE,
 } ElementType;
 
 typedef struct {
@@ -219,6 +235,21 @@ static Element *find_element(Scanner *s, ElementType type) {
   return NULL;
 }
 
+typedef enum {
+  SpanSingle,
+  SpanBracketed,
+  SpanBracketedAndSingle,
+  SpanBracketedAndSingleNoWhitespace,
+} SpanType;
+
+static bool scan_single_span_end(TSLexer *lexer, char marker) {
+  if (lexer->lookahead != marker) {
+    return false;
+  }
+  advance(lexer);
+  return true;
+}
+
 // Match a `_}` style token.
 static bool scan_bracketed_span_end(TSLexer *lexer, char marker) {
   if (lexer->lookahead != marker) {
@@ -300,8 +331,7 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
 
 // Parse a span ending token, either `_` or `_}`.
 static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
-                           TokenType token, char marker,
-                           bool whitespace_sensitive, bool bracketed_only) {
+                           TokenType token, char marker, SpanType span_type) {
   // Only close the topmost element, so in:
   //
   //    _a *b_
@@ -318,14 +348,27 @@ static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
     return false;
   }
 
-  if (bracketed_only) {
+  switch (span_type) {
+  case SpanSingle:
+    if (!scan_single_span_end(lexer, marker)) {
+      return false;
+    }
+    break;
+  case SpanBracketed:
     if (!scan_bracketed_span_end(lexer, marker)) {
       return false;
     }
-  } else {
-    if (!scan_span_end(lexer, marker, whitespace_sensitive)) {
+    break;
+  case SpanBracketedAndSingle:
+    if (!scan_span_end(lexer, marker, false)) {
       return false;
     }
+    break;
+  case SpanBracketedAndSingleNoWhitespace:
+    if (!scan_span_end(lexer, marker, true)) {
+      return false;
+    }
+    break;
   }
 
   lexer->mark_end(lexer);
@@ -338,11 +381,9 @@ static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
 // delimiters.
 static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
                        ElementType element, TokenType begin_token,
-                       TokenType end_token, char marker,
-                       bool whitespace_sensitive, bool bracketed_only) {
+                       TokenType end_token, char marker, SpanType span_type) {
   if (valid_symbols[end_token] &&
-      parse_span_end(s, lexer, element, end_token, marker, whitespace_sensitive,
-                     bracketed_only)) {
+      parse_span_end(s, lexer, element, end_token, marker, span_type)) {
     return true;
   }
   if (valid_symbols[begin_token] &&
@@ -355,37 +396,57 @@ static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
 static bool parse_emphasis(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, EMPHASIS, EMPHASIS_MARK_BEGIN,
-                    EMPHASIS_END, '_', true, false);
+                    EMPHASIS_END, '_', SpanBracketedAndSingleNoWhitespace);
 }
 static bool parse_strong(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, STRONG, STRONG_MARK_BEGIN,
-                    STRONG_END, '*', true, false);
+                    STRONG_END, '*', SpanBracketedAndSingleNoWhitespace);
 }
 static bool parse_superscript(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, SUPERSCRIPT,
-                    SUPERSCRIPT_MARK_BEGIN, SUPERSCRIPT_END, '^', false, false);
+                    SUPERSCRIPT_MARK_BEGIN, SUPERSCRIPT_END, '^',
+                    SpanBracketedAndSingle);
 }
 static bool parse_subscript(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, SUBSCRIPT, SUBSCRIPT_MARK_BEGIN,
-                    SUBSCRIPT_END, '~', false, false);
+                    SUBSCRIPT_END, '~', SpanBracketedAndSingle);
 }
 static bool parse_highlighted(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, HIGHLIGHTED,
-                    HIGHLIGHTED_MARK_BEGIN, HIGHLIGHTED_END, '=', false, true);
+                    HIGHLIGHTED_MARK_BEGIN, HIGHLIGHTED_END, '=',
+                    SpanBracketed);
 }
 static bool parse_insert(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, INSERT, INSERT_MARK_BEGIN,
-                    INSERT_END, '+', false, true);
+                    INSERT_END, '+', SpanBracketed);
 }
 static bool parse_delete(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, DELETE, DELETE_MARK_BEGIN,
-                    DELETE_END, '-', false, true);
+                    DELETE_END, '-', SpanBracketed);
+}
+static bool parse_image_description(Scanner *s, TSLexer *lexer,
+                                    const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, IMAGE_DESCRIPTION,
+                    IMAGE_DESCRIPTION_MARK_BEGIN, IMAGE_DESCRIPTION_END, ']',
+                    SpanSingle);
+}
+static bool parse_bracketed_text(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, BRACKETED_TEXT,
+                    BRACKETED_TEXT_MARK_BEGIN, BRACKETED_TEXT_END, ']',
+                    SpanSingle);
+}
+static bool parse_inline_attribute(Scanner *s, TSLexer *lexer,
+                                   const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, INLINE_ATTRIBUTE,
+                    INLINE_ATTRIBUTE_MARK_BEGIN, INLINE_ATTRIBUTE_END, '}',
+                    SpanSingle);
 }
 
 static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
@@ -455,6 +516,15 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
     return true;
   }
   if (parse_delete(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_image_description(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_bracketed_text(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_inline_attribute(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -557,6 +627,18 @@ static char *token_type_s(TokenType t) {
     return "DELETE_MARK_BEGIN";
   case DELETE_END:
     return "DELETE_END";
+  case IMAGE_DESCRIPTION_MARK_BEGIN:
+    return "IMAGE_DESCRIPTION_MARK_BEGIN";
+  case IMAGE_DESCRIPTION_END:
+    return "IMAGE_DESCRIPTION_END";
+  case BRACKETED_TEXT_MARK_BEGIN:
+    return "BRACKETED_TEXT_MARK_BEGIN";
+  case BRACKETED_TEXT_END:
+    return "BRACKETED_TEXT_END";
+  case INLINE_ATTRIBUTE_MARK_BEGIN:
+    return "INLINE_ATTRIBUTE_MARK_BEGIN";
+  case INLINE_ATTRIBUTE_END:
+    return "INLINE_ATTRIBUTE_END";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";
@@ -588,6 +670,12 @@ static char *element_type_s(ElementType t) {
     return "INSERT";
   case DELETE:
     return "DELETE";
+  case IMAGE_DESCRIPTION:
+    return "IMAGE_DESCRIPTION";
+  case BRACKETED_TEXT:
+    return "BRACKETED_TEXT";
+  case INLINE_ATTRIBUTE:
+    return "INLINE_ATTRIBUTE";
   }
 }
 

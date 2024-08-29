@@ -11,14 +11,11 @@ module.exports = grammar({
     [$.highlighted_begin, $._symbol_fallback],
     [$.insert_begin, $._symbol_fallback],
     [$.delete_begin, $._symbol_fallback],
+    [$._bracketed_text_begin, $._symbol_fallback],
+    [$._image_description_begin, $._symbol_fallback],
+    [$._inline_attribute_begin, $._inline_attribute_fallback],
 
-    [$._image_description, $._symbol_fallback],
     [$.math, $._symbol_fallback],
-    [$.link_text, $.span, $._symbol_fallback],
-
-    [$._inline, $._comment_with_spaces],
-    [$._inline_without_trailing_space, $._comment_with_spaces],
-    [$._comment_with_spaces],
   ],
 
   rules: {
@@ -55,7 +52,6 @@ module.exports = grammar({
               $.raw_inline,
               $.footnote_reference,
               $.symbol,
-              $.span,
               $._image,
               $._link,
               $._comment_with_spaces,
@@ -63,29 +59,10 @@ module.exports = grammar({
               $._symbol_fallback,
               $._text,
             ),
-            optional($.inline_attribute),
+            optional(choice($.inline_attribute, $._inline_attribute_fallback)),
           ),
           $.span,
         ),
-      ),
-
-    inline_attribute: ($) =>
-      seq(
-        token.immediate("{"),
-        alias(
-          repeat(
-            choice(
-              $.class,
-              $.identifier,
-              $.key_value,
-              alias($._comment_with_newline, $.comment),
-              $._whitespace1,
-              $._newline,
-            ),
-          ),
-          $.args,
-        ),
-        "}",
       ),
 
     // Emphasis and strong are a little special as they don't allow spaces next
@@ -172,9 +149,10 @@ module.exports = grammar({
 
     backslash_escape: (_) => /\\[^\\\r\n]/,
 
+    // No backlash escape in an autolink.
     autolink: (_) => seq("<", /[^>\s]+/, ">"),
 
-    symbol: (_) => token(seq(":", /[^:\s]+/, ":")),
+    symbol: (_) => token(seq(":", /[\w\d_-]+/, ":")),
 
     footnote_reference: ($) =>
       seq(
@@ -198,7 +176,13 @@ module.exports = grammar({
     inline_image: ($) => seq($._image_description, $.inline_link_destination),
 
     _image_description: ($) =>
-      seq("![", optional(alias($._inline, $.image_description)), "]"),
+      seq(
+        $._image_description_begin,
+        $._image_description_mark_begin,
+        optional(alias($._inline, $.image_description)),
+        prec.dynamic(1000, $._image_description_end),
+      ),
+    _image_description_begin: (_) => "![",
 
     _link: ($) =>
       choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
@@ -206,15 +190,18 @@ module.exports = grammar({
     collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
     inline_link: ($) => seq($.link_text, $.inline_link_destination),
 
-    link_text: ($) => seq("[", $._inline, "]"),
+    link_text: ($) => $._bracketed_text,
 
-    _link_label: ($) =>
-      seq("[", alias($._inline, $.link_label), token.immediate("]")),
-    inline_link_destination: (_) => seq("(", /[^\n\)]+/, ")"),
+    span: ($) =>
+      // Both bracketed_text and inline_attribute contributes +1000 each,
+      // so we pull it back to 1000 so it's the same as other spans,
+      // making precedence work properly.
+      prec.dynamic(-1000, seq($._bracketed_text, $.inline_attribute)),
 
     inline_attribute: ($) =>
       seq(
-        token.immediate("{"),
+        $._inline_attribute_begin,
+        $._inline_attribute_mark_begin,
         alias(
           repeat(
             choice(
@@ -228,15 +215,27 @@ module.exports = grammar({
           ),
           $.args,
         ),
-        "}",
+        prec.dynamic(1000, $._inline_attribute_end),
       ),
+    _inline_attribute_begin: (_) => "{",
+
+    _bracketed_text: ($) =>
+      seq(
+        $._bracketed_text_begin,
+        $._bracketed_text_mark_begin,
+        $._inline,
+        prec.dynamic(1000, $._bracketed_text_end),
+      ),
+    _bracketed_text_begin: (_) => "[",
+
+    _link_label: ($) =>
+      seq("[", alias($._inline, $.link_label), token.immediate("]")),
+    inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
 
     // An inline attribute is only allowed to have surrounding spaces
     // if it only contains a comment.
     comment: ($) => seq("{", $._comment_with_newline, "}"),
     _comment_with_spaces: ($) => seq($._whitespace1, $.comment),
-
-    span: ($) => seq("[", $._inline, "]", $.inline_attribute),
 
     _comment_with_newline: ($) =>
       seq(
@@ -293,12 +292,6 @@ module.exports = grammar({
     // when the tree grows large.
     _symbol_fallback: ($) =>
       choice(
-        "![",
-        "[",
-        "[^",
-        "{",
-        "<",
-        "$",
         // Standalone emphasis and strong markers are required for backtracking
         "_",
         "*",
@@ -321,7 +314,19 @@ module.exports = grammar({
         seq("{=", choice($._highlighted_mark_begin, $._in_fallback)),
         seq("{+", choice($._insert_mark_begin, $._in_fallback)),
         seq("{-", choice($._delete_mark_begin, $._in_fallback)),
+
+        // Fallbacks for spans, links and images
+        seq("![", choice($._image_description_mark_begin, $._in_fallback)),
+        seq("[", choice($._bracketed_text_mark_begin, $._in_fallback)),
+
+        // "[^",
+        // "{",
+        "<",
+        "$",
       ),
+
+    _inline_attribute_fallback: ($) =>
+      seq("{", choice($._inline_attribute_mark_begin, $._in_fallback)),
 
     language: (_) => /[^\n\t \{\}=]+/,
 
@@ -349,6 +354,9 @@ module.exports = grammar({
     $._verbatim_end,
     $._verbatim_content,
 
+    // The different spans.
+    // Begin is marked by a zero-width token and the end is the actual
+    // ending token (such as `_}`).
     $._emphasis_mark_begin,
     $.emphasis_end,
     $._strong_mark_begin,
@@ -363,6 +371,12 @@ module.exports = grammar({
     $.insert_end,
     $._delete_mark_begin,
     $.delete_end,
+    $._bracketed_text_mark_begin,
+    $._bracketed_text_end,
+    $._image_description_mark_begin,
+    $._image_description_end,
+    $._inline_attribute_mark_begin,
+    $._inline_attribute_end,
 
     $._in_fallback,
     $._non_whitespace_check,
