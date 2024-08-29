@@ -5,10 +5,6 @@
 
 // #define DEBUG
 
-// TODO elements we need to handle in the scanner
-// (precedence problems where the first closing element should get priority)
-// footnote_reference
-
 // The different tokens the external scanner support
 // See `externals` in `grammar.js` for a description of most of them.
 typedef enum {
@@ -44,6 +40,8 @@ typedef enum {
   BRACKETED_TEXT_END,
   INLINE_ATTRIBUTE_MARK_BEGIN,
   INLINE_ATTRIBUTE_END,
+  FOOTNOTE_MARKER_MARK_BEGIN,
+  FOOTNOTE_MARKER_END,
 
   // If we're scanning a fallback token then we should accept the beginning
   // markers, but not push anything on the stack.
@@ -68,6 +66,7 @@ typedef enum {
   // Covers the initial `[text]` part in spans and links.
   BRACKETED_TEXT,
   INLINE_ATTRIBUTE,
+  FOOTNOTE_MARKER,
 } ElementType;
 
 typedef struct {
@@ -448,6 +447,12 @@ static bool parse_inline_attribute(Scanner *s, TSLexer *lexer,
                     INLINE_ATTRIBUTE_MARK_BEGIN, INLINE_ATTRIBUTE_END, '}',
                     SpanSingle);
 }
+static bool parse_footnote_marker(Scanner *s, TSLexer *lexer,
+                                  const bool *valid_symbols) {
+  return parse_span(s, lexer, valid_symbols, FOOTNOTE_MARKER,
+                    FOOTNOTE_MARKER_MARK_BEGIN, FOOTNOTE_MARKER_END, ']',
+                    SpanSingle);
+}
 
 static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
   switch (lexer->lookahead) {
@@ -525,6 +530,9 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
     return true;
   }
   if (parse_inline_attribute(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_footnote_marker(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -639,6 +647,10 @@ static char *token_type_s(TokenType t) {
     return "INLINE_ATTRIBUTE_MARK_BEGIN";
   case INLINE_ATTRIBUTE_END:
     return "INLINE_ATTRIBUTE_END";
+  case FOOTNOTE_MARKER_MARK_BEGIN:
+    return "FOOTNOTE_MARKER_MARK_BEGIN";
+  case FOOTNOTE_MARKER_END:
+    return "FOOTNOTE_MARKER_END";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";
@@ -676,6 +688,8 @@ static char *element_type_s(ElementType t) {
     return "BRACKETED_TEXT";
   case INLINE_ATTRIBUTE:
     return "INLINE_ATTRIBUTE";
+  case FOOTNOTE_MARKER:
+    return "FOOTNOTE_MARKER";
   }
 }
 

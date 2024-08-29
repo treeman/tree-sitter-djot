@@ -13,9 +13,10 @@ module.exports = grammar({
     [$.delete_begin, $._symbol_fallback],
     [$._bracketed_text_begin, $._symbol_fallback],
     [$._image_description_begin, $._symbol_fallback],
-    [$._inline_attribute_begin, $._inline_attribute_fallback],
-
+    [$.footnote_marker_begin, $._symbol_fallback],
     [$.math, $._symbol_fallback],
+
+    [$._inline_attribute_begin, $._inline_attribute_fallback],
   ],
 
   rules: {
@@ -156,10 +157,12 @@ module.exports = grammar({
 
     footnote_reference: ($) =>
       seq(
-        alias("[^", $.footnote_marker_begin),
+        $.footnote_marker_begin,
+        $._footnote_marker_mark_begin,
         $.reference_label,
-        alias("]", $.footnote_marker_end),
+        prec.dynamic(1000, $.footnote_marker_end),
       ),
+    footnote_marker_begin: (_) => "[^",
 
     reference_label: ($) => $._id,
     _id: (_) => /[\w_-]+/,
@@ -315,13 +318,18 @@ module.exports = grammar({
         seq("{+", choice($._insert_mark_begin, $._in_fallback)),
         seq("{-", choice($._delete_mark_begin, $._in_fallback)),
 
+        // Footnotes
+        seq("[^", choice($._footnote_marker_mark_begin, $._in_fallback)),
+
         // Fallbacks for spans, links and images
         seq("![", choice($._image_description_mark_begin, $._in_fallback)),
         seq("[", choice($._bracketed_text_mark_begin, $._in_fallback)),
 
-        // "[^",
-        // "{",
+        // Autolink
         "<",
+        seq("<", /[^>\s]+/),
+
+        // Math
         "$",
       ),
 
@@ -377,6 +385,8 @@ module.exports = grammar({
     $._image_description_end,
     $._inline_attribute_mark_begin,
     $._inline_attribute_end,
+    $._footnote_marker_mark_begin,
+    $.footnote_marker_end,
 
     $._in_fallback,
     $._non_whitespace_check,

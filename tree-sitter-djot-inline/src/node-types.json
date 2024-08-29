@@ -273,6 +273,11 @@
     "fields": {}
   },
   {
+    "type": "footnote_marker_begin",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "footnote_reference",
     "named": true,
     "fields": {},
@@ -1420,6 +1425,10 @@
     "named": false
   },
   {
+    "type": "[^",
+    "named": false
+  },
+  {
     "type": "\\",
     "named": false
   },
@@ -1461,10 +1470,6 @@
   },
   {
     "type": "fixme",
-    "named": true
-  },
-  {
-    "type": "footnote_marker_begin",
     "named": true
   },
   {
