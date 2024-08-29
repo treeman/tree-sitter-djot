@@ -333,6 +333,7 @@ module.exports = grammar({
         "$",
       ),
 
+    // Used to branch on inline attributes that may follow any element.
     _inline_attribute_fallback: ($) =>
       seq("{", choice($._inline_attribute_mark_begin, $._in_fallback)),
 
@@ -379,8 +380,10 @@ module.exports = grammar({
     $.insert_end,
     $._delete_mark_begin,
     $.delete_end,
+    // The bracketed text covers the first `[text]` portion of spans and links.
     $._bracketed_text_mark_begin,
     $._bracketed_text_end,
+    // The image description is the first `![text]` part of the image.
     $._image_description_mark_begin,
     $._image_description_end,
     $._inline_attribute_mark_begin,
@@ -388,10 +391,16 @@ module.exports = grammar({
     $._footnote_marker_mark_begin,
     $.footnote_marker_end,
 
+    // A signaling token that's used to signal that a fallback token should be scanned,
+    // and should never be output.
+    // It's used to notify the external scanner if we're in the fallback branch or in
+    // if we're scanning a span. This so the scanner knows if the current element should
+    // be stored on the stack or not.
     $._in_fallback,
+    // A zero-width whitespace check token.
     $._non_whitespace_check,
 
-    // Never valid and is only used to signal an internal scanner error.
+    // Should never be used in the grammar and is output when a branch should be pruned.
     $._error,
   ],
 });

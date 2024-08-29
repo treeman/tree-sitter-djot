@@ -69,6 +69,19 @@ typedef enum {
   FOOTNOTE_MARKER,
 } ElementType;
 
+// What kind of span we should parse.
+typedef enum {
+  // Only delimited by a single character, for example `[text]`.
+  SpanSingle,
+  // Only delimited by a curly bracketed tags, for example `{= highlight =}`.
+  SpanBracketed,
+  // Either single or bracketed, for example `^superscript^}`.
+  SpanBracketedAndSingle,
+  // Either single or bracketed, but no whitespace next to the single tags.
+  // For example `_emphasis_}` (but not `_ emphasis _`).
+  SpanBracketedAndSingleNoWhitespace,
+} SpanType;
+
 typedef struct {
   ElementType type;
   // Different types may use `data` differently.
@@ -219,6 +232,28 @@ static bool parse_verbatim_start(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
+static bool parse_verbatim(Scanner *s, TSLexer *lexer,
+                           const bool *valid_symbols) {
+  if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
+    return true;
+  }
+  if (lexer->eof(lexer)) {
+    if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
+      return true;
+    }
+  }
+
+  if (lexer->lookahead == '`') {
+    if (valid_symbols[VERBATIM_BEGIN] && parse_verbatim_start(s, lexer)) {
+      return true;
+    }
+    if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool element_on_top(Scanner *s, ElementType type) {
   return s->open_elements->size > 0 &&
          (*array_back(s->open_elements))->type == type;
@@ -233,13 +268,6 @@ static Element *find_element(Scanner *s, ElementType type) {
   }
   return NULL;
 }
-
-typedef enum {
-  SpanSingle,
-  SpanBracketed,
-  SpanBracketedAndSingle,
-  SpanBracketedAndSingleNoWhitespace,
-} SpanType;
 
 static bool scan_single_span_end(TSLexer *lexer, char marker) {
   if (lexer->lookahead != marker) {
@@ -489,19 +517,16 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
     return true;
   }
 
-  if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
-    return true;
-  }
-  if (lexer->eof(lexer)) {
-    if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
-      return true;
-    }
-  }
-
   if (valid_symbols[NON_WHITESPACE_CHECK] && check_non_whitespace(s, lexer)) {
     return true;
   }
 
+  // There's no overlap of leading characters that the scanner needs to manage,
+  // so we can hide all individual character checks inside these parse
+  // functions.
+  if (parse_verbatim(s, lexer, valid_symbols)) {
+    return true;
+  }
   if (parse_emphasis(s, lexer, valid_symbols)) {
     return true;
   }
@@ -534,19 +559,6 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   }
   if (parse_footnote_marker(s, lexer, valid_symbols)) {
     return true;
-  }
-
-  switch (lexer->lookahead) {
-  case '`':
-    if (valid_symbols[VERBATIM_BEGIN] && parse_verbatim_start(s, lexer)) {
-      return true;
-    }
-    if (valid_symbols[VERBATIM_END] && parse_verbatim_end(s, lexer)) {
-      return true;
-    }
-    break;
-  default:
-    break;
   }
 
   return false;
