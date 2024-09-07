@@ -173,17 +173,17 @@ module.exports = grammar({
         $.collapsed_reference_image,
         $.inline_image,
       ),
-    full_reference_image: ($) => seq($._image_description, $._link_label),
+    full_reference_image: ($) => seq($.image_description, $._link_label),
     collapsed_reference_image: ($) =>
-      seq($._image_description, token.immediate("[]")),
-    inline_image: ($) => seq($._image_description, $.inline_link_destination),
+      seq($.image_description, token.immediate("[]")),
+    inline_image: ($) => seq($.image_description, $.inline_link_destination),
 
-    _image_description: ($) =>
+    image_description: ($) =>
       seq(
         $._image_description_begin,
         $._image_description_mark_begin,
         optional(alias($._inline, $.image_description)),
-        prec.dynamic(1000, $._image_description_end),
+        prec.dynamic(1000, alias($._image_description_end, "]")),
       ),
     _image_description_begin: (_) => "![",
 
@@ -193,13 +193,31 @@ module.exports = grammar({
     collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
     inline_link: ($) => seq($.link_text, $.inline_link_destination),
 
-    link_text: ($) => $._bracketed_text,
+    link_text: ($) =>
+      seq(
+        $._bracketed_text_begin,
+        $._bracketed_text_mark_begin,
+        $._inline,
+        // Alias to "]" to allow us to highlight it in Neovim.
+        // Maybe some bug, or some undocumented behavior?
+        prec.dynamic(1000, alias($._bracketed_text_end, "]")),
+      ),
 
     span: ($) =>
       // Both bracketed_text and inline_attribute contributes +1000 each,
       // so we pull it back to 1000 so it's the same as other spans,
       // making precedence work properly.
-      prec.dynamic(-1000, seq($._bracketed_text, $.inline_attribute)),
+      // prec.dynamic(-1000, seq($._bracketed_text,
+
+      seq(
+        $._bracketed_text_begin,
+        $._bracketed_text_mark_begin,
+        alias($._inline, $.content),
+        alias($._bracketed_text_end, "]"),
+        $.inline_attribute,
+      ),
+
+    _bracketed_text_begin: (_) => "[",
 
     inline_attribute: ($) =>
       seq(
@@ -218,7 +236,7 @@ module.exports = grammar({
           ),
           $.args,
         ),
-        prec.dynamic(1000, $._inline_attribute_end),
+        prec.dynamic(1000, alias($._inline_attribute_end, "}")),
       ),
     _inline_attribute_begin: (_) => "{",
 
@@ -229,7 +247,6 @@ module.exports = grammar({
         $._inline,
         prec.dynamic(1000, $._bracketed_text_end),
       ),
-    _bracketed_text_begin: (_) => "[",
 
     _link_label: ($) =>
       seq("[", alias($._inline, $.link_label), token.immediate("]")),

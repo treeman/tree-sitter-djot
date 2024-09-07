@@ -147,13 +147,6 @@
 (key_value
   (value) @string)
 
-(link_text
-  [
-    "["
-    "]"
-  ] @punctuation.bracket
-  (#set! conceal ""))
-
 (autolink
   [
     "<"
@@ -161,12 +154,21 @@
   ] @punctuation.bracket
   (#set! conceal ""))
 
+(link_text
+  [
+    "["
+    "]"
+  ] @punctuation.bracket
+  (#set! conceal ""))
+
+(link_text) @markup.link.label
+
+; Should we use markup.link instead of label?
+; (collapsed_reference_link
+;   (link_text) @markup.link)
 (inline_link
   (inline_link_destination) @markup.link.url
   (#set! conceal ""))
-
-(full_reference_link
-  (link_text) @markup.link)
 
 (full_reference_link
   (link_label) @markup.link.label
@@ -183,44 +185,25 @@
   ] @punctuation.bracket
   (#set! conceal ""))
 
-(collapsed_reference_link
-  (link_text) @markup.link)
+(image_description
+  [
+    "!["
+    "]"
+  ] @punctuation.bracket)
 
-(collapsed_reference_link
-  (link_text) @markup.link.label)
-
-(inline_link
-  (link_text) @markup.link)
+(image_description) @markup.link.label
 
 (full_reference_image
   (link_label) @markup.link.label)
 
 (full_reference_image
   [
-    "!["
     "["
     "]"
   ] @punctuation.bracket)
 
 (collapsed_reference_image
-  [
-    "!["
-    "]"
-  ] @punctuation.bracket)
-
-(inline_image
-  [
-    "!["
-    "]"
-  ] @punctuation.bracket)
-
-(image_description) @markup.italic
-
-(image_description
-  [
-    "["
-    "]"
-  ] @punctuation.bracket)
+  "[]" @punctuation.bracket)
 
 (inline_link_destination
   [
@@ -240,7 +223,6 @@
   (footnote_marker_begin)
   (footnote_marker_end)
 ] @punctuation.bracket
-
 
 (todo) @comment.todo
 

@@ -42,7 +42,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "image_description",
@@ -441,6 +441,10 @@
         },
         {
           "type": "highlighted",
+          "named": true
+        },
+        {
+          "type": "image_description",
           "named": true
         },
         {
@@ -1109,127 +1113,11 @@
       "required": true,
       "types": [
         {
-          "type": "autolink",
-          "named": true
-        },
-        {
-          "type": "backslash_escape",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_image",
-          "named": true
-        },
-        {
-          "type": "collapsed_reference_link",
-          "named": true
-        },
-        {
-          "type": "comment",
-          "named": true
-        },
-        {
-          "type": "delete",
-          "named": true
-        },
-        {
-          "type": "ellipsis",
-          "named": true
-        },
-        {
-          "type": "em_dash",
-          "named": true
-        },
-        {
-          "type": "emphasis",
-          "named": true
-        },
-        {
-          "type": "en_dash",
-          "named": true
-        },
-        {
-          "type": "fixme",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
-          "named": true
-        },
-        {
-          "type": "full_reference_image",
-          "named": true
-        },
-        {
-          "type": "full_reference_link",
-          "named": true
-        },
-        {
-          "type": "hard_line_break",
-          "named": true
-        },
-        {
-          "type": "highlighted",
+          "type": "content",
           "named": true
         },
         {
           "type": "inline_attribute",
-          "named": true
-        },
-        {
-          "type": "inline_image",
-          "named": true
-        },
-        {
-          "type": "inline_link",
-          "named": true
-        },
-        {
-          "type": "insert",
-          "named": true
-        },
-        {
-          "type": "math",
-          "named": true
-        },
-        {
-          "type": "note",
-          "named": true
-        },
-        {
-          "type": "quotation_marks",
-          "named": true
-        },
-        {
-          "type": "raw_inline",
-          "named": true
-        },
-        {
-          "type": "span",
-          "named": true
-        },
-        {
-          "type": "strong",
-          "named": true
-        },
-        {
-          "type": "subscript",
-          "named": true
-        },
-        {
-          "type": "superscript",
-          "named": true
-        },
-        {
-          "type": "symbol",
-          "named": true
-        },
-        {
-          "type": "todo",
-          "named": true
-        },
-        {
-          "type": "verbatim",
           "named": true
         }
       ]
