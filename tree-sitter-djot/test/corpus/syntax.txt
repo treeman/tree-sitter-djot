@@ -457,7 +457,8 @@ Block quote: with hard line break
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph))))
+      (paragraph
+        (block_quote_marker)))))
 
 ===============================================================================
 Block quote: contain code block
