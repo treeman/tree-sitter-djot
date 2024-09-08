@@ -255,12 +255,14 @@ Image: precedence
     (strong_begin)
     (content)
     (strong_end))
-  (inline_image
-    (image_description)
-    (inline_link_destination))
-  (full_reference_image
-    (image_description)
-    (link_label)))
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end))
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end)))
 
 ===============================================================================
 Image: inline
@@ -1090,12 +1092,14 @@ Link: precedence
     (strong_begin)
     (content)
     (strong_end))
-  (inline_link
-    (link_text)
-    (inline_link_destination))
-  (full_reference_link
-    (link_text)
-    (link_label)))
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end))
+  (strong
+    (strong_begin)
+    (content)
+    (strong_end)))
 
 ===============================================================================
 Link: post precedence inline_link
@@ -1309,8 +1313,6 @@ Span: Precedence
 
 [*]{.c*} The Djot playground doesn't handle this case properly
 
-[*]{.c}* Should be a span
-
 -------------------------------------------------------------------------------
 
 (inline
@@ -1322,12 +1324,40 @@ Span: Precedence
   (strong
     (strong_begin)
     (content)
-    (strong_end))
+    (strong_end)))
+
+===============================================================================
+Span: Precedence prefer span
+:skip
+===============================================================================
+
+[_]{.c}_
+
+-------------------------------------------------------------------------------
+
+(inline
   (span
     (content)
     (inline_attribute
       (args
         (class)))))
+
+===============================================================================
+Span: Precedence choose string with inline attribute
+===============================================================================
+
+_[_]{.c}
+
+-------------------------------------------------------------------------------
+
+(inline
+  (emphasis
+    (emphasis_begin)
+    (content)
+    (emphasis_end))
+  (inline_attribute
+    (args
+      (class))))
 
 ===============================================================================
 Span: Broken inline attribute

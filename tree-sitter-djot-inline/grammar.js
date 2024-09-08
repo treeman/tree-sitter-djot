@@ -1,3 +1,5 @@
+const ELEMENT_PRECEDENCE = 100;
+
 module.exports = grammar({
   name: "djot_inline",
 
@@ -35,36 +37,60 @@ module.exports = grammar({
     _element: ($) =>
       prec.left(
         choice(
+          // Span is declared separately because it always parses an `inline_attribute`,
+          // while the attribute is optional for everything else.
+          $.span,
           seq(
             choice(
               $.hard_line_break,
               $._smart_punctuation,
               $.backslash_escape,
+              // Elements containing other inline elements needs to have the same precedence level
+              // so we can choose the element that's closed first.
+              //
+              // For example:
+              //
+              //     *[x](y*)
+              //
+              // Should parse a strong element instead of a link because it's closed before the link.
+              //
+              // They also need a higher precedence than the fallback tokens so that:
+              //
+              //     _a_
+              //
+              // Is parsed as emphasis instead of just text with `_symbol_fallback` tokens.
+              prec.dynamic(ELEMENT_PRECEDENCE, $.emphasis),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.strong),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.highlighted),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.superscript),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.subscript),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.insert),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.delete),
+              prec.dynamic(ELEMENT_PRECEDENCE, $.footnote_reference),
+              prec.dynamic(ELEMENT_PRECEDENCE, $._image),
+              prec.dynamic(ELEMENT_PRECEDENCE, $._link),
               $.autolink,
-              $.emphasis,
-              $.strong,
-              $.highlighted,
-              $.superscript,
-              $.subscript,
-              $.insert,
-              $.delete,
               $.verbatim,
               $.math,
               $.raw_inline,
-              $.footnote_reference,
               $.symbol,
-              $._image,
-              $._link,
               $._comment_with_spaces,
               $._todo_highlights,
+              // Text and the symbol fallback matches everything not matched elsewhere.
               $._symbol_fallback,
               $._text,
             ),
             optional(
-              choice($.inline_attribute, $._curly_bracket_span_fallback),
+              // We need a separate fallback token for the opening `{`
+              // for the parser to recognize the conflict.
+              choice(
+                // Use precedence for inline attribute as well to allow
+                // closure before other elements.
+                prec.dynamic(ELEMENT_PRECEDENCE, $.inline_attribute),
+                $._curly_bracket_span_fallback,
+              ),
             ),
           ),
-          $.span,
         ),
       ),
 
@@ -81,7 +107,7 @@ module.exports = grammar({
         $.emphasis_begin,
         $._emphasis_mark_begin,
         alias($._inline_without_trailing_space, $.content),
-        prec.dynamic(1000, $.emphasis_end),
+        $.emphasis_end,
       ),
     emphasis_begin: ($) => choice("{_", seq("_", $._non_whitespace_check)),
 
@@ -90,7 +116,7 @@ module.exports = grammar({
         $.strong_begin,
         $._strong_mark_begin,
         alias($._inline_without_trailing_space, $.content),
-        prec.dynamic(1000, $.strong_end),
+        $.strong_end,
       ),
     strong_begin: ($) => choice("{*", seq("*", $._non_whitespace_check)),
 
@@ -101,7 +127,7 @@ module.exports = grammar({
         $.superscript_begin,
         $._superscript_mark_begin,
         alias($._inline, $.content),
-        prec.dynamic(1000, $.superscript_end),
+        $.superscript_end,
       ),
     superscript_begin: (_) => choice("{^", "^"),
 
@@ -110,7 +136,7 @@ module.exports = grammar({
         $.subscript_begin,
         $._subscript_mark_begin,
         alias($._inline, $.content),
-        prec.dynamic(1000, $.subscript_end),
+        $.subscript_end,
       ),
     subscript_begin: (_) => choice("{~", "~"),
 
@@ -119,7 +145,7 @@ module.exports = grammar({
         $.highlighted_begin,
         $._highlighted_mark_begin,
         alias($._inline, $.content),
-        prec.dynamic(1000, $.highlighted_end),
+        $.highlighted_end,
       ),
     highlighted_begin: (_) => "{=",
     insert: ($) =>
@@ -127,7 +153,7 @@ module.exports = grammar({
         $.insert_begin,
         $._insert_mark_begin,
         alias($._inline, $.content),
-        prec.dynamic(1000, $.insert_end),
+        $.insert_end,
       ),
     insert_begin: (_) => "{+",
     delete: ($) =>
@@ -135,7 +161,7 @@ module.exports = grammar({
         $.delete_begin,
         $._delete_mark_begin,
         alias($._inline, $.content),
-        prec.dynamic(1000, $.delete_end),
+        $.delete_end,
       ),
     delete_begin: (_) => "{-",
 
@@ -162,10 +188,7 @@ module.exports = grammar({
         $.footnote_marker_begin,
         $._square_bracket_span_begin,
         $.reference_label,
-        prec.dynamic(
-          1000,
-          alias($._square_bracket_span_end, $.footnote_marker_end),
-        ),
+        alias($._square_bracket_span_end, $.footnote_marker_end),
       ),
     footnote_marker_begin: (_) => "[^",
 
@@ -188,7 +211,7 @@ module.exports = grammar({
         $._image_description_begin,
         $._square_bracket_span_begin,
         optional($._inline),
-        prec.dynamic(1000, alias($._square_bracket_span_end, "]")),
+        alias($._square_bracket_span_end, "]"),
       ),
     _image_description_begin: (_) => "![",
 
@@ -205,20 +228,19 @@ module.exports = grammar({
         $._inline,
         // Alias to "]" to allow us to highlight it in Neovim.
         // Maybe some bug, or some undocumented behavior?
-        prec.dynamic(1000, alias($._square_bracket_span_end, "]")),
+        alias($._square_bracket_span_end, "]"),
       ),
 
     span: ($) =>
-      // Both bracketed_text and inline_attribute contributes +1000 each,
-      // so we pull it back to 1000 so it's the same as other spans,
-      // making precedence work properly.
-      // prec.dynamic(-1000, seq($._bracketed_text,
-
       seq(
         $._bracketed_text_begin,
         $._square_bracket_span_begin,
         alias($._inline, $.content),
-        alias($._square_bracket_span_end, "]"),
+        // Prefer span over regular text + inline attribute.
+        prec.dynamic(
+          ELEMENT_PRECEDENCE,
+          alias($._square_bracket_span_end, "]"),
+        ),
         $.inline_attribute,
       ),
 
@@ -241,7 +263,7 @@ module.exports = grammar({
           ),
           $.args,
         ),
-        prec.dynamic(1000, alias($._curly_bracket_span_end, "}")),
+        alias($._curly_bracket_span_end, "}"),
       ),
     _curly_bracket_span_begin: (_) => "{",
 
@@ -250,7 +272,7 @@ module.exports = grammar({
         $._bracketed_text_begin,
         $._square_bracket_span_begin,
         $._inline,
-        prec.dynamic(1000, $._square_bracket_span_end),
+        $._square_bracket_span_end,
       ),
 
     _link_label: ($) =>
