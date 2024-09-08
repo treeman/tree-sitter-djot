@@ -42,9 +42,9 @@ module.exports = grammar({
           $.span,
           seq(
             choice(
-              $.hard_line_break,
               $._smart_punctuation,
               $.backslash_escape,
+              $.hard_line_break,
               // Elements containing other inline elements needs to have the same precedence level
               // so we can choose the element that's closed first.
               //
@@ -176,7 +176,7 @@ module.exports = grammar({
     em_dash: (_) => "---",
     en_dash: (_) => "--",
 
-    backslash_escape: (_) => /\\[^\\\r\n]/,
+    backslash_escape: (_) => /\\[^\r\n]/,
 
     // No backlash escape in an autolink.
     autolink: (_) => seq("<", /[^>\s]+/, ">"),

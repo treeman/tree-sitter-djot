@@ -80,15 +80,15 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "hard_line_break"
-                  },
-                  {
-                    "type": "SYMBOL",
                     "name": "_smart_punctuation"
                   },
                   {
                     "type": "SYMBOL",
                     "name": "backslash_escape"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "hard_line_break"
                   },
                   {
                     "type": "PREC_DYNAMIC",
@@ -582,7 +582,7 @@
     },
     "backslash_escape": {
       "type": "PATTERN",
-      "value": "\\\\[^\\\\\\r\\n]"
+      "value": "\\\\[^\\r\\n]"
     },
     "autolink": {
       "type": "SEQ",

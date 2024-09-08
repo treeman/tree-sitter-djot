@@ -154,6 +154,8 @@ Regular \.\.\. dots
 Inside _x\_y_
 No \{+insert\*}
 \> no quote
+\\
+\ whitespace
 
 -------------------------------------------------------------------------------
 
@@ -164,6 +166,8 @@ No \{+insert\*}
   (backslash_escape) (backslash_escape) (backslash_escape)
   (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end))
   (backslash_escape) (backslash_escape)
+  (backslash_escape)
+  (backslash_escape)
   (backslash_escape))
 
 ===============================================================================
