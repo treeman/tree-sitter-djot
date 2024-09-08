@@ -444,10 +444,6 @@
           "named": true
         },
         {
-          "type": "image_description",
-          "named": true
-        },
-        {
           "type": "inline_attribute",
           "named": true
         },

@@ -16,7 +16,7 @@ module.exports = grammar({
     [$.footnote_marker_begin, $._symbol_fallback],
     [$.math, $._symbol_fallback],
 
-    [$._inline_attribute_begin, $._inline_attribute_fallback],
+    [$._curly_bracket_span_begin, $._curly_bracket_span_fallback],
   ],
 
   rules: {
@@ -60,7 +60,9 @@ module.exports = grammar({
               $._symbol_fallback,
               $._text,
             ),
-            optional(choice($.inline_attribute, $._inline_attribute_fallback)),
+            optional(
+              choice($.inline_attribute, $._curly_bracket_span_fallback),
+            ),
           ),
           $.span,
         ),
@@ -158,9 +160,12 @@ module.exports = grammar({
     footnote_reference: ($) =>
       seq(
         $.footnote_marker_begin,
-        $._footnote_marker_mark_begin,
+        $._square_bracket_span_begin,
         $.reference_label,
-        prec.dynamic(1000, $.footnote_marker_end),
+        prec.dynamic(
+          1000,
+          alias($._square_bracket_span_end, $.footnote_marker_end),
+        ),
       ),
     footnote_marker_begin: (_) => "[^",
 
@@ -181,9 +186,9 @@ module.exports = grammar({
     image_description: ($) =>
       seq(
         $._image_description_begin,
-        $._image_description_mark_begin,
-        optional(alias($._inline, $.image_description)),
-        prec.dynamic(1000, alias($._image_description_end, "]")),
+        $._square_bracket_span_begin,
+        optional($._inline),
+        prec.dynamic(1000, alias($._square_bracket_span_end, "]")),
       ),
     _image_description_begin: (_) => "![",
 
@@ -196,11 +201,11 @@ module.exports = grammar({
     link_text: ($) =>
       seq(
         $._bracketed_text_begin,
-        $._bracketed_text_mark_begin,
+        $._square_bracket_span_begin,
         $._inline,
         // Alias to "]" to allow us to highlight it in Neovim.
         // Maybe some bug, or some undocumented behavior?
-        prec.dynamic(1000, alias($._bracketed_text_end, "]")),
+        prec.dynamic(1000, alias($._square_bracket_span_end, "]")),
       ),
 
     span: ($) =>
@@ -211,9 +216,9 @@ module.exports = grammar({
 
       seq(
         $._bracketed_text_begin,
-        $._bracketed_text_mark_begin,
+        $._square_bracket_span_begin,
         alias($._inline, $.content),
-        alias($._bracketed_text_end, "]"),
+        alias($._square_bracket_span_end, "]"),
         $.inline_attribute,
       ),
 
@@ -221,8 +226,8 @@ module.exports = grammar({
 
     inline_attribute: ($) =>
       seq(
-        $._inline_attribute_begin,
-        $._inline_attribute_mark_begin,
+        $._curly_bracket_span_begin,
+        $._curly_bracket_span_mark_begin,
         alias(
           repeat(
             choice(
@@ -236,21 +241,30 @@ module.exports = grammar({
           ),
           $.args,
         ),
-        prec.dynamic(1000, alias($._inline_attribute_end, "}")),
+        prec.dynamic(1000, alias($._curly_bracket_span_end, "}")),
       ),
-    _inline_attribute_begin: (_) => "{",
+    _curly_bracket_span_begin: (_) => "{",
 
     _bracketed_text: ($) =>
       seq(
         $._bracketed_text_begin,
-        $._bracketed_text_mark_begin,
+        $._square_bracket_span_begin,
         $._inline,
-        prec.dynamic(1000, $._bracketed_text_end),
+        prec.dynamic(1000, $._square_bracket_span_end),
       ),
 
     _link_label: ($) =>
       seq("[", alias($._inline, $.link_label), token.immediate("]")),
-    inline_link_destination: (_) => seq("(", /[^\)]+/, ")"),
+    inline_link_destination: ($) =>
+      seq(
+        $._parens_span_begin,
+        $._parens_span_mark_begin,
+        // /[^\)]+/,
+        // TODO should capture as backslash_escape
+        /([^\)]|\\\))+/,
+        alias($._parens_span_end, ")"),
+      ),
+    _parens_span_begin: (_) => "(",
 
     // An inline attribute is only allowed to have surrounding spaces
     // if it only contains a comment.
@@ -335,12 +349,11 @@ module.exports = grammar({
         seq("{+", choice($._insert_mark_begin, $._in_fallback)),
         seq("{-", choice($._delete_mark_begin, $._in_fallback)),
 
-        // Footnotes
-        seq("[^", choice($._footnote_marker_mark_begin, $._in_fallback)),
-
-        // Fallbacks for spans, links and images
-        seq("![", choice($._image_description_mark_begin, $._in_fallback)),
-        seq("[", choice($._bracketed_text_mark_begin, $._in_fallback)),
+        // Bracketed spans
+        seq("[^", choice($._square_bracket_span_begin, $._in_fallback)),
+        seq("![", choice($._square_bracket_span_begin, $._in_fallback)),
+        seq("[", choice($._square_bracket_span_begin, $._in_fallback)),
+        seq("(", choice($._parens_span_mark_begin, $._in_fallback)),
 
         // Autolink
         "<",
@@ -351,8 +364,8 @@ module.exports = grammar({
       ),
 
     // Used to branch on inline attributes that may follow any element.
-    _inline_attribute_fallback: ($) =>
-      seq("{", choice($._inline_attribute_mark_begin, $._in_fallback)),
+    _curly_bracket_span_fallback: ($) =>
+      seq("{", choice($._curly_bracket_span_mark_begin, $._in_fallback)),
 
     language: (_) => /[^\n\t \{\}=]+/,
 
@@ -397,16 +410,14 @@ module.exports = grammar({
     $.insert_end,
     $._delete_mark_begin,
     $.delete_end,
-    // The bracketed text covers the first `[text]` portion of spans and links.
-    $._bracketed_text_mark_begin,
-    $._bracketed_text_end,
-    // The image description is the first `![text]` part of the image.
-    $._image_description_mark_begin,
-    $._image_description_end,
-    $._inline_attribute_mark_begin,
-    $._inline_attribute_end,
-    $._footnote_marker_mark_begin,
-    $.footnote_marker_end,
+    // Spans where the external scanner uses a zero-width begin marker
+    // and parser the end token as ), } or ].
+    $._parens_span_mark_begin,
+    $._parens_span_end,
+    $._curly_bracket_span_mark_begin,
+    $._curly_bracket_span_end,
+    $._square_bracket_span_begin,
+    $._square_bracket_span_end,
 
     // A signaling token that's used to signal that a fallback token should be scanned,
     // and should never be output.
