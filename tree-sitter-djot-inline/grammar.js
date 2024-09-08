@@ -186,7 +186,7 @@ module.exports = grammar({
     footnote_reference: ($) =>
       seq(
         $.footnote_marker_begin,
-        $._square_bracket_span_begin,
+        $._square_bracket_span_mark_begin,
         $.reference_label,
         alias($._square_bracket_span_end, $.footnote_marker_end),
       ),
@@ -209,7 +209,7 @@ module.exports = grammar({
     image_description: ($) =>
       seq(
         $._image_description_begin,
-        $._square_bracket_span_begin,
+        $._square_bracket_span_mark_begin,
         optional($._inline),
         alias($._square_bracket_span_end, "]"),
       ),
@@ -224,7 +224,7 @@ module.exports = grammar({
     link_text: ($) =>
       seq(
         $._bracketed_text_begin,
-        $._square_bracket_span_begin,
+        $._square_bracket_span_mark_begin,
         $._inline,
         // Alias to "]" to allow us to highlight it in Neovim.
         // Maybe some bug, or some undocumented behavior?
@@ -234,7 +234,7 @@ module.exports = grammar({
     span: ($) =>
       seq(
         $._bracketed_text_begin,
-        $._square_bracket_span_begin,
+        $._square_bracket_span_mark_begin,
         alias($._inline, $.content),
         // Prefer span over regular text + inline attribute.
         prec.dynamic(
@@ -270,7 +270,7 @@ module.exports = grammar({
     _bracketed_text: ($) =>
       seq(
         $._bracketed_text_begin,
-        $._square_bracket_span_begin,
+        $._square_bracket_span_mark_begin,
         $._inline,
         $._square_bracket_span_end,
       ),
@@ -371,9 +371,9 @@ module.exports = grammar({
         seq("{-", choice($._delete_mark_begin, $._in_fallback)),
 
         // Bracketed spans
-        seq("[^", choice($._square_bracket_span_begin, $._in_fallback)),
-        seq("![", choice($._square_bracket_span_begin, $._in_fallback)),
-        seq("[", choice($._square_bracket_span_begin, $._in_fallback)),
+        seq("[^", choice($._square_bracket_span_mark_begin, $._in_fallback)),
+        seq("![", choice($._square_bracket_span_mark_begin, $._in_fallback)),
+        seq("[", choice($._square_bracket_span_mark_begin, $._in_fallback)),
         seq("(", choice($._parens_span_mark_begin, $._in_fallback)),
 
         // Autolink
@@ -437,7 +437,7 @@ module.exports = grammar({
     $._parens_span_end,
     $._curly_bracket_span_mark_begin,
     $._curly_bracket_span_end,
-    $._square_bracket_span_begin,
+    $._square_bracket_span_mark_begin,
     $._square_bracket_span_end,
 
     // A signaling token that's used to signal that a fallback token should be scanned,

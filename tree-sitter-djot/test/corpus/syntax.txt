@@ -2672,72 +2672,33 @@ Footnote: With block quote
 ===============================================================================
 Paragraph: broken things
 ===============================================================================
-1 * 2
-
-2 _ 1
-
-1 ^ 2
-
-~ x
-
-{*x
-
-{=x
-
-{+x
-
-{-x
-
-^x
-
-{^x
-
-:x
-
-_ x _
-
-_x _
-
-_ x_
-
-x * x *
-
-x *x *
-
-x * x*
-
-[x
-
-^
-
 |
-
-`
-
-:
 
 -
 
-[x](
++
 
-)
+*
+
+[x]:
+
+[^f
+
+{.a
+
+{#a
+
+{a=1
+
+{%
+
+{% a
+
+{% a %
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
   (paragraph)
   (paragraph)
   (paragraph)

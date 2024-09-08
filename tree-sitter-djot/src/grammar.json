@@ -1500,13 +1500,12 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_footnote_begin"
-          },
-          "named": true,
-          "value": "footnote_marker_begin"
+          "type": "SYMBOL",
+          "name": "footnote_marker_begin"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_footnote_mark_begin"
         },
         {
           "type": "SYMBOL",
@@ -1530,6 +1529,10 @@
           "name": "_footnote_end"
         }
       ]
+    },
+    "footnote_marker_begin": {
+      "type": "STRING",
+      "value": "[^"
     },
     "footnote_content": {
       "type": "REPEAT1",
@@ -2311,13 +2314,66 @@
           {
             "type": "STRING",
             "value": "|"
+          },
+          {
+            "type": "STRING",
+            "value": "."
+          },
+          {
+            "type": "STRING",
+            "value": "#"
+          },
+          {
+            "type": "STRING",
+            "value": "%"
+          },
+          {
+            "type": "TOKEN",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "#"
+                },
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[^\\s\\}]+"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "[^"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_footnote_mark_begin"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_in_fallback"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
     },
     "backslash_escape": {
       "type": "PATTERN",
-      "value": "\\\\[^\\\\\\r\\n]"
+      "value": "\\\\[^\\r\\n]"
     },
     "reference_label": {
       "type": "SYMBOL",
@@ -2378,6 +2434,14 @@
     ],
     [
       "table_row",
+      "_symbol_fallback"
+    ],
+    [
+      "block_attribute",
+      "_symbol_fallback"
+    ],
+    [
+      "footnote_marker_begin",
       "_symbol_fallback"
     ]
   ],
@@ -2541,7 +2605,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_footnote_begin"
+      "name": "_footnote_mark_begin"
     },
     {
       "type": "SYMBOL",
@@ -2554,6 +2618,10 @@
     {
       "type": "SYMBOL",
       "name": "_table_caption_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_in_fallback"
     },
     {
       "type": "SYMBOL",

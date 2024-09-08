@@ -7,6 +7,8 @@ module.exports = grammar({
     [$._table_content],
     [$.link_reference_definition, $._symbol_fallback],
     [$.table_row, $._symbol_fallback],
+    [$.block_attribute, $._symbol_fallback],
+    [$.footnote_marker_begin, $._symbol_fallback],
   ],
 
   rules: {
@@ -336,12 +338,14 @@ module.exports = grammar({
 
     footnote: ($) =>
       seq(
-        alias($._footnote_begin, $.footnote_marker_begin),
+        $.footnote_marker_begin,
+        $._footnote_mark_begin,
         $.reference_label,
         alias("]:", $.footnote_marker_end),
         $.footnote_content,
         $._footnote_end,
       ),
+    footnote_marker_begin: (_) => "[^",
     footnote_content: ($) => repeat1($._block_with_heading),
 
     div: ($) =>
@@ -490,9 +494,24 @@ module.exports = grammar({
     _inline: ($) => prec.left(repeat1(choice(/[^\n]/, $._symbol_fallback))),
     _inline_line: ($) => seq($._inline, $._eof_or_newline),
 
-    _symbol_fallback: ($) => prec.dynamic(-1000, choice("[", "{", "{-", "|")),
+    _symbol_fallback: ($) =>
+      prec.dynamic(
+        -1000,
+        choice(
+          "[",
+          "{",
+          "{-",
+          "|",
+          ".",
+          "#",
+          "%",
+          // To capture dangling identifiers after `{`
+          token(seq("#", token.immediate(/[^\s\}]+/))),
+          seq("[^", choice($._footnote_mark_begin, $._in_fallback)),
+        ),
+      ),
 
-    backslash_escape: (_) => /\\[^\\\r\n]/,
+    backslash_escape: (_) => /\\[^\r\n]/,
 
     reference_label: ($) => $._id,
     _id: (_) => /[\w_-]+/,
@@ -596,11 +615,13 @@ module.exports = grammar({
     $._thematic_break_dash,
     $._thematic_break_star,
     // Footnotes have significant whitespace.
-    $._footnote_begin,
+    $._footnote_mark_begin,
     $._footnote_end,
     // Table captions have significant whitespace.
     $._table_caption_begin,
     $._table_caption_end,
+
+    $._in_fallback,
 
     // Never valid and is only used to signal an internal scanner error.
     $._error,
