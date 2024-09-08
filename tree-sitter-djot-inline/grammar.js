@@ -259,8 +259,7 @@ module.exports = grammar({
       seq(
         $._parens_span_begin,
         $._parens_span_mark_begin,
-        // /[^\)]+/,
-        // TODO should capture as backslash_escape
+        // Can escape `)`, but shouldn't capture it.
         /([^\)]|\\\))+/,
         alias($._parens_span_end, ")"),
       ),
