@@ -21,12 +21,23 @@
 
 (heading) @markup.heading
 
-((heading) @markup.heading.1 (#match? @markup.heading.1 "^# "))
-((heading) @markup.heading.2 (#match? @markup.heading.2 "^## "))
-((heading) @markup.heading.3 (#match? @markup.heading.3 "^### "))
-((heading) @markup.heading.4 (#match? @markup.heading.4 "^#### "))
-((heading) @markup.heading.5 (#match? @markup.heading.5 "^##### "))
-((heading) @markup.heading.6 (#match? @markup.heading.6 "^###### "))
+((heading) @markup.heading.1
+  (#match? @markup.heading.1 "^# "))
+
+((heading) @markup.heading.2
+  (#match? @markup.heading.2 "^## "))
+
+((heading) @markup.heading.3
+  (#match? @markup.heading.3 "^### "))
+
+((heading) @markup.heading.4
+  (#match? @markup.heading.4 "^#### "))
+
+((heading) @markup.heading.5
+  (#match? @markup.heading.5 "^##### "))
+
+((heading) @markup.heading.6
+  (#match? @markup.heading.6 "^###### "))
 
 (thematic_break) @string.special
 
@@ -59,8 +70,7 @@
 
 (language) @attribute
 
-((language_marker) @punctuation.delimiter
-  (#set! conceal ""))
+(language_marker) @punctuation.delimiter
 
 [
   (block_quote)
@@ -155,10 +165,7 @@
 (link_reference_definition
   (link_label) @markup.link.label)
 
-[
-  (link_reference_definition)
-] @markup.link.url
-
+(link_reference_definition) @markup.link.url
 
 (footnote
   (reference_label) @markup.link.label)
@@ -167,4 +174,3 @@
   (footnote_marker_begin)
   (footnote_marker_end)
 ] @punctuation.bracket
-
