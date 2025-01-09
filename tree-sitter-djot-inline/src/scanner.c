@@ -92,9 +92,9 @@ typedef struct {
   Array(Element *) * open_elements;
 
   // Set to true when a bracket fallback is found inside an element,
-  // for example in `*[*` the `[` will set it to true.
+  // for example in `*[` the `[` will set it to true.
   // Set to false when an element is opened again.
-  // This is used to detect `*[*](y)` where we'll block elements inside
+  // This is used to detect `*[x](y*)` where we'll block elements inside
   // `( )` if we can scan the whole inline link.
   uint8_t fallback_bracket_inside_element;
 } Scanner;
@@ -168,6 +168,56 @@ static Element *peek_element(Scanner *s) {
     return *array_back(s->open_elements);
   } else {
     return NULL;
+  }
+}
+
+static SpanType element_span_type(ElementType type) {
+  switch (type) {
+  case VERBATIM:
+    // NOTE not supported or used
+    return SpanSingle;
+  case EMPHASIS:
+  case STRONG:
+    return SpanBracketedAndSingleNoWhitespace;
+  case SUPERSCRIPT:
+  case SUBSCRIPT:
+    return SpanBracketedAndSingle;
+  case HIGHLIGHTED:
+  case INSERT:
+  case DELETE:
+    return SpanBracketed;
+  case PARENS_SPAN:
+  case CURLY_BRACKET_SPAN:
+  case SQUARE_BRACKET_SPAN:
+    return SpanSingle;
+  }
+}
+
+static char element_marker(ElementType type) {
+  switch (type) {
+  case VERBATIM:
+    // NOTE not supported or used
+    return '`';
+  case EMPHASIS:
+    return '_';
+  case STRONG:
+    return '*';
+  case SUPERSCRIPT:
+    return '^';
+  case SUBSCRIPT:
+    return '~';
+  case HIGHLIGHTED:
+    return '=';
+  case INSERT:
+    return '+';
+  case DELETE:
+    return '-';
+  case PARENS_SPAN:
+    return ')';
+  case CURLY_BRACKET_SPAN:
+    return '}';
+  case SQUARE_BRACKET_SPAN:
+    return ']';
   }
 }
 
@@ -321,7 +371,52 @@ static bool scan_span_end(TSLexer *lexer, char marker,
   return scan_bracketed_span_end(lexer, marker);
 }
 
-static bool scan_inline_image_url(TSLexer *lexer, Element *top_element) {
+// Scan a span ending token, either `_` or `_}`.
+static bool scan_span_end_element(Scanner *s, TSLexer *lexer,
+                                  ElementType element) {
+  // Only close the topmost element, so in:
+  //
+  //    _a *b_
+  //
+  // The `*` isn't allowed to open a span, and that branch should not be
+  // valid.
+  Element *top = peek_element(s);
+  if (!top || top->type != element) {
+    return false;
+  }
+  // If we've chosen any fallback symbols inside the span then we
+  // should not accept the span.
+  if (top->data > 0) {
+    return false;
+  }
+
+  char marker = element_marker(element);
+  switch (element_span_type(element)) {
+  case SpanSingle:
+    if (!scan_single_span_end(lexer, marker)) {
+      return false;
+    }
+    break;
+  case SpanBracketed:
+    if (!scan_bracketed_span_end(lexer, marker)) {
+      return false;
+    }
+    break;
+  case SpanBracketedAndSingle:
+    if (!scan_span_end(lexer, marker, false)) {
+      return false;
+    }
+    break;
+  case SpanBracketedAndSingleNoWhitespace:
+    if (!scan_span_end(lexer, marker, true)) {
+      return false;
+    }
+    break;
+  }
+  return true;
+}
+
+static bool scan_inline_link_destination(TSLexer *lexer, Element *top_element) {
   // The `(` has already been scanned, now we should check for
   // an ending `)`. It can also be escaped.
   while (!lexer->eof(lexer)) {
@@ -341,16 +436,34 @@ static bool scan_inline_image_url(TSLexer *lexer, Element *top_element) {
 
 static bool mark_span_begin(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols, ElementType element,
-                            TokenType token, char marker) {
+                            TokenType token) {
+  Element *top = peek_element(s);
+
   // If IN_FALLBACK is valid then it means we're processing the
   // `_symbol_fallback` branch (see `grammar.js`).
   if (valid_symbols[IN_FALLBACK]) {
-    Element *top = peek_element(s);
+    // There's a challenge when we have multiple elements inside an inline link:
+    //
+    //     [x](a_b_c_d_e)
+    //
+    // Because of the dynamic precedence treesitter will not parse this as a
+    // link but as some fallback characters and then some emphasis.
+    //
+    // To prevent this we don't allow the parsing of `(` when it's a fallback
+    // symbol if we can scan ahead and see that we should be able to parse it as
+    // a link, stopping the contained emphasis from being considered.
+    //
+    // Additionally `fallback_bracket_inside_element` is used to allow us
+    // to detect an element ending marker inside the destination
+    // and allow that. For example here:
+    //
+    //     *[x](y*)
+    //
     if (element == PARENS_SPAN) {
       // Should scan ahead and if there's a valid inline link we should not
       // allow the fallback to be parsed (favoring the link).
       if (!s->fallback_bracket_inside_element &&
-          scan_inline_image_url(lexer, top)) {
+          scan_inline_link_destination(lexer, top)) {
         return false;
       }
     }
@@ -395,45 +508,9 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
 
 // Parse a span ending token, either `_` or `_}`.
 static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
-                           TokenType token, char marker, SpanType span_type) {
-  // Only close the topmost element, so in:
-  //
-  //    _a *b_
-  //
-  // The `*` isn't allowed to open a span, and that branch should not be
-  // valid.
-  Element *top = peek_element(s);
-  if (!top || top->type != element) {
+                           TokenType token) {
+  if (!scan_span_end_element(s, lexer, element)) {
     return false;
-  }
-
-  // If we've chosen any fallback symbols inside the span then we
-  // should not accept the span.
-  if (top->data > 0) {
-    return false;
-  }
-
-  switch (span_type) {
-  case SpanSingle:
-    if (!scan_single_span_end(lexer, marker)) {
-      return false;
-    }
-    break;
-  case SpanBracketed:
-    if (!scan_bracketed_span_end(lexer, marker)) {
-      return false;
-    }
-    break;
-  case SpanBracketedAndSingle:
-    if (!scan_span_end(lexer, marker, false)) {
-      return false;
-    }
-    break;
-  case SpanBracketedAndSingleNoWhitespace:
-    if (!scan_span_end(lexer, marker, true)) {
-      return false;
-    }
-    break;
   }
 
   lexer->mark_end(lexer);
@@ -446,13 +523,13 @@ static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
 // delimiters.
 static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
                        ElementType element, TokenType begin_token,
-                       TokenType end_token, char marker, SpanType span_type) {
+                       TokenType end_token) {
   if (valid_symbols[end_token] &&
-      parse_span_end(s, lexer, element, end_token, marker, span_type)) {
+      parse_span_end(s, lexer, element, end_token)) {
     return true;
   }
   if (valid_symbols[begin_token] &&
-      mark_span_begin(s, lexer, valid_symbols, element, begin_token, marker)) {
+      mark_span_begin(s, lexer, valid_symbols, element, begin_token)) {
     return true;
   }
   return false;
@@ -461,56 +538,52 @@ static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
 static bool parse_emphasis(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, EMPHASIS, EMPHASIS_MARK_BEGIN,
-                    EMPHASIS_END, '_', SpanBracketedAndSingleNoWhitespace);
+                    EMPHASIS_END);
 }
 static bool parse_strong(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, STRONG, STRONG_MARK_BEGIN,
-                    STRONG_END, '*', SpanBracketedAndSingleNoWhitespace);
+                    STRONG_END);
 }
 static bool parse_superscript(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, SUPERSCRIPT,
-                    SUPERSCRIPT_MARK_BEGIN, SUPERSCRIPT_END, '^',
-                    SpanBracketedAndSingle);
+                    SUPERSCRIPT_MARK_BEGIN, SUPERSCRIPT_END);
 }
 static bool parse_subscript(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, SUBSCRIPT, SUBSCRIPT_MARK_BEGIN,
-                    SUBSCRIPT_END, '~', SpanBracketedAndSingle);
+                    SUBSCRIPT_END);
 }
 static bool parse_highlighted(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, HIGHLIGHTED,
-                    HIGHLIGHTED_MARK_BEGIN, HIGHLIGHTED_END, '=',
-                    SpanBracketed);
+                    HIGHLIGHTED_MARK_BEGIN, HIGHLIGHTED_END);
 }
 static bool parse_insert(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, INSERT, INSERT_MARK_BEGIN,
-                    INSERT_END, '+', SpanBracketed);
+                    INSERT_END);
 }
 static bool parse_delete(Scanner *s, TSLexer *lexer,
                          const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, DELETE, DELETE_MARK_BEGIN,
-                    DELETE_END, '-', SpanBracketed);
+                    DELETE_END);
 }
 static bool parse_parens_span(Scanner *s, TSLexer *lexer,
                               const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, PARENS_SPAN,
-                    PARENS_SPAN_MARK_BEGIN, PARENS_SPAN_END, ')', SpanSingle);
+                    PARENS_SPAN_MARK_BEGIN, PARENS_SPAN_END);
 }
 static bool parse_curly_bracket_span(Scanner *s, TSLexer *lexer,
                                      const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, CURLY_BRACKET_SPAN,
-                    CURLY_BRACKET_SPAN_MARK_BEGIN, CURLY_BRACKET_SPAN_END, '}',
-                    SpanSingle);
+                    CURLY_BRACKET_SPAN_MARK_BEGIN, CURLY_BRACKET_SPAN_END);
 }
 static bool parse_square_bracket_span(Scanner *s, TSLexer *lexer,
                                       const bool *valid_symbols) {
   return parse_span(s, lexer, valid_symbols, SQUARE_BRACKET_SPAN,
-                    SQUARE_BRACKET_SPAN_MARK_BEGIN, SQUARE_BRACKET_SPAN_END,
-                    ']', SpanSingle);
+                    SQUARE_BRACKET_SPAN_MARK_BEGIN, SQUARE_BRACKET_SPAN_END);
 }
 
 static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
