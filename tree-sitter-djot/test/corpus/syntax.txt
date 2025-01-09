@@ -5,7 +5,7 @@ Line
 
 -------------------------------------------------------------------------------
 
-(document (paragraph))
+(document (paragraph (inline)))
 
 ===============================================================================
 Paragraph: empty line
@@ -14,7 +14,7 @@ Line
 
 -------------------------------------------------------------------------------
 
-(document (paragraph))
+(document (paragraph (inline)))
 
 ===============================================================================
 Paragraph: multiline
@@ -25,7 +25,7 @@ Line3
 
 -------------------------------------------------------------------------------
 
-(document (paragraph))
+(document (paragraph (inline)))
 
 ===============================================================================
 Paragraph: with words
@@ -34,7 +34,7 @@ Multiple words in paragraph
 
 -------------------------------------------------------------------------------
 
-(document (paragraph))
+(document (paragraph (inline)))
 
 ===============================================================================
 Paragraph: two
@@ -46,8 +46,8 @@ Second
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 Paragraph: two multiline
@@ -61,8 +61,8 @@ Second
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 Heading: 1
@@ -72,7 +72,7 @@ Heading: 1
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Heading: 2
@@ -82,7 +82,7 @@ Heading: 2
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Heading: very long
@@ -92,7 +92,7 @@ Heading: very long
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Heading: multiple lines
@@ -109,10 +109,10 @@ A paragraph
   (section
     (heading
       (marker)
-      (content
+      (inline
         (marker)
         (marker)))
-    (section_content (paragraph))))
+    (section_content (paragraph (inline)))))
 
 ===============================================================================
 Heading: multiple lines no # prefix
@@ -129,10 +129,10 @@ A paragraph
   (section
     (heading
       (marker)
-      (content
+      (inline
         (marker)
         (marker)))
-    (section_content (paragraph))))
+    (section_content (paragraph (inline)))))
 
 ===============================================================================
 Heading 2: multiple lines
@@ -149,10 +149,10 @@ A paragraph
   (section
     (heading
       (marker)
-      (content
+      (inline
         (marker)
         (marker)))
-    (section_content (paragraph))))
+    (section_content (paragraph (inline)))))
 
 ===============================================================================
 Heading: closed by higher heading on the next line
@@ -166,12 +166,12 @@ Heading: closed by higher heading on the next line
   (section
     (heading
       (marker)
-      (content))
+      (inline))
     (section_content
       (section
         (heading
           (marker)
-          (content))))))
+          (inline))))))
 
 ===============================================================================
 Heading: closed by lower heading on the next line
@@ -185,11 +185,11 @@ Heading: closed by lower heading on the next line
   (section
     (heading
       (marker)
-      (content)))
+      (inline)))
   (section
     (heading
       (marker)
-      (content))))
+      (inline))))
 
 ===============================================================================
 Heading 4: div closes
@@ -206,9 +206,9 @@ stop
   (div
     (div_marker_begin)
     (content
-      (heading (marker) (content)))
+      (heading (marker) (inline)))
     (div_marker_end))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Heading 6: list closes
@@ -220,12 +220,12 @@ Heading 6: list closes
 
 (document
   (section
-    (heading (marker) (content))
+    (heading (marker) (inline))
     (section_content
       (list
         (list_item
           (list_marker_dash)
-          (list_item_content (paragraph)))))))
+          (list_item_content (paragraph (inline))))))))
 
 ===============================================================================
 Heading: followed by list
@@ -238,12 +238,12 @@ Heading: followed by list
 
 (document
   (section
-    (heading (marker) (content))
+    (heading (marker) (inline))
     (section_content
       (list
         (list_item
           (list_marker_dash)
-          (list_item_content (paragraph)))))))
+          (list_item_content (paragraph (inline))))))))
 
 ===============================================================================
 Section: closed by the same level
@@ -256,10 +256,10 @@ Section: closed by the same level
 
 (document
   (section
-    (heading (marker) (content))
+    (heading (marker) (inline))
     (section_content))
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Section: closed by a lower level
@@ -272,10 +272,10 @@ Section: closed by a lower level
 
 (document
   (section
-    (heading (marker) (content))
+    (heading (marker) (inline))
     (section_content))
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Section: not closed by higher level
@@ -290,15 +290,13 @@ Section: not closed by higher level
 
 (document
   (section
-    (heading
-      (marker)
-      (content))
+    (heading (marker) (inline))
     (section_content
       (section
-        (heading (marker) (content))
+        (heading (marker) (inline))
         (section_content
           (section
-            (heading (marker) (content))))))))
+            (heading (marker) (inline))))))))
 
 ===============================================================================
 Section: only allow sections on top level
@@ -313,14 +311,14 @@ Section: only allow sections on top level
 
 (document
   (section
-    (heading (marker) (content))
+    (heading (marker) (inline))
     (section_content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)
-            (heading (marker) (content))))))))
+            (paragraph (inline))
+            (heading (marker) (inline))))))))
 
 ===============================================================================
 Block quote: oneline
@@ -333,7 +331,7 @@ Block quote: oneline
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block quote: directly after
@@ -349,8 +347,9 @@ Block quote: directly after
     (block_quote_marker)
     (content
       (paragraph
-        (block_quote_marker)
-        (block_quote_marker)))))
+        (inline
+          (block_quote_marker)
+          (block_quote_marker))))))
 
 ===============================================================================
 Block quote: long
@@ -365,10 +364,10 @@ Block quote: long
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph)
+      (paragraph (inline))
       (block_quote_marker)
       (block_quote_marker)
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block quote: lazy
@@ -382,7 +381,7 @@ This is included
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block quote: lazy short words
@@ -397,7 +396,7 @@ ghi
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block quote: multilevel close nesting
@@ -419,10 +418,10 @@ c
           (block_quote
             (block_quote_marker)
             (content
-              (paragraph)))))
+              (paragraph (inline))))))
       (block_quote_marker)
-      (paragraph)))
-  (paragraph))
+      (paragraph (inline))))
+  (paragraph (inline)))
 
 ===============================================================================
 Block quote: multilevel nesting with space
@@ -440,10 +439,10 @@ Block quote: multilevel nesting with space
       (block_quote
         (block_quote_marker)
         (content
-          (paragraph)))
+          (paragraph (inline))))
       (block_quote_marker)
       (block_quote_marker)
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block quote: with hard line break
@@ -458,7 +457,8 @@ Block quote: with hard line break
     (block_quote_marker)
     (content
       (paragraph
-        (block_quote_marker)))))
+        (inline
+          (block_quote_marker))))))
 
 ===============================================================================
 Block quote: contain code block
@@ -523,7 +523,7 @@ z
     (code_block_marker_begin)
     (code)
     (code_block_marker_end))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Code block :lang
@@ -614,9 +614,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Thematic break: star more
@@ -637,7 +637,7 @@ After
 
 (document
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Thematic break: minus
@@ -651,9 +651,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Thematic break: star 2 + 1
@@ -667,9 +667,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 
 ===============================================================================
@@ -684,9 +684,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Thematic break: minus 3 combined
@@ -700,9 +700,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Thematic break: minus 2 + 1
@@ -716,9 +716,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 
 ===============================================================================
@@ -733,9 +733,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (thematic_break)
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Link: ref def
@@ -746,7 +746,7 @@ Link: ref def
 
 (document
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination)))
 
 ===============================================================================
@@ -759,11 +759,11 @@ Some text
 More text
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Link: ref def with emphasis
@@ -775,10 +775,10 @@ Link: ref def with emphasis
 
 (document
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination)))
 
 ===============================================================================
@@ -792,7 +792,7 @@ two]: /url
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Link: ref defs
@@ -806,15 +806,15 @@ Some text
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
+  (paragraph (inline))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination)))
 
 
@@ -830,7 +830,7 @@ Paragraph
   (block_attribute
     (args
       (class)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: spaces
@@ -844,7 +844,7 @@ Paragraph
   (block_attribute
     (args
       (class)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: identifier
@@ -858,7 +858,7 @@ Paragraph
   (block_attribute
     (args
       (identifier)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: key value
@@ -874,7 +874,7 @@ Paragraph
       (key_value
         (key)
         (value))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: key value spaces
@@ -890,7 +890,7 @@ Paragraph
       (key_value
         (key)
         (value))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: mixed
@@ -909,7 +909,7 @@ Paragraph
       (key_value
         (key)
         (value))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: with comment
@@ -924,7 +924,7 @@ Paragraph
     (args
       (identifier)
       (comment (content))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Block attribute: before heading
@@ -941,7 +941,7 @@ Block attribute: before heading
   (section
     (heading
       (marker)
-      (content))))
+      (inline))))
 
 ===============================================================================
 Block attribute: before table
@@ -957,8 +957,8 @@ Block attribute: before table
       (identifier)))
   (table
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Block attribute: before list
@@ -976,7 +976,7 @@ Block attribute: before list
     (list_item
       (list_marker_decimal_period)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 Block attribute: before blockquote
@@ -993,7 +993,7 @@ Block attribute: before blockquote
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Block attribute: before div
@@ -1010,8 +1010,9 @@ ok
     (args
       (identifier)))
   (div
-    (div_marker_begin (class_name))
-    (content (paragraph))
+    (div_marker_begin)
+    (class_name)
+    (content (paragraph (inline)))
     (div_marker_end)))
 
 
@@ -1048,7 +1049,7 @@ Block attribute: before link def
     (args
       (identifier)))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination)))
 
 ===============================================================================
@@ -1080,7 +1081,7 @@ Block attribute: inside list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (block_attribute
           (args
             (class)))))))
@@ -1099,12 +1100,12 @@ Block attribute: inside block quote
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph)
+      (paragraph (inline))
       (block_quote_marker)
       (block_quote_marker)
       (block_attribute (args (class)))
       (block_quote_marker)
-      (paragraph))))
+      (paragraph (inline)))))
 
 
 ===============================================================================
@@ -1121,12 +1122,12 @@ Link: inside list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_plus)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 Div: simple
@@ -1142,7 +1143,7 @@ Inside
   (div
     (div_marker_begin)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 ===============================================================================
@@ -1157,10 +1158,10 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 ===============================================================================
@@ -1175,10 +1176,10 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 ===============================================================================
@@ -1193,10 +1194,10 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 ===============================================================================
@@ -1212,7 +1213,7 @@ Inside
   (div
     (div_marker_begin)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 
@@ -1228,7 +1229,7 @@ Inside
   (div
     (div_marker_begin)
     (content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Div: nested
@@ -1248,11 +1249,11 @@ Div: nested
   (div
     (div_marker_begin)
     (content
-      (paragraph)
+      (paragraph (inline))
       (div
         (div_marker_begin)
         (content
-          (paragraph))
+          (paragraph (inline)))
         (div_marker_end)))
     (div_marker_end)))
 
@@ -1273,11 +1274,11 @@ Div: close nested div
   (div
     (div_marker_begin)
     (content
-      (paragraph)
+      (paragraph (inline))
       (div
         (div_marker_begin)
         (content
-          (paragraph))))
+          (paragraph (inline)))))
     (div_marker_end)))
 
 ===============================================================================
@@ -1297,7 +1298,8 @@ Div: inside block quote
         (div_marker_begin)
         (content
           (paragraph
-            (block_quote_marker)))
+            (inline
+              (block_quote_marker))))
         (block_quote_marker)
         (div_marker_end)))))
 
@@ -1313,9 +1315,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 Paragraph :not recognized 2
@@ -1329,9 +1331,9 @@ After
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 List: single dash
@@ -1344,7 +1346,7 @@ List: single dash
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: tight dashes
@@ -1359,13 +1361,13 @@ List: tight dashes
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: Close sublist
@@ -1383,15 +1385,15 @@ List: Close sublist
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (list
           (list_item
             (list_marker_dash)
             (list_item_content
-              (paragraph))))))
+              (paragraph (inline)))))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: multiple lists with space between (not separated due to simplicity)
@@ -1408,16 +1410,16 @@ List: multiple lists with space between (not separated due to simplicity)
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: multiple lists with paragraph between
@@ -1436,18 +1438,18 @@ paragraph
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph))))
-  (paragraph)
+      (list_item_content (paragraph (inline)))))
+  (paragraph (inline))
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: Contain unindented paragraph closes list
@@ -1462,8 +1464,8 @@ Second
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph))))
-  (paragraph))
+      (list_item_content (paragraph (inline)))))
+  (paragraph (inline)))
 
 ===============================================================================
 List: Continue paragraph with soft break
@@ -1477,7 +1479,7 @@ List: Continue paragraph with soft break
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: Continue paragraph with lazy indentation
@@ -1491,7 +1493,7 @@ Second
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: Contain multiple paragraphs
@@ -1507,8 +1509,8 @@ List: Contain multiple paragraphs
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
-        (paragraph)))))
+        (paragraph (inline))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: Immediate blockquote
@@ -1527,7 +1529,8 @@ List: Immediate blockquote
           (block_quote_marker)
           (content
             (paragraph
-              (block_quote_marker))))))))
+              (inline
+                (block_quote_marker)))))))))
 
 ===============================================================================
 List: Close contained code block at eof
@@ -1564,7 +1567,7 @@ x
         (code_block
           (code_block_marker_begin)
           (code)))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 List: Close contained multiline code at next non-indent
@@ -1586,7 +1589,7 @@ x
         (code_block
           (code_block_marker_begin)
           (code)))))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 List: code block should ignore nested list
@@ -1604,7 +1607,7 @@ List: code block should ignore nested list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (code_block
           (code_block_marker_begin)
           (code)
@@ -1626,7 +1629,7 @@ List: raw block at end
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (raw_block
           (raw_block_marker_begin)
           (raw_block_info
@@ -1651,11 +1654,11 @@ List: div at end
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (div
           (div_marker_begin)
           (content
-            (paragraph))
+            (paragraph (inline)))
           (div_marker_end))))))
 
 ===============================================================================
@@ -1672,10 +1675,10 @@ List: Close contained div at eof
       (list_marker_dash)
       (list_item_content
         (div
-          (div_marker_begin
-            (class_name))
+          (div_marker_begin)
+          (class_name)
           (content
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: Close contained div at next non-indent
@@ -1693,11 +1696,11 @@ x
       (list_marker_dash)
       (list_item_content
         (div
-          (div_marker_begin
-            (class_name))
+          (div_marker_begin)
+          (class_name)
           (content
-            (paragraph))))))
-  (paragraph))
+            (paragraph (inline)))))))
+  (paragraph (inline)))
 
 ===============================================================================
 List: With sublist
@@ -1714,18 +1717,18 @@ List: With sublist
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (list
           (list_item
             (list_marker_dash)
-            (list_item_content (paragraph)))
+            (list_item_content (paragraph (inline))))
           (list_item
             (list_marker_dash)
-            (list_item_content (paragraph))))))))
+            (list_item_content (paragraph (inline)))))))))
 
 ===============================================================================
 List: plus
@@ -1739,10 +1742,10 @@ List: plus
   (list
     (list_item
       (list_marker_plus)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_plus)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: star
@@ -1756,10 +1759,10 @@ List: star
   (list
     (list_item
       (list_marker_star)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_star)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: mixed bullets create new lists
@@ -1774,15 +1777,15 @@ List: mixed bullets create new lists
   (list
     (list_item
       (list_marker_dash)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_plus)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_star)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: close sublist
@@ -1802,14 +1805,14 @@ outer
     (list_item
       (list_marker_plus)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (list
           (list_item
             (list_marker_plus)
             (list_item_content
-              (paragraph))))
-        (paragraph))))
-  (paragraph))
+              (paragraph (inline)))))
+        (paragraph (inline)))))
+  (paragraph (inline)))
 
 ===============================================================================
 List: definition
@@ -1826,10 +1829,10 @@ List: definition
   (list
     (list_item
       (list_marker_definition)
-      (term)
+      (term (inline))
       (definition
-        (paragraph)
-        (paragraph)))))
+        (paragraph (inline))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: ordered list markers
@@ -1886,108 +1889,108 @@ I) x
   (list
     (list_item
       (list_marker_decimal_period)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_decimal_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_decimal_paren)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_decimal_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_decimal_parens)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_decimal_parens)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_alpha_period)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_alpha_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_alpha_paren)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_alpha_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_alpha_parens)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_alpha_parens)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_alpha_period)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_alpha_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_alpha_paren)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_alpha_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_alpha_parens)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_alpha_parens)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_period)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_roman_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_paren)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_roman_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_parens)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_lower_roman_parens)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_period)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_roman_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_paren)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_roman_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_parens)
-      (list_item_content (paragraph)))
+      (list_item_content (paragraph (inline))))
     (list_item
       (list_marker_upper_roman_parens)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 ===============================================================================
 List: multi letter ordered list markers
@@ -2029,45 +2032,45 @@ II) x
   (list
     (list_item
       (list_marker_decimal_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_decimal_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_decimal_parens)
-      (list_item_content (paragraph))))
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
+      (list_item_content (paragraph (inline)))))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
   (list
     (list_item
       (list_marker_lower_roman_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_parens)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_period)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_paren)
-      (list_item_content (paragraph))))
+      (list_item_content (paragraph (inline)))))
   (list
     (list_item
       (list_marker_upper_roman_parens)
-      (list_item_content (paragraph)))))
+      (list_item_content (paragraph (inline))))))
 
 
 ===============================================================================
@@ -2088,14 +2091,14 @@ outer
     (list_item
       (list_marker_decimal_period)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (list
           (list_item
             (list_marker_decimal_period)
             (list_item_content
-              (paragraph))))
-      (paragraph))))
-  (paragraph))
+              (paragraph (inline)))))
+      (paragraph (inline)))))
+  (paragraph (inline)))
 
 ===============================================================================
 List: ordered list don't mix
@@ -2112,22 +2115,22 @@ i) x
     (list_item
       (list_marker_decimal_period)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_decimal_paren)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_roman_paren)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_lower_alpha_parens)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: task
@@ -2144,17 +2147,17 @@ List: task
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_task
         (checked))
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_task
         (checked))
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: task mix multiple styles
@@ -2171,17 +2174,17 @@ List: task mix multiple styles
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: not tasks
@@ -2199,15 +2202,15 @@ List: not tasks
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)))
+        (paragraph (inline))))
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: task list closed
@@ -2232,34 +2235,34 @@ List: task list closed
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_plus)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_task
         (unchecked))
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (list
     (list_item
       (list_marker_star)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: double dash
@@ -2273,7 +2276,7 @@ List: double dash
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)))))
+        (paragraph (inline))))))
 
 ===============================================================================
 List: in block quote
@@ -2296,47 +2299,47 @@ List: in block quote
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)))
+            (paragraph (inline))))
         (list_item
           (block_quote_marker)
           (list_marker_dash)
           (list_item_content
-            (paragraph))))
+            (paragraph (inline)))))
       (block_quote_marker)
       (list
         (list_item
           (list_marker_star)
           (list_item_content
-            (paragraph)))
+            (paragraph (inline))))
         (list_item
           (block_quote_marker)
           (list_marker_star)
           (list_item_content
-            (paragraph))))
+            (paragraph (inline)))))
       (block_quote_marker)
       (list
         (list_item
           (list_marker_plus)
           (list_item_content
-            (paragraph)))
+            (paragraph (inline))))
         (list_item
           (block_quote_marker)
           (list_marker_plus)
           (list_item_content
-            (paragraph))))
+            (paragraph (inline)))))
       (block_quote_marker)
       (list
         (list_item
           (list_marker_task
             (unchecked))
           (list_item_content
-            (paragraph)))
+            (paragraph (inline))))
         (list_item
           (block_quote_marker)
           (list_marker_task
             (checked))
           (list_item_content
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: Sparse list in block quote
@@ -2355,13 +2358,13 @@ List: Sparse list in block quote
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)))
+            (paragraph (inline))))
         (list_item
           (block_quote_marker)
           (block_quote_marker)
           (list_marker_dash)
           (list_item_content
-            (paragraph))))
+            (paragraph (inline)))))
       (block_quote_marker))))
 
 ===============================================================================
@@ -2379,10 +2382,10 @@ List: List definition in block quote
       (list
         (list_item
           (list_marker_definition)
-          (term)
+          (term (inline))
           (definition
             (block_quote_marker)
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: In block quote with paragraph
@@ -2400,9 +2403,9 @@ List: In block quote with paragraph
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)
+            (paragraph (inline))
             (block_quote_marker)
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: Unclosed List in Blockquote
@@ -2415,14 +2418,14 @@ List: Unclosed List in Blockquote
   (block_quote
     (block_quote_marker)
     (content
-      (paragraph)
+      (paragraph (inline))
       (block_quote_marker)
       (block_quote_marker)
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: Unclosed List in Section
@@ -2435,13 +2438,13 @@ List: Unclosed List in Section
   (section
     (heading
       (marker)
-      (content))
+      (inline))
     (section_content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 List: Unclosed List in Div
@@ -2452,14 +2455,14 @@ List: Unclosed List in Div
 -------------------------------------------------------------------------------
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
-            (paragraph)))))))
+            (paragraph (inline))))))))
 
 ===============================================================================
 Table: single row
@@ -2471,8 +2474,8 @@ Table: single row
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: before paragraph
@@ -2486,9 +2489,9 @@ z
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell)))
-  (paragraph))
+      (table_cell (inline))
+      (table_cell (inline))))
+  (paragraph (inline)))
 
 ===============================================================================
 Table: initial separator
@@ -2504,8 +2507,8 @@ Table: initial separator
       (table_cell_alignment)
       (table_cell_alignment))
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: separator + header
@@ -2519,14 +2522,14 @@ Table: separator + header
 (document
   (table
     (table_header
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_separator
       (table_cell_alignment)
       (table_cell_alignment))
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: separator alignments
@@ -2544,10 +2547,10 @@ Table: separator alignments
       (table_cell_alignment)
       (table_cell_alignment))
     (table_row
-      (table_cell)
-      (table_cell)
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: multiple headers
@@ -2563,20 +2566,20 @@ Table: multiple headers
 (document
   (table
     (table_header
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_separator
       (table_cell_alignment)
       (table_cell_alignment))
     (table_header
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_separator
       (table_cell_alignment)
       (table_cell_alignment))
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: inside blockquote
@@ -2593,16 +2596,16 @@ Table: inside blockquote
     (content
       (table
         (table_header
-          (table_cell)
-          (table_cell))
+          (table_cell (inline))
+          (table_cell (inline)))
         (table_separator
           (block_quote_marker)
           (table_cell_alignment)
           (table_cell_alignment))
         (table_row
           (block_quote_marker)
-          (table_cell)
-          (table_cell))))))
+          (table_cell (inline))
+          (table_cell (inline)))))))
 
 ===============================================================================
 Table: with inline styling
@@ -2614,8 +2617,8 @@ Table: with inline styling
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell))))
+      (table_cell (inline))
+      (table_cell (inline)))))
 
 ===============================================================================
 Table: with caption
@@ -2630,12 +2633,12 @@ Next paragraph
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_caption
       (marker)
       (content)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Table: caption early end
@@ -2649,12 +2652,12 @@ Next paragraph
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_caption
       (marker)
       (content)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Table: spaced caption
@@ -2670,12 +2673,12 @@ Next paragraph
 (document
   (table
     (table_row
-      (table_cell)
-      (table_cell))
+      (table_cell (inline))
+      (table_cell (inline)))
     (table_caption
       (marker)
       (content)))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Footnote: simple
@@ -2690,7 +2693,7 @@ Footnote: simple
     (reference_label)
     (footnote_marker_end)
     (footnote_content
-      (paragraph))))
+      (paragraph (inline)))))
 
 ===============================================================================
 Footnote: before heading
@@ -2707,9 +2710,9 @@ Footnote: before heading
     (reference_label)
     (footnote_marker_end)
     (footnote_content
-      (paragraph)))
+      (paragraph (inline))))
   (section
-    (heading (marker) (content))))
+    (heading (marker) (inline))))
 
 ===============================================================================
 Footnote: multiline
@@ -2727,8 +2730,8 @@ that continues
     (reference_label)
     (footnote_marker_end)
     (footnote_content
-      (paragraph)
-      (paragraph))))
+      (paragraph (inline))
+      (paragraph (inline)))))
 
 ===============================================================================
 Footnote: With block quote
@@ -2745,11 +2748,11 @@ Footnote: With block quote
     (reference_label)
     (footnote_marker_end)
     (footnote_content
-      (paragraph)
+      (paragraph (inline))
       (block_quote
         (block_quote_marker)
         (content
-          (paragraph))))))
+          (paragraph (inline)))))))
 
 ===============================================================================
 Paragraph: broken things
@@ -2781,18 +2784,18 @@ Paragraph: broken things
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 Paragraph: Not list items
@@ -2816,14 +2819,14 @@ i.e.
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline))
+  (paragraph (inline)))
 
 ===============================================================================
 Frontmatter
@@ -2842,7 +2845,7 @@ x
     (frontmatter_marker)
     (frontmatter_content)
     (frontmatter_marker))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Frontmatter
@@ -2861,7 +2864,7 @@ x
     (language)
     (frontmatter_content)
     (frontmatter_marker))
-  (paragraph))
+  (paragraph (inline)))
 
 ===============================================================================
 Heading after list
@@ -2876,11 +2879,11 @@ Heading after list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph))))
+        (paragraph (inline)))))
   (section
     (heading
       (marker)
-      (content))))
+      (inline))))
 
 ===============================================================================
 Div in list should be closed before unindented div
@@ -2900,15 +2903,15 @@ outside div
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (div
           (div_marker_begin)
           (content
-            (paragraph))))))
+            (paragraph (inline)))))))
   (div
     (div_marker_begin)
     (content
-      (paragraph))
+      (paragraph (inline)))
     (div_marker_end)))
 
 ===============================================================================
@@ -2929,7 +2932,7 @@ Second code
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (code_block
           (code_block_marker_begin)
           (code)))))
@@ -2956,7 +2959,7 @@ y
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (raw_block
           (raw_block_marker_begin)
           (raw_block_info
@@ -2987,15 +2990,15 @@ Div in list should be closed before heading
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph)
+        (paragraph (inline))
         (div
           (div_marker_begin)
           (content
-            (paragraph))))))
+            (paragraph (inline)))))))
   (section
     (heading
       (marker)
-      (content))))
+      (inline))))
 
 ===============================================================================
 Comment before link def
@@ -3010,7 +3013,7 @@ Comment before link def
       (comment
         (content))))
   (link_reference_definition
-    (link_label)
+    (link_label (inline))
     (link_destination)))
 
 ===============================================================================
@@ -3028,4 +3031,4 @@ Comment before heading
   (section
     (heading
       (marker)
-      (content))))
+      (inline))))

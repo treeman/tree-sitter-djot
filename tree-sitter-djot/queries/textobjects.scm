@@ -13,7 +13,7 @@
 
 ; Functions, the next level
 (heading
-  (content) @function.inner) @function.outer
+  (inline) @function.inner) @function.outer
 
 (div
   (content) @function.inner) @function.outer
@@ -54,38 +54,6 @@
 ; Attributes, extra things attached to elements
 (block_attribute
   (args) @attribute.inner) @attribute.outer
-
-; (inline_attribute
-;   (args) @attribute.inner) @attribute.outer
-
-; (table_caption
-;   (content) @attribute.inner) @attribute.outer
-;
-; (emphasis
-;   (content) @attribute.inner) @attribute.outer
-;
-; (strong
-;   (content) @attribute.inner) @attribute.outer
-;
-; (highlighted
-;   (content) @attribute.inner) @attribute.outer
-;
-; (insert
-;   (content) @attribute.inner) @attribute.outer
-;
-; (delete
-;   (content) @attribute.inner) @attribute.outer
-;
-; (symbol) @attribute.outer
-;
-; (superscript
-;   (content) @attribute.inner) @attribute.outer
-;
-; (subscript
-;   (content) @attribute.inner) @attribute.outer
-;
-; (verbatim
-;   (content) @attribute.inner) @attribute.outer
 
 ; Parameters, inside a description of a thing
 [

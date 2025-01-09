@@ -105,19 +105,19 @@ module.exports = grammar({
     //      and not for the `_` case.
     emphasis: ($) =>
       seq(
-        $.emphasis_begin,
+        field("begin_marker", $.emphasis_begin),
         $._emphasis_mark_begin,
-        alias($._inline_without_trailing_space, $.content),
-        $.emphasis_end,
+        field("content", alias($._inline_without_trailing_space, $.content)),
+        field("end_marker", $.emphasis_end),
       ),
     emphasis_begin: ($) => choice("{_", seq("_", $._non_whitespace_check)),
 
     strong: ($) =>
       seq(
-        $.strong_begin,
+        field("begin_marker", $.strong_begin),
         $._strong_mark_begin,
-        alias($._inline_without_trailing_space, $.content),
-        $.strong_end,
+        field("content", alias($._inline_without_trailing_space, $.content)),
+        field("end_marker", $.strong_end),
       ),
     strong_begin: ($) => choice("{*", seq("*", $._non_whitespace_check)),
 
@@ -125,44 +125,44 @@ module.exports = grammar({
     // The live playground suggests that yes they can, although it's a bit inconsistent.
     superscript: ($) =>
       seq(
-        $.superscript_begin,
+        field("begin_marker", $.superscript_begin),
         $._superscript_mark_begin,
-        alias($._inline, $.content),
-        $.superscript_end,
+        field("content", alias($._inline, $.content)),
+        field("end_marker", $.superscript_end),
       ),
     superscript_begin: (_) => choice("{^", "^"),
 
     subscript: ($) =>
       seq(
-        $.subscript_begin,
+        field("begin_marker", $.subscript_begin),
         $._subscript_mark_begin,
-        alias($._inline, $.content),
-        $.subscript_end,
+        field("content", alias($._inline, $.content)),
+        field("end_marker", $.subscript_end),
       ),
     subscript_begin: (_) => choice("{~", "~"),
 
     highlighted: ($) =>
       seq(
-        $.highlighted_begin,
+        field("begin_marker", $.highlighted_begin),
         $._highlighted_mark_begin,
-        alias($._inline, $.content),
-        $.highlighted_end,
+        field("content", alias($._inline, $.content)),
+        field("end_marker", $.highlighted_end),
       ),
     highlighted_begin: (_) => "{=",
     insert: ($) =>
       seq(
-        $.insert_begin,
+        field("begin_marker", $.insert_begin),
         $._insert_mark_begin,
-        alias($._inline, $.content),
-        $.insert_end,
+        field("content", alias($._inline, $.content)),
+        field("end_marker", $.insert_end),
       ),
     insert_begin: (_) => "{+",
     delete: ($) =>
       seq(
-        $.delete_begin,
+        field("begin_marker", $.delete_begin),
         $._delete_mark_begin,
-        alias($._inline, $.content),
-        $.delete_end,
+        field("content", alias($._inline, $.content)),
+        field("end_marker", $.delete_end),
       ),
     delete_begin: (_) => "{-",
 
@@ -202,10 +202,15 @@ module.exports = grammar({
         $.collapsed_reference_image,
         $.inline_image,
       ),
-    full_reference_image: ($) => seq($.image_description, $._link_label),
+    full_reference_image: ($) =>
+      seq(field("description", $.image_description), $._link_label),
     collapsed_reference_image: ($) =>
-      seq($.image_description, token.immediate("[]")),
-    inline_image: ($) => seq($.image_description, $.inline_link_destination),
+      seq(field("description", $.image_description), token.immediate("[]")),
+    inline_image: ($) =>
+      seq(
+        field("description", $.image_description),
+        field("destination", $.inline_link_destination),
+      ),
 
     image_description: ($) =>
       seq(
@@ -218,9 +223,14 @@ module.exports = grammar({
 
     _link: ($) =>
       choice($.full_reference_link, $.collapsed_reference_link, $.inline_link),
-    full_reference_link: ($) => seq($.link_text, $._link_label),
-    collapsed_reference_link: ($) => seq($.link_text, token.immediate("[]")),
-    inline_link: ($) => seq($.link_text, $.inline_link_destination),
+    full_reference_link: ($) => seq(field("text", $.link_text), $._link_label),
+    collapsed_reference_link: ($) =>
+      seq(field("text", $.link_text), token.immediate("[]")),
+    inline_link: ($) =>
+      seq(
+        field("text", $.link_text),
+        field("destination", $.inline_link_destination),
+      ),
 
     link_text: ($) =>
       choice(
@@ -242,13 +252,13 @@ module.exports = grammar({
       seq(
         $._bracketed_text_begin,
         $._square_bracket_span_mark_begin,
-        alias($._inline, $.content),
+        field("content", alias($._inline, $.content)),
         // Prefer span over regular text + inline attribute.
         prec.dynamic(
           ELEMENT_PRECEDENCE,
           alias($._square_bracket_span_end, "]"),
         ),
-        $.inline_attribute,
+        field("attribute", $.inline_attribute),
       ),
 
     _bracketed_text_begin: (_) => "[",
@@ -283,7 +293,11 @@ module.exports = grammar({
       ),
 
     _link_label: ($) =>
-      seq("[", alias($._inline, $.link_label), token.immediate("]")),
+      seq(
+        "[",
+        field("label", alias($._inline, $.link_label)),
+        token.immediate("]"),
+      ),
     inline_link_destination: ($) =>
       seq(
         $._parens_span_begin,
@@ -320,24 +334,31 @@ module.exports = grammar({
 
     raw_inline: ($) =>
       seq(
-        alias($._verbatim_begin, $.raw_inline_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.raw_inline_marker_end),
-        $.raw_inline_attribute,
+        field(
+          "begin_marker",
+          alias($._verbatim_begin, $.raw_inline_marker_begin),
+        ),
+        field("content", alias($._verbatim_content, $.content)),
+        field("end_marker", alias($._verbatim_end, $.raw_inline_marker_end)),
+        field("attribute", $.raw_inline_attribute),
       ),
-    raw_inline_attribute: ($) => seq(token.immediate("{="), $.language, "}"),
+    raw_inline_attribute: ($) =>
+      seq(token.immediate("{="), field("language", $.language), "}"),
     math: ($) =>
       seq(
-        alias("$", $.math_marker),
-        alias($._verbatim_begin, $.math_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.math_marker_end),
+        field("math_marker", alias("$", $.math_marker)),
+        field("begin_marker", alias($._verbatim_begin, $.math_marker_begin)),
+        field("content", alias($._verbatim_content, $.content)),
+        field("end_marker", alias($._verbatim_end, $.math_marker_end)),
       ),
     verbatim: ($) =>
       seq(
-        alias($._verbatim_begin, $.verbatim_marker_begin),
-        alias($._verbatim_content, $.content),
-        alias($._verbatim_end, $.verbatim_marker_end),
+        field(
+          "begin_marker",
+          alias($._verbatim_begin, $.verbatim_marker_begin),
+        ),
+        field("content", alias($._verbatim_content, $.content)),
+        field("end_marker", alias($._verbatim_end, $.verbatim_marker_end)),
       ),
 
     _todo_highlights: ($) => choice($.todo, $.note, $.fixme),
@@ -407,9 +428,9 @@ module.exports = grammar({
     _text: (_) => repeat1(/\S/),
 
     class_name: ($) => $._id,
-    class: ($) => seq(".", alias($.class_name, "class")),
+    class: ($) => seq(".", field("name", alias($.class_name, "class"))),
     identifier: (_) => token(seq("#", token.immediate(/[^\s\}]+/))),
-    key_value: ($) => seq($.key, "=", $.value),
+    key_value: ($) => seq(field("key", $.key), "=", field("value", $.value)),
     key: ($) => $._id,
     value: (_) => choice(seq('"', /[^"\n]+/, '"'), /\w+/),
   },
