@@ -1,4 +1,5 @@
 {
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
   "name": "djot_inline",
   "rules": {
     "inline": {
@@ -630,7 +631,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_square_bracket_span_begin"
+          "name": "_square_bracket_span_mark_begin"
         },
         {
           "type": "SYMBOL",
@@ -727,7 +728,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_square_bracket_span_begin"
+          "name": "_square_bracket_span_mark_begin"
         },
         {
           "type": "CHOICE",
@@ -816,28 +817,37 @@
       ]
     },
     "link_text": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_bracketed_text_begin"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_bracketed_text_begin"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_square_bracket_span_mark_begin"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_inline"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_square_bracket_span_end"
+              },
+              "named": false,
+              "value": "]"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_square_bracket_span_begin"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_inline"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_square_bracket_span_end"
-          },
-          "named": false,
-          "value": "]"
+          "type": "STRING",
+          "value": "[]"
         }
       ]
     },
@@ -850,7 +860,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_square_bracket_span_begin"
+          "name": "_square_bracket_span_mark_begin"
         },
         {
           "type": "ALIAS",
@@ -961,7 +971,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_square_bracket_span_begin"
+          "name": "_square_bracket_span_mark_begin"
         },
         {
           "type": "SYMBOL",
@@ -1545,7 +1555,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_square_bracket_span_begin"
+                  "name": "_square_bracket_span_mark_begin"
                 },
                 {
                   "type": "SYMBOL",
@@ -1567,7 +1577,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_square_bracket_span_begin"
+                  "name": "_square_bracket_span_mark_begin"
                 },
                 {
                   "type": "SYMBOL",
@@ -1589,7 +1599,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "_square_bracket_span_begin"
+                  "name": "_square_bracket_span_mark_begin"
                 },
                 {
                   "type": "SYMBOL",
@@ -1641,6 +1651,10 @@
         {
           "type": "STRING",
           "value": "$"
+        },
+        {
+          "type": "STRING",
+          "value": "[]"
         }
       ]
     },
@@ -1836,6 +1850,10 @@
       "_symbol_fallback"
     ],
     [
+      "link_text",
+      "_symbol_fallback"
+    ],
+    [
       "_curly_bracket_span_begin",
       "_curly_bracket_span_fallback"
     ]
@@ -1932,7 +1950,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_square_bracket_span_begin"
+      "name": "_square_bracket_span_mark_begin"
     },
     {
       "type": "SYMBOL",

@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-djot-inline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "bindings/node",
   "types": "bindings/node",
@@ -30,18 +30,6 @@
     "tree-sitter-cli": "^0.22.1",
     "prebuildify": "^6.0.0"
   },
-  "tree-sitter": [
-    {
-      "scope": "text.djot_inline",
-      "injection-regex": "djot_inline",
-      "highlights": [
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
-      ]
-    }
-  ],
   "files": [
     "grammar.js",
     "binding.gyp",

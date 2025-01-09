@@ -90,6 +90,13 @@ typedef struct {
 
 typedef struct {
   Array(Element *) * open_elements;
+
+  // Set to true when a bracket fallback is found inside an element,
+  // for example in `*[*` the `[` will set it to true.
+  // Set to false when an element is opened again.
+  // This is used to detect `*[*](y)` where we'll block elements inside
+  // `( )` if we can scan the whole inline link.
+  uint8_t fallback_bracket_inside_element;
 } Scanner;
 
 #ifdef DEBUG
@@ -314,12 +321,43 @@ static bool scan_span_end(TSLexer *lexer, char marker,
   return scan_bracketed_span_end(lexer, marker);
 }
 
+static bool scan_inline_image_url(TSLexer *lexer, Element *top_element) {
+  // The `(` has already been scanned, now we should check for
+  // an ending `)`. It can also be escaped.
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '\\':
+      advance(lexer);
+      break;
+    case ')':
+      return true;
+    default:
+      break;
+    }
+    advance(lexer);
+  }
+  return false;
+}
+
 static bool mark_span_begin(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols, ElementType element,
                             TokenType token, char marker) {
   // If IN_FALLBACK is valid then it means we're processing the
   // `_symbol_fallback` branch (see `grammar.js`).
   if (valid_symbols[IN_FALLBACK]) {
+    Element *top = peek_element(s);
+    if (element == PARENS_SPAN) {
+      // Should scan ahead and if there's a valid inline link we should not
+      // allow the fallback to be parsed (favoring the link).
+      if (!s->fallback_bracket_inside_element &&
+          scan_inline_image_url(lexer, top)) {
+        return false;
+      }
+    }
+    if (top && element == SQUARE_BRACKET_SPAN) {
+      s->fallback_bracket_inside_element = 1;
+    }
+
     // If there's multiple valid opening spans, for example:
     //
     //      {_ {_ a_
@@ -335,8 +373,9 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
     //
     //      _a _b_ a_
     //
-    // If we issue an error here at `_b` then we won't find the nested emphasis.
-    // The solution i found was to do the check when closing the span instead.
+    // If we issue an error here at `_b` then we won't find the nested
+    // emphasis. The solution i found was to do the check when closing the
+    // span instead.
     Element *open = find_element(s, element);
     if (open != NULL) {
       ++open->data;
@@ -346,6 +385,7 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
     lexer->result_symbol = token;
     return true;
   } else {
+    s->fallback_bracket_inside_element = 0;
     lexer->mark_end(lexer);
     lexer->result_symbol = token;
     push_element(s, element, 0);
@@ -360,7 +400,8 @@ static bool parse_span_end(Scanner *s, TSLexer *lexer, ElementType element,
   //
   //    _a *b_
   //
-  // The `*` isn't allowed to open a span, and that branch should not be valid.
+  // The `*` isn't allowed to open a span, and that branch should not be
+  // valid.
   Element *top = peek_element(s);
   if (!top || top->type != element) {
     return false;
@@ -511,8 +552,8 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
     return true;
   }
 
-  // There's no overlap of leading characters that the scanner needs to manage,
-  // so we can hide all individual character checks inside these parse
+  // There's no overlap of leading characters that the scanner needs to
+  // manage, so we can hide all individual character checks inside these parse
   // functions.
   if (parse_verbatim(s, lexer, valid_symbols)) {
     return true;
@@ -551,7 +592,10 @@ bool tree_sitter_djot_inline_external_scanner_scan(void *payload,
   return false;
 }
 
-void init(Scanner *s) { array_init(s->open_elements); }
+void init(Scanner *s) {
+  array_init(s->open_elements);
+  s->fallback_bracket_inside_element = 0;
+}
 
 void *tree_sitter_djot_inline_external_scanner_create() {
   Scanner *s = (Scanner *)ts_malloc(sizeof(Scanner));
@@ -570,6 +614,7 @@ unsigned tree_sitter_djot_inline_external_scanner_serialize(void *payload,
                                                             char *buffer) {
   Scanner *s = (Scanner *)payload;
   unsigned size = 0;
+  buffer[size++] = (char)s->fallback_bracket_inside_element;
 
   for (size_t i = 0; i < s->open_elements->size; ++i) {
     Element *e = *array_get(s->open_elements, i);
@@ -586,6 +631,7 @@ void tree_sitter_djot_inline_external_scanner_deserialize(void *payload,
   init(s);
   if (length > 0) {
     size_t size = 0;
+    s->fallback_bracket_inside_element = (uint8_t)buffer[size++];
 
     while (size < length) {
       ElementType type = (ElementType)buffer[size++];
@@ -634,22 +680,19 @@ static char *token_type_s(TokenType t) {
     return "DELETE_MARK_BEGIN";
   case DELETE_END:
     return "DELETE_END";
-  case IMAGE_DESCRIPTION_MARK_BEGIN:
-    return "IMAGE_DESCRIPTION_MARK_BEGIN";
-  case IMAGE_DESCRIPTION_END:
-    return "IMAGE_DESCRIPTION_END";
-  case SQUARE_BRACKET_SPAN_MARK_BEGIN:
-    return "SQUARE_BRACKET_SPAN_MARK_BEGIN";
-  case SQUARE_BRACKET_SPAN_END:
-    return "SQUARE_BRACKET_SPAN_END";
+
+  case PARENS_SPAN_MARK_BEGIN:
+    return "PARENS_SPAN_MARK_BEGIN";
+  case PARENS_SPAN_END:
+    return "PARENS_SPAN_END";
   case CURLY_BRACKET_SPAN_MARK_BEGIN:
     return "CURLY_BRACKET_SPAN_MARK_BEGIN";
   case CURLY_BRACKET_SPAN_END:
     return "CURLY_BRACKET_SPAN_END";
-  case FOOTNOTE_MARKER_MARK_BEGIN:
-    return "FOOTNOTE_MARKER_MARK_BEGIN";
-  case FOOTNOTE_MARKER_END:
-    return "FOOTNOTE_MARKER_END";
+  case SQUARE_BRACKET_SPAN_MARK_BEGIN:
+    return "SQUARE_BRACKET_SPAN_MARK_BEGIN";
+  case SQUARE_BRACKET_SPAN_END:
+    return "SQUARE_BRACKET_SPAN_END";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";
@@ -681,18 +724,18 @@ static char *element_type_s(ElementType t) {
     return "INSERT";
   case DELETE:
     return "DELETE";
-  case IMAGE_DESCRIPTION:
-    return "IMAGE_DESCRIPTION";
+  case PARENS_SPAN:
+    return "PARENS_SPAN";
   case SQUARE_BRACKET_SPAN:
     return "SQUARE_BRACKET_SPAN";
   case CURLY_BRACKET_SPAN:
     return "CURLY_BRACKET_SPAN";
-  case FOOTNOTE_MARKER:
-    return "FOOTNOTE_MARKER";
   }
 }
 
 static void dump_scanner(Scanner *s) {
+  printf("fallback_bracket_inside_element: %u\n",
+         s->fallback_bracket_inside_element);
   printf("--- Open elements: %u (last -> first)\n", s->open_elements->size);
   for (size_t i = 0; i < s->open_elements->size; ++i) {
     Element *e = *array_get(s->open_elements, i);

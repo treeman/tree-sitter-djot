@@ -1,0 +1,34 @@
+{
+  "grammars": [
+    {
+      "name": "djot-inline",
+      "camelcase": "DjotInline",
+      "scope": "text.djot_inline",
+      "path": ".",
+      "file-types": null,
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "injections": [
+        "queries/injections.scm"
+      ],
+      "injection-regex": "djot_inline"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "license": "ISC",
+    "description": "",
+    "links": {
+      "repository": "https://github.com/tree-sitter/tree-sitter-djot-inline"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

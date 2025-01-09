@@ -17,6 +17,7 @@ module.exports = grammar({
     [$._image_description_begin, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
     [$.math, $._symbol_fallback],
+    [$.link_text, $._symbol_fallback],
 
     [$._curly_bracket_span_begin, $._curly_bracket_span_fallback],
   ],
@@ -222,13 +223,19 @@ module.exports = grammar({
     inline_link: ($) => seq($.link_text, $.inline_link_destination),
 
     link_text: ($) =>
-      seq(
-        $._bracketed_text_begin,
-        $._square_bracket_span_mark_begin,
-        $._inline,
-        // Alias to "]" to allow us to highlight it in Neovim.
-        // Maybe some bug, or some undocumented behavior?
-        alias($._square_bracket_span_end, "]"),
+      choice(
+        seq(
+          $._bracketed_text_begin,
+          $._square_bracket_span_mark_begin,
+          $._inline,
+          // Alias to "]" to allow us to highlight it in Neovim.
+          // Maybe some bug, or some undocumented behavior?
+          alias($._square_bracket_span_end, "]"),
+        ),
+        // Required as we track fallback characters between bracketed begin and end,
+        // but when it's empty it skips blocks the inline link destination.
+        // This is an easy workaround for that special case.
+        "[]",
       ),
 
     span: ($) =>
@@ -382,6 +389,9 @@ module.exports = grammar({
 
         // Math
         "$",
+
+        // Empty link text
+        "[]",
       ),
 
     // Used to branch on inline attributes that may follow any element.
