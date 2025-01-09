@@ -1990,6 +1990,87 @@ I) x
       (list_item_content (paragraph)))))
 
 ===============================================================================
+List: multi letter ordered list markers
+===============================================================================
+
+10. x
+
+10) x
+
+(10) x
+
+aa. x
+
+aa) x
+
+(aa) x
+
+AA. x
+
+AA) x
+
+(AA) x
+
+ii. x
+
+ii) x
+
+(ii) x
+
+II. x
+
+II) x
+
+(II) x
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_decimal_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_decimal_parens)
+      (list_item_content (paragraph))))
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (list
+    (list_item
+      (list_marker_lower_roman_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_lower_roman_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_lower_roman_parens)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_parens)
+      (list_item_content (paragraph)))))
+
+
+===============================================================================
 List: close decimal sublist
 ===============================================================================
 1. one
