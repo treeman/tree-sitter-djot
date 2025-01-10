@@ -219,8 +219,12 @@
                         "type": "PREC_DYNAMIC",
                         "value": 100,
                         "content": {
-                          "type": "SYMBOL",
-                          "name": "inline_attribute"
+                          "type": "FIELD",
+                          "name": "attribute",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "inline_attribute"
+                          }
                         }
                       },
                       {

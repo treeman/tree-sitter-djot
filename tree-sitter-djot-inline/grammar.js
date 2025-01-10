@@ -87,7 +87,10 @@ module.exports = grammar({
               choice(
                 // Use precedence for inline attribute as well to allow
                 // closure before other elements.
-                prec.dynamic(ELEMENT_PRECEDENCE, $.inline_attribute),
+                prec.dynamic(
+                  ELEMENT_PRECEDENCE,
+                  field("attribute", $.inline_attribute),
+                ),
                 $._curly_bracket_span_fallback,
               ),
             ),
