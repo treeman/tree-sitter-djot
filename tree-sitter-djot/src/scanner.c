@@ -126,6 +126,9 @@ typedef struct {
   TokenType delayed_token;
   uint8_t delayed_token_width;
 
+  // TODO
+  // Use a state
+  // CLOSING_PARAGRAPH ?
 
   // What's our current block quote level?
   uint8_t block_quote_level;

@@ -36,18 +36,20 @@ module.exports = grammar({
         choice($.heading, $._block_element, $._newline),
       ),
     _block_element: ($) =>
-      choice(
-        $.list,
-        $.table,
-        $.footnote,
-        $.div,
-        $.raw_block,
-        $.code_block,
-        $.thematic_break,
-        $.block_quote,
-        $.link_reference_definition,
-        $.block_attribute,
-        $._paragraph,
+      seq(
+        optional($.block_attribute),
+        choice(
+          $.list,
+          $.table,
+          $.footnote,
+          $.div,
+          $.raw_block,
+          $.code_block,
+          $.thematic_break,
+          $.block_quote,
+          $.link_reference_definition,
+          $._paragraph,
+        ),
       ),
 
     // Section should end by a new header with the same or fewer amount of `#`.
@@ -487,7 +489,7 @@ module.exports = grammar({
 
     block_attribute: ($) =>
       seq(
-        "{",
+        prec.dynamic(1000, "{"),
         field(
           "args",
           alias(

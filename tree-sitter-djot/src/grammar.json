@@ -134,51 +134,64 @@
       ]
     },
     "_block_element": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "list"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "block_attribute"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "table"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "footnote"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "div"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "raw_block"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "code_block"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "thematic_break"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "block_quote"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "link_reference_definition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "block_attribute"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_paragraph"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "list"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "table"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "footnote"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "div"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "raw_block"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "code_block"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "thematic_break"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "block_quote"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "link_reference_definition"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_paragraph"
+            }
+          ]
         }
       ]
     },
@@ -2273,8 +2286,12 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "{"
+          "type": "PREC_DYNAMIC",
+          "value": 1000,
+          "content": {
+            "type": "STRING",
+            "value": "{"
+          }
         },
         {
           "type": "FIELD",
