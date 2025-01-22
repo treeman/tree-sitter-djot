@@ -126,7 +126,6 @@ typedef struct {
   TokenType delayed_token;
   uint8_t delayed_token_width;
 
-
   // What's our current block quote level?
   uint8_t block_quote_level;
 
@@ -395,16 +394,35 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
 // Close open list if list markers are different.
 static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
                                          bool is_newline) {
-  if (is_newline) {
+  Block *list = find_list(s);
+  if (!list) {
     return false;
   }
-  Block *list = find_list(s);
-  if (list && s->indent >= list->level) {
-    lexer->mark_end(lexer);
-    lexer->result_symbol = LIST_ITEM_CONTINUATION;
-    return true;
+
+  // A newline may be encountered when a block is wedged inside a list.
+  // For example:
+  //
+  //   - Start
+  //
+  //     [link_def]: /url
+  // ->
+  //     Another paragraph
+  //
+  // Then list item continuation should scan until `A` instead
+  // of returning false at the newline before (leading to the paragraph
+  // falling outside of the list content).
+  if (is_newline) {
+    advance(s, lexer);
+    s->indent = consume_whitespace(s, lexer);
   }
-  return false;
+
+  if (s->indent < list->level) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = LIST_ITEM_CONTINUATION;
+  return true;
 }
 
 // Close a block inside a list.
@@ -987,6 +1005,8 @@ static uint8_t consume_line_with_char_or_whitespace(Scanner *s, TSLexer *lexer,
     } else if (lexer->lookahead == '\r') {
       advance(s, lexer);
     } else if (lexer->lookahead == '\n') {
+      // Blocks should consume the ending newline.
+      advance(s, lexer);
       return seen;
     } else {
       return 0;
@@ -1875,8 +1895,8 @@ static char *token_type_s(TokenType t) {
     return "THEMATIC_BREAK_DASH";
   case THEMATIC_BREAK_STAR:
     return "THEMATIC_BREAK_STAR";
-  case FOOTNOTE_BEGIN:
-    return "FOOTNOTE_BEGIN";
+  case FOOTNOTE_MARK_BEGIN:
+    return "FOOTNOTE_MARK_BEGIN";
   case FOOTNOTE_END:
     return "FOOTNOTE_END";
   case TABLE_CAPTION_BEGIN:

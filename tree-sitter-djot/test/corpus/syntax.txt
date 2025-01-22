@@ -2465,6 +2465,171 @@ List: Unclosed List in Div
             (paragraph (inline))))))))
 
 ===============================================================================
+List: Nested divs with block attributes
+===============================================================================
+- x
+
+  {#1}
+  :::
+  a
+  :::
+
+  {#2}
+  :::
+  b
+  :::
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (block_attribute (args (identifier)))
+        (div
+          (div_marker_begin)
+          (content (paragraph (inline)))
+          (div_marker_end))
+        (block_attribute (args (identifier)))
+        (div
+          (div_marker_begin)
+          (content (paragraph (inline)))
+          (div_marker_end))))))
+
+===============================================================================
+List: Nested code block between paragraphs
+===============================================================================
+- a
+
+  ```
+  x
+  ```
+
+  c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph (inline))))))
+
+===============================================================================
+List: Thematic break between paragraphs
+===============================================================================
+- a
+
+  * * *
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (thematic_break)
+        (paragraph (inline))))))
+
+===============================================================================
+List: Quote between paragraphs
+===============================================================================
+- a
+
+  > c
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (block_quote
+          (block_quote_marker)
+          (content
+            (paragraph (inline))))
+        (paragraph (inline))))))
+
+===============================================================================
+List: Link definition between paragraphs
+===============================================================================
+- a
+
+  [def]: /u
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (link_reference_definition
+          (link_label (inline))
+          (link_destination))
+        (paragraph (inline))))))
+
+===============================================================================
+List: Footnote def between paragraphs
+===============================================================================
+- a
+
+  [^def]: Footnote
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (footnote
+          (footnote_marker_begin)
+          (reference_label)
+          (footnote_marker_end)
+          (footnote_content
+            (paragraph (inline))))
+        (paragraph (inline))))))
+
+===============================================================================
+List: Table between paragraphs
+===============================================================================
+- a
+
+  | a | b |
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (table
+          (table_row
+            (table_cell (inline))
+            (table_cell (inline))))
+        (paragraph (inline))))))
+
+===============================================================================
 Table: single row
 ===============================================================================
 | a | b |
