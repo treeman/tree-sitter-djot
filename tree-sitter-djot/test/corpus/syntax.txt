@@ -2630,6 +2630,51 @@ List: Table between paragraphs
         (paragraph (inline))))))
 
 ===============================================================================
+List: Extra space between
+===============================================================================
+- a
+
+
+- c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (table
+          (table_row
+            (table_cell (inline))
+            (table_cell (inline))))
+        (paragraph (inline))))))
+
+===============================================================================
+List: Code in list item
+===============================================================================
+- b
+
+  ```
+  x
+  ```
+
+- c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (table
+          (table_row
+            (table_cell (inline))
+            (table_cell (inline))))
+        (paragraph (inline))))))
+
+===============================================================================
 Table: single row
 ===============================================================================
 | a | b |
