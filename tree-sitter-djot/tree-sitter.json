@@ -5,16 +5,10 @@
       "camelcase": "Djot",
       "scope": "text.djot",
       "path": ".",
-      "file-types": [
-        "dj"
-      ],
-      "highlights": [
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
-      ],
-      "injection-regex": "djot"
+      "file-types": ["dj"],
+      "highlights": ["queries/highlights.scm"],
+      "injections": ["queries/injections.scm"],
+      "injection-regex": "^djot$"
     }
   ],
   "metadata": {

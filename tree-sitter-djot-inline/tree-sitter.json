@@ -6,13 +6,9 @@
       "scope": "text.djot_inline",
       "path": ".",
       "file-types": null,
-      "highlights": [
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
-      ],
-      "injection-regex": "djot_inline"
+      "highlights": ["queries/highlights.scm"],
+      "injections": ["queries/injections.scm"],
+      "injection-regex": "^djot_inline$"
     }
   ],
   "metadata": {
