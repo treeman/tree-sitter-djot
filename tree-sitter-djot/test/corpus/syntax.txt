@@ -228,7 +228,7 @@ Heading 6: list closes
           (list_item_content (paragraph (inline))))))))
 
 ===============================================================================
-Heading: followed by list
+Heading: before list
 ===============================================================================
 # Heading
 
@@ -244,6 +244,26 @@ Heading: followed by list
         (list_item
           (list_marker_dash)
           (list_item_content (paragraph (inline))))))))
+
+===============================================================================
+Heading: after list
+===============================================================================
+- list
+
+# Heading
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline)))))
+  (section
+    (heading
+      (marker)
+      (inline))))
+
 
 ===============================================================================
 Section: closed by the same level
@@ -583,9 +603,35 @@ Code block: don't parse heading
     (code)
     (code_block_marker_end)))
 
+===============================================================================
+Code block: in list should be closed before unindented code block
+===============================================================================
+- List
+
+  ```
+  First code
+
+```
+Second code
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (code_block
+          (code_block_marker_begin)
+          (code)))))
+  (code_block
+    (code_block_marker_begin)
+    (code)
+    (code_block_marker_end)))
 
 ===============================================================================
-Raw block
+Raw block: with space before language
 ===============================================================================
 ``` =html
 <p>txt</p>
@@ -601,6 +647,40 @@ Raw block
       (language))
     (content)
     (raw_block_marker_end)))
+
+===============================================================================
+Raw block: in list should be closed before unindented raw block
+===============================================================================
+- a
+
+  ```=html
+  x
+
+```=html
+y
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)))))
+  (raw_block
+    (raw_block_marker_begin)
+    (raw_block_info
+      (language_marker)
+      (language))
+      (content)
+      (raw_block_marker_end)))
+
 
 ===============================================================================
 Thematic break: star
@@ -1302,6 +1382,61 @@ Div: inside block quote
               (block_quote_marker))))
         (block_quote_marker)
         (div_marker_end)))))
+
+===============================================================================
+Div: in list should be closed before heading
+===============================================================================
+- List
+
+  :::
+  unclosed div
+
+# heading
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph (inline)))))))
+  (section
+    (heading
+      (marker)
+      (inline))))
+
+===============================================================================
+Div: in list should be closed before unindented div
+===============================================================================
+- List
+
+  :::
+  nested div
+
+:::
+outside div
+:::
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline))
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph (inline)))))))
+  (div
+    (div_marker_begin)
+    (content
+      (paragraph (inline)))
+    (div_marker_end)))
 
 ===============================================================================
 Paragraph: not recognized
@@ -2989,6 +3124,176 @@ Footnote: With block quote
           (paragraph (inline)))))))
 
 ===============================================================================
+Footnote: Code block starts footnote
+===============================================================================
+[^foo]: ```
+        x
+        ```
+
+        a
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph (inline)))))
+
+
+===============================================================================
+Footnote: Nested divs with block attributes
+===============================================================================
+[^f]: x
+
+     {#1}
+     :::
+     a
+     :::
+
+     {#2}
+     :::
+     b
+     :::
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (block_attribute (args (identifier)))
+      (div
+        (div_marker_begin)
+        (content (paragraph (inline)))
+        (div_marker_end))
+      (block_attribute (args (identifier)))
+      (div
+        (div_marker_begin)
+        (content (paragraph (inline)))
+        (div_marker_end)))))
+
+===============================================================================
+Footnote: Nested code block between paragraphs
+===============================================================================
+[^f]: a
+
+     ```
+     x
+     ```
+
+     c
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (code_block
+        (code_block_marker_begin)
+        (code)
+        (code_block_marker_end))
+      (paragraph (inline)))))
+
+===============================================================================
+Footnote: Thematic break between paragraphs
+===============================================================================
+[^f]: a
+
+      * * *
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (thematic_break)
+      (paragraph (inline)))))
+
+===============================================================================
+Footnote: Quote between paragraphs
+===============================================================================
+[^f]: a
+
+      > c
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (block_quote
+        (block_quote_marker)
+        (content
+          (paragraph (inline))))
+      (paragraph (inline)))))
+
+===============================================================================
+Footnote: Link definition between paragraphs
+===============================================================================
+[^f]: a
+
+      [def]: /u
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (link_reference_definition
+        (link_label (inline))
+        (link_destination))
+      (paragraph (inline)))))
+
+===============================================================================
+Footnote: Table between paragraphs
+===============================================================================
+[^foo]: a
+
+        | a | b |
+
+        b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph (inline))
+      (table
+        (table_row
+          (table_cell (inline))
+          (table_cell (inline))))
+      (paragraph (inline)))))
+
+===============================================================================
 Paragraph: broken things
 ===============================================================================
 |
@@ -3063,7 +3368,7 @@ i.e.
   (paragraph (inline)))
 
 ===============================================================================
-Frontmatter
+Frontmatter: without language
 ===============================================================================
 ---
 key: Some value
@@ -3082,7 +3387,7 @@ x
   (paragraph (inline)))
 
 ===============================================================================
-Frontmatter
+Frontmatter: with language
 ===============================================================================
 ---toml
 key: Some value
@@ -3101,141 +3406,7 @@ x
   (paragraph (inline)))
 
 ===============================================================================
-Heading after list
-===============================================================================
-- list
-
-# Heading
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline)))))
-  (section
-    (heading
-      (marker)
-      (inline))))
-
-===============================================================================
-Div in list should be closed before unindented div
-===============================================================================
-- List
-
-  :::
-  nested div
-
-:::
-outside div
-:::
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline))
-        (div
-          (div_marker_begin)
-          (content
-            (paragraph (inline)))))))
-  (div
-    (div_marker_begin)
-    (content
-      (paragraph (inline)))
-    (div_marker_end)))
-
-===============================================================================
-Code block in list should be closed before unindented code block
-===============================================================================
-- List
-
-  ```
-  First code
-
-```
-Second code
-```
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline))
-        (code_block
-          (code_block_marker_begin)
-          (code)))))
-  (code_block
-    (code_block_marker_begin)
-    (code)
-    (code_block_marker_end)))
-
-===============================================================================
-Raw block in list should be closed before unindented raw block
-===============================================================================
-- a
-
-  ```=html
-  x
-
-```=html
-y
-```
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline))
-        (raw_block
-          (raw_block_marker_begin)
-          (raw_block_info
-            (language_marker)
-            (language))
-          (content)))))
-  (raw_block
-    (raw_block_marker_begin)
-    (raw_block_info
-      (language_marker)
-      (language))
-      (content)
-      (raw_block_marker_end)))
-
-===============================================================================
-Div in list should be closed before heading
-===============================================================================
-- List
-
-  :::
-  unclosed div
-
-# heading
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline))
-        (div
-          (div_marker_begin)
-          (content
-            (paragraph (inline)))))))
-  (section
-    (heading
-      (marker)
-      (inline))))
-
-===============================================================================
-Comment before link def
+Comment: before link def
 ===============================================================================
 {% c %}
 [def]: /url
@@ -3251,7 +3422,7 @@ Comment before link def
     (link_destination)))
 
 ===============================================================================
-Comment before heading
+Comment: before heading
 ===============================================================================
 {% c %}
 # one

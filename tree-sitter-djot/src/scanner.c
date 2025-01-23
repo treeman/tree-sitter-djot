@@ -49,13 +49,14 @@ typedef enum {
   LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_CONTINUATION,
   LIST_ITEM_END,
-  LIST_ITEM_CONTENT_SPACER,
+  INDENTED_CONTENT_SPACER,
   CLOSE_PARAGRAPH,
   BLOCK_QUOTE_BEGIN,
   BLOCK_QUOTE_CONTINUATION,
   THEMATIC_BREAK_DASH,
   THEMATIC_BREAK_STAR,
   FOOTNOTE_MARK_BEGIN,
+  FOOTNOTE_CONTINUATION,
   FOOTNOTE_END,
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
@@ -392,19 +393,18 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   }
 }
 
-static bool parse_list_item_content_spacer(Scanner *s, TSLexer *lexer,
-                                           bool is_newline) {
+static bool parse_indented_content_spacer(Scanner *s, TSLexer *lexer,
+                                          bool is_newline) {
   if (is_newline) {
     advance(s, lexer);
     lexer->mark_end(lexer);
   }
-  lexer->result_symbol = LIST_ITEM_CONTENT_SPACER;
+  lexer->result_symbol = INDENTED_CONTENT_SPACER;
   return true;
 }
 
 // Close open list if list markers are different.
-static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
-                                         bool is_newline) {
+static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer) {
   Block *list = find_list(s);
   if (!list) {
     return false;
@@ -416,6 +416,21 @@ static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
 
   lexer->mark_end(lexer);
   lexer->result_symbol = LIST_ITEM_CONTINUATION;
+  return true;
+}
+
+static bool parse_footnote_continuation(Scanner *s, TSLexer *lexer) {
+  Block *footnote = peek_block(s);
+  if (!footnote || footnote->type != FOOTNOTE) {
+    return false;
+  }
+
+  if (s->indent < footnote->level) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = FOOTNOTE_CONTINUATION;
   return true;
 }
 
@@ -1642,13 +1657,17 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[LIST_ITEM_CONTENT_SPACER] &&
-      parse_list_item_content_spacer(s, lexer, is_newline)) {
+  if (valid_symbols[INDENTED_CONTENT_SPACER] &&
+      parse_indented_content_spacer(s, lexer, is_newline)) {
     return true;
   }
 
   if (valid_symbols[LIST_ITEM_CONTINUATION] &&
-      parse_list_item_continuation(s, lexer, is_newline)) {
+      parse_list_item_continuation(s, lexer)) {
+    return true;
+  }
+  if (valid_symbols[FOOTNOTE_CONTINUATION] &&
+      parse_footnote_continuation(s, lexer)) {
     return true;
   }
 

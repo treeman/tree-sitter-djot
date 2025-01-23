@@ -330,14 +330,14 @@ module.exports = grammar({
     list_item_content: ($) =>
       seq(
         $._block_with_heading,
-        $._list_item_content_spacer,
+        $._indented_content_spacer,
         optional(
           repeat(
             seq(
               optional($._block_quote_prefix),
               $._list_item_continuation,
               $._block_with_heading,
-              $._list_item_content_spacer,
+              $._indented_content_spacer,
             ),
           ),
         ),
@@ -395,11 +395,26 @@ module.exports = grammar({
         $._footnote_mark_begin,
         field("label", $.reference_label),
         alias("]:", $.footnote_marker_end),
+        $._whitespace1,
         field("content", $.footnote_content),
-        $._footnote_end,
       ),
     footnote_marker_begin: (_) => "[^",
-    footnote_content: ($) => repeat1($._block_with_heading),
+    footnote_content: ($) =>
+      seq(
+        $._block_with_heading,
+        $._indented_content_spacer,
+        optional(
+          repeat(
+            seq(
+              optional($._block_quote_prefix),
+              $._footnote_continuation,
+              $._block_with_heading,
+              $._indented_content_spacer,
+            ),
+          ),
+        ),
+        $._footnote_end,
+      ),
 
     div: ($) =>
       seq(
@@ -664,13 +679,13 @@ module.exports = grammar({
     $.list_marker_upper_alpha_parens,
     $.list_marker_lower_roman_parens,
     $.list_marker_upper_roman_parens,
-    // List item continuation consumes whitespace indentation for lists.
+    // Continuations consumes whitespace indentation.
     $._list_item_continuation,
     // `_list_item_end` is responsible for closing an open list,
     // if indent or list markers are mismatched.
     $._list_item_end,
-    // `_list_item_content_spacer` is either a blankline separating
-    // list content or a zero-width marker if content continues immediately.
+    // `_indented_content_spacer` is either a blankline separating
+    // indented content or a zero-width marker if content continues immediately.
     //
     //    - a
     //              <- spacer
@@ -678,7 +693,8 @@ module.exports = grammar({
     //      x
     //      ```
     //      b       <- zero-width spacer (followed by a list item continuation).
-    $._list_item_content_spacer,
+    //
+    $._indented_content_spacer,
     // Paragraphs are anonymous blocks and open blocks aren't tracked by the
     // external scanner. `close_paragraph` is a marker that's responsible
     // for closing the paragraph early, for example on a div marker.
@@ -689,13 +705,17 @@ module.exports = grammar({
     //
     //    > a   <- `block_quote_begin` (before the paragraph)
     //    > b   <- `block_quote_continuation` (inside the paragraph)
+    //
     $._block_quote_continuation,
     $._thematic_break_dash,
     $._thematic_break_star,
-    // Footnotes have significant whitespace.
+    // Footnotes have significant whitespace and can contain blocks,
+    // the same as lists.
     $._footnote_mark_begin,
+    // Continuations consumes whitespace indentation.
+    $._footnote_continuation,
     $._footnote_end,
-    // Table captions have significant whitespace.
+    // Table captions have significant whitespace but contain only inline.
     $._table_caption_begin,
     $._table_caption_end,
 
