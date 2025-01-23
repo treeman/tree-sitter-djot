@@ -1749,6 +1749,7 @@ static bool parse_attribute_begin(Scanner *s, TSLexer *lexer,
       }
       break;
     case '\n':
+      advance(s, lexer);
       // Need to match indent!
       if (indent != consume_whitespace(s, lexer)) {
         return false;

@@ -519,6 +519,7 @@ module.exports = grammar({
                 $.key_value,
                 $.comment,
                 $._whitespace1,
+                $._newline,
               ),
             ),
             $.args,
