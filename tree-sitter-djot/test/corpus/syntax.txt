@@ -897,6 +897,26 @@ Some text
     (link_label (inline))
     (link_destination)))
 
+===============================================================================
+Link: inside list
+===============================================================================
+- [label](#ref)
+
++ [label](#ref)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph (inline)))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph (inline))))))
 
 ===============================================================================
 Block attribute: class
@@ -1187,28 +1207,6 @@ Block attribute: inside block quote
       (block_quote_marker)
       (paragraph (inline)))))
 
-
-===============================================================================
-Link: inside list
-===============================================================================
-- [label](#ref)
-
-+ [label](#ref)
-
--------------------------------------------------------------------------------
-
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph (inline)))))
-  (list
-    (list_item
-      (list_marker_plus)
-      (list_item_content
-        (paragraph (inline))))))
-
 ===============================================================================
 Block attribute: must be first
 ===============================================================================
@@ -1289,7 +1287,7 @@ Block attribute: comment closed at }
 
 (document
   (block_attribute
-    (args (comment))))
+    (args (comment (content)))))
 
 ===============================================================================
 Block attribute: comment can contain newlines
@@ -1303,7 +1301,7 @@ Block attribute: comment can contain newlines
 
 (document
   (block_attribute
-    (args (comment))))
+    (args (comment (content)))))
 
 ===============================================================================
 Block attribute: comment newlines must match indent
@@ -1316,6 +1314,39 @@ c
 
 (document
   (paragraph (inline)))
+
+===============================================================================
+Block attribute: comment before link def
+===============================================================================
+{% c %}
+[def]: /url
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (link_reference_definition
+    (link_label (inline))
+    (link_destination)))
+
+===============================================================================
+Block attribute: comment before heading
+===============================================================================
+{% c %}
+# one
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (section
+    (heading
+      (marker)
+      (inline))))
 
 ===============================================================================
 Div: simple
@@ -3549,35 +3580,3 @@ x
     (frontmatter_marker))
   (paragraph (inline)))
 
-===============================================================================
-Comment: before link def
-===============================================================================
-{% c %}
-[def]: /url
-
--------------------------------------------------------------------------------
-(document
-  (block_attribute
-    (args
-      (comment
-        (content))))
-  (link_reference_definition
-    (link_label (inline))
-    (link_destination)))
-
-===============================================================================
-Comment: before heading
-===============================================================================
-{% c %}
-# one
-
--------------------------------------------------------------------------------
-(document
-  (block_attribute
-    (args
-      (comment
-        (content))))
-  (section
-    (heading
-      (marker)
-      (inline))))

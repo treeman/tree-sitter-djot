@@ -603,9 +603,9 @@ module.exports = grammar({
         "%",
         field(
           "content",
-          alias(repeat(choice($.backslash_escape, /[^%\n]/)), $.content),
+          alias(repeat(choice($.backslash_escape, /[^%}]/)), $.content),
         ),
-        "%",
+        choice(alias($._comment_end_marker, "%"), $._comment_close),
       ),
   },
 
@@ -731,6 +731,9 @@ module.exports = grammar({
     // The `{` that begins a block attribute (scans the entire attribute to avoid
     // excessive branching).
     $._block_attribute_begin,
+    // A comment can be closed by a `%` or implicitly when the attribute closes at `}`.
+    $._comment_end_marker,
+    $._comment_close,
 
     $._in_fallback,
 

@@ -66,6 +66,8 @@ typedef enum {
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
   BLOCK_ATTRIBUTE_BEGIN,
+  COMMENT_END_MARKER,
+  COMMENT_CLOSE,
 
   IN_FALLBACK,
 
@@ -1670,20 +1672,33 @@ static bool scan_until_unescaped(Scanner *s, TSLexer *lexer, char c) {
 
 // Scan until the end of a comment, either consuming the next `%`
 // or before the ending `}`.
-static bool scan_comment(Scanner *s, TSLexer *lexer) {
+static bool scan_comment(Scanner *s, TSLexer *lexer, uint8_t indent) {
   if (lexer->lookahead != '%') {
     return false;
   }
   advance(s, lexer);
 
   while (!lexer->eof(lexer)) {
-    if (lexer->lookahead == '%') {
+    switch (lexer->lookahead) {
+    case '%':
       advance(s, lexer);
       return true;
-    } else if (lexer->lookahead == '}') {
+    case '}':
       return true;
-    } else if (lexer->lookahead == '\\') {
+    case '\\':
       advance(s, lexer);
+      break;
+    case '\n':
+      advance(s, lexer);
+      // Need to match indent!
+      if (indent != consume_whitespace(s, lexer)) {
+        return false;
+      }
+      // Can only have one newline in a row for a valid attribute.
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+      break;
     }
     advance(s, lexer);
   }
@@ -1744,7 +1759,7 @@ static bool parse_attribute_begin(Scanner *s, TSLexer *lexer,
       }
       break;
     case '%':
-      if (!scan_comment(s, lexer)) {
+      if (!scan_comment(s, lexer, indent)) {
         return false;
       }
       break;
@@ -1916,8 +1931,22 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
     return true;
   }
 
-  // Something should already have matched, but lets not rely on that shall
-  // we?
+  // Something should already have matched, but lets not rely on that shall we?
+  return false;
+}
+
+static bool parse_comment_end(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (valid_symbols[COMMENT_END_MARKER] && lexer->lookahead == '%') {
+    advance(s, lexer);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = COMMENT_END_MARKER;
+    return true;
+  }
+  if (valid_symbols[COMMENT_CLOSE] && lexer->lookahead == '}') {
+    lexer->result_symbol = COMMENT_CLOSE;
+    return true;
+  }
   return false;
 }
 
@@ -2019,6 +2048,9 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
   if (parse_heading(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (parse_comment_end(s, lexer, valid_symbols)) {
     return true;
   }
 

@@ -2780,7 +2780,7 @@
                   },
                   {
                     "type": "PATTERN",
-                    "value": "[^%\\n]"
+                    "value": "[^%}]"
                   }
                 ]
               }
@@ -2790,8 +2790,22 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "%"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_comment_end_marker"
+              },
+              "named": false,
+              "value": "%"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_comment_close"
+            }
+          ]
         }
       ]
     }
@@ -3013,6 +3027,14 @@
     {
       "type": "SYMBOL",
       "name": "_block_attribute_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_comment_end_marker"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_comment_close"
     },
     {
       "type": "SYMBOL",
