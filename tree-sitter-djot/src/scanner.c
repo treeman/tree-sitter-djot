@@ -1,6 +1,7 @@
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
+#include <ctype.h>
 #include <stdio.h>
 
 // #define DEBUG
@@ -64,6 +65,7 @@ typedef enum {
   TABLE_CELL,
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
+  BLOCK_ATTRIBUTE_BEGIN,
 
   IN_FALLBACK,
 
@@ -1635,6 +1637,141 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
+static bool scan_identifier(Scanner *s, TSLexer *lexer) {
+  bool any_scanned = false;
+  while (!lexer->eof(lexer)) {
+    if (isalnum(lexer->lookahead) || lexer->lookahead == '-' ||
+        lexer->lookahead == '_') {
+      any_scanned = true;
+      advance(s, lexer);
+    } else {
+      return any_scanned;
+    }
+  }
+  return any_scanned;
+}
+
+static bool scan_until_unescaped(Scanner *s, TSLexer *lexer, char c) {
+  while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == c) {
+      return true;
+    } else if (lexer->lookahead == '\\') {
+      advance(s, lexer);
+    }
+    advance(s, lexer);
+  }
+  return false;
+}
+
+// Scan until the end of a comment, either consuming the next `%`
+// or before the ending `}`.
+static bool scan_comment(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '%') {
+    return false;
+  }
+  advance(s, lexer);
+
+  while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == '%') {
+      advance(s, lexer);
+      return true;
+    } else if (lexer->lookahead == '}') {
+      return true;
+    } else if (lexer->lookahead == '\\') {
+      advance(s, lexer);
+    }
+    advance(s, lexer);
+  }
+  return false;
+}
+
+static bool scan_value(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead == '"') {
+    // First "
+    advance(s, lexer);
+    if (!scan_until_unescaped(s, lexer, '"')) {
+      return false;
+    }
+    // Last "
+    advance(s, lexer);
+    return true;
+  } else {
+    return scan_identifier(s, lexer);
+  }
+}
+
+static bool parse_attribute_begin(Scanner *s, TSLexer *lexer,
+                                  const bool *valid_symbols) {
+  if (!valid_symbols[BLOCK_ATTRIBUTE_BEGIN]) {
+    return false;
+  }
+  if (lexer->lookahead != '{') {
+    return false;
+  }
+  // Only consume the `{`, if successful.
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+
+  // Match indent to one past the `{`
+  uint8_t indent = s->indent + 1;
+
+  while (!lexer->eof(lexer)) {
+    consume_whitespace(s, lexer);
+
+    switch (lexer->lookahead) {
+    case '\\':
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '}':
+      lexer->result_symbol = BLOCK_ATTRIBUTE_BEGIN;
+      return true;
+    case '.':
+      advance(s, lexer);
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      break;
+    case '#':
+      advance(s, lexer);
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      break;
+    case '%':
+      if (!scan_comment(s, lexer)) {
+        return false;
+      }
+      break;
+    case '\n':
+      // Need to match indent!
+      if (indent != consume_whitespace(s, lexer)) {
+        return false;
+      }
+      // Can only have one newline in a row for a valid attribute.
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+      break;
+    default:
+      // First scan a key
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      // Must have equals
+      if (lexer->lookahead != '=') {
+        return false;
+      }
+      advance(s, lexer);
+      // Then scan the value
+      if (!scan_value(s, lexer)) {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
 static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   Block *block = find_block(s, BLOCK_QUOTE);
   if (!block) {
@@ -1910,6 +2047,16 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
     break;
+  case '|':
+    if (parse_table_begin(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '{':
+    if (parse_attribute_begin(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
   default:
     break;
   }
@@ -1928,9 +2075,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
   if (valid_symbols[TABLE_CAPTION_BEGIN] &&
       parse_table_caption_begin(s, lexer)) {
-    return true;
-  }
-  if (parse_table_begin(s, lexer, valid_symbols)) {
     return true;
   }
   if (valid_symbols[TABLE_CELL] && parse_table_cell(s, lexer)) {
@@ -2113,10 +2257,14 @@ static char *token_type_s(TokenType t) {
     return "TABLE_SEPARATOR_BEGIN";
   case TABLE_ROW_BEGIN:
     return "TABLE_ROW_BEGIN";
+  case TABLE_CELL:
+    return "TABLE_CELL";
   case TABLE_CAPTION_BEGIN:
     return "TABLE_CAPTION_BEGIN";
   case TABLE_CAPTION_END:
     return "TABLE_CAPTION_END";
+  case BLOCK_ATTRIBUTE_BEGIN:
+    return "BLOCK_ATTRIBUTE_BEGIN";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";

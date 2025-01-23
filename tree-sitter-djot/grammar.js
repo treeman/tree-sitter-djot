@@ -5,7 +5,6 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.link_reference_definition, $._symbol_fallback],
-    [$.block_attribute, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
   ],
 
@@ -358,7 +357,7 @@ module.exports = grammar({
     table_header: ($) =>
       prec.right(
         seq(
-          $._table_header_begin,
+          alias($._table_header_begin, "|"),
           $.table_cell,
           repeat(seq("|", $.table_cell)),
           "|",
@@ -368,7 +367,7 @@ module.exports = grammar({
     table_separator: ($) =>
       prec.right(
         seq(
-          $._table_separator_begin,
+          alias($._table_separator_begin, "|"),
           $.table_cell_alignment,
           repeat(seq("|", $.table_cell_alignment)),
           "|",
@@ -378,7 +377,7 @@ module.exports = grammar({
     table_row: ($) =>
       prec.right(
         seq(
-          $._table_row_begin,
+          alias($._table_row_begin, "|"),
           $.table_cell,
           repeat(seq("|", $.table_cell)),
           "|",
@@ -509,7 +508,7 @@ module.exports = grammar({
 
     block_attribute: ($) =>
       seq(
-        "{",
+        alias($._block_attribute_begin, "{"),
         field(
           "args",
           alias(
@@ -518,7 +517,7 @@ module.exports = grammar({
                 $.class,
                 $.identifier,
                 $.key_value,
-                alias($._comment_no_newline, $.comment),
+                $.comment,
                 $._whitespace1,
               ),
             ),
@@ -598,7 +597,7 @@ module.exports = grammar({
     reference_label: ($) => $._id,
     _id: (_) => /[\w_-]+/,
 
-    _comment_no_newline: ($) =>
+    comment: ($) =>
       seq(
         "%",
         field(
@@ -728,6 +727,9 @@ module.exports = grammar({
     // Table captions have significant whitespace but contain only inline.
     $._table_caption_begin,
     $._table_caption_end,
+    // The `{` that begins a block attribute (scans the entire attribute to avoid
+    // excessive branching).
+    $._block_attribute_begin,
 
     $._in_fallback,
 

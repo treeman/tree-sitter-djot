@@ -1547,8 +1547,13 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "_table_header_begin"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_table_header_begin"
+            },
+            "named": false,
+            "value": "|"
           },
           {
             "type": "SYMBOL",
@@ -1588,8 +1593,13 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "_table_separator_begin"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_table_separator_begin"
+            },
+            "named": false,
+            "value": "|"
           },
           {
             "type": "SYMBOL",
@@ -1629,8 +1639,13 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "_table_row_begin"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_table_row_begin"
+            },
+            "named": false,
+            "value": "|"
           },
           {
             "type": "SYMBOL",
@@ -2351,7 +2366,12 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_block_attribute_begin"
+          },
+          "named": false,
           "value": "{"
         },
         {
@@ -2377,13 +2397,8 @@
                     "name": "key_value"
                   },
                   {
-                    "type": "ALIAS",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "_comment_no_newline"
-                    },
-                    "named": true,
-                    "value": "comment"
+                    "type": "SYMBOL",
+                    "name": "comment"
                   },
                   {
                     "type": "SYMBOL",
@@ -2738,7 +2753,7 @@
       "type": "PATTERN",
       "value": "[\\w_-]+"
     },
-    "_comment_no_newline": {
+    "comment": {
       "type": "SEQ",
       "members": [
         {
@@ -2786,10 +2801,6 @@
   "conflicts": [
     [
       "link_reference_definition",
-      "_symbol_fallback"
-    ],
-    [
-      "block_attribute",
       "_symbol_fallback"
     ],
     [
@@ -2994,6 +3005,10 @@
     {
       "type": "SYMBOL",
       "name": "_table_caption_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_block_attribute_begin"
     },
     {
       "type": "SYMBOL",
