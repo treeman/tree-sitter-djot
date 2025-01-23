@@ -58,6 +58,9 @@ typedef enum {
   FOOTNOTE_MARK_BEGIN,
   FOOTNOTE_CONTINUATION,
   FOOTNOTE_END,
+  TABLE_HEADER_BEGIN,
+  TABLE_SEPARATOR_BEGIN,
+  TABLE_ROW_BEGIN,
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
 
@@ -1422,6 +1425,172 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
   return true;
 }
 
+static bool scan_verbatim_to_end_no_newline(Scanner *s, TSLexer *lexer,
+                                            uint8_t tick_count) {
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '\\':
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '`':
+      if (consume_chars(s, lexer, '`') == tick_count) {
+        return true;
+      }
+      break;
+    case '\n':
+      return false;
+    default:
+      advance(s, lexer);
+    }
+  }
+  return false;
+}
+
+// Scan from a `|` to the next `|`, respecting verbatim and escapes.
+// May not contain any newline.
+static bool scan_table_cell(Scanner *s, TSLexer *lexer, bool *separator) {
+  consume_whitespace(s, lexer);
+
+  *separator = true;
+
+  bool first_char = true;
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '\\':
+      *separator = false;
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '\n':
+      return false;
+    case '`':
+      *separator = false;
+      // We must have ending ticks for this to be a valid table cell.
+      if (!scan_verbatim_to_end_no_newline(s, lexer,
+                                           consume_chars(s, lexer, '`'))) {
+        return false;
+      }
+      break;
+
+    case '|':
+      return true;
+    case ':':
+      advance(s, lexer);
+
+      consume_whitespace(s, lexer);
+      // A `:` can begin or end a separator cell.
+      if (lexer->lookahead == '|') {
+        return true;
+      } else if (!first_char) {
+        *separator = false;
+      }
+      break;
+    case '-':
+      advance(s, lexer);
+      break;
+    default:
+      *separator = false;
+      advance(s, lexer);
+      break;
+    }
+
+    first_char = false;
+  }
+  return false;
+}
+
+static bool scan_separator_row(Scanner *s, TSLexer *lexer) {
+  uint8_t cell_count = 0;
+  bool curr_separator;
+  while (scan_table_cell(s, lexer, &curr_separator)) {
+    if (!curr_separator) {
+      return false;
+    }
+    ++cell_count;
+    if (lexer->lookahead == '|') {
+      advance(s, lexer);
+    }
+  }
+
+  if (cell_count == 0) {
+    return false;
+  }
+
+  // Nothing but whitespace and then a newline may follow a table row.
+  consume_whitespace(s, lexer);
+  return lexer->lookahead == '\n';
+}
+
+static bool scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
+
+  uint8_t cell_count = 0;
+  bool all_separators = true;
+  bool curr_separator;
+  while (scan_table_cell(s, lexer, &curr_separator)) {
+    if (!curr_separator) {
+      all_separators = false;
+    }
+    ++cell_count;
+    if (lexer->lookahead == '|') {
+      advance(s, lexer);
+    }
+  }
+
+  if (cell_count == 0) {
+    return false;
+  }
+
+  // Nothing but whitespace and then a newline may follow a table row.
+  consume_whitespace(s, lexer);
+  if (lexer->lookahead != '\n') {
+    return false;
+  }
+
+  // Consume newline.
+  advance(s, lexer);
+  if (all_separators) {
+    *row_type = TABLE_SEPARATOR_BEGIN;
+  } else {
+    // We need to check the next row and if that is full of separators then
+    // this is a header, otherwise it's a regular row.
+    // We also need to check for any block quote markers on that row.
+    bool newline = false;
+    scan_block_quote_markers(s, lexer, &newline);
+
+    if (!newline && scan_separator_row(s, lexer)) {
+      *row_type = TABLE_HEADER_BEGIN;
+    } else {
+      *row_type = TABLE_ROW_BEGIN;
+    }
+  }
+  return true;
+}
+
+static bool parse_table_begin(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (lexer->lookahead != '|') {
+    return false;
+  }
+  if (!valid_symbols[TABLE_ROW_BEGIN] &&
+      !valid_symbols[TABLE_SEPARATOR_BEGIN] &&
+      !valid_symbols[TABLE_HEADER_BEGIN]) {
+    return false;
+  }
+
+  // The tokens should consume the pipe.
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+
+  TokenType row_type;
+  if (!scan_table_row(s, lexer, &row_type)) {
+    return false;
+  }
+
+  lexer->result_symbol = row_type;
+  return true;
+}
+
 static bool parse_table_caption_begin(Scanner *s, TSLexer *lexer) {
   if (lexer->lookahead != '^') {
     return false;
@@ -1750,6 +1919,9 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       parse_table_caption_begin(s, lexer)) {
     return true;
   }
+  if (parse_table_begin(s, lexer, valid_symbols)) {
+    return true;
+  }
 
   // May scan a complete list marker, which we can't do before checking if
   // we should output the list marker itself.
@@ -1903,6 +2075,8 @@ static char *token_type_s(TokenType t) {
     return "LIST_ITEM_CONTINUATION";
   case LIST_ITEM_END:
     return "LIST_ITEM_END";
+  case INDENTED_CONTENT_SPACER:
+    return "INDENTED_CONTENT_SPACER";
   case CLOSE_PARAGRAPH:
     return "CLOSE_PARAGRAPH";
   case BLOCK_QUOTE_BEGIN:
@@ -1915,19 +2089,27 @@ static char *token_type_s(TokenType t) {
     return "THEMATIC_BREAK_STAR";
   case FOOTNOTE_MARK_BEGIN:
     return "FOOTNOTE_MARK_BEGIN";
+  case FOOTNOTE_CONTINUATION:
+    return "FOOTNOTE_CONTINUATION";
   case FOOTNOTE_END:
     return "FOOTNOTE_END";
+  case TABLE_HEADER_BEGIN:
+    return "TABLE_HEADER_BEGIN";
+  case TABLE_SEPARATOR_BEGIN:
+    return "TABLE_SEPARATOR_BEGIN";
+  case TABLE_ROW_BEGIN:
+    return "TABLE_ROW_BEGIN";
   case TABLE_CAPTION_BEGIN:
     return "TABLE_CAPTION_BEGIN";
   case TABLE_CAPTION_END:
     return "TABLE_CAPTION_END";
 
+  case IN_FALLBACK:
+    return "IN_FALLBACK";
   case ERROR:
     return "ERROR";
   case IGNORED:
     return "IGNORED";
-  default:
-    return "NOT IMPLEMENTED";
   }
 }
 
@@ -1987,8 +2169,6 @@ static char *block_type_s(BlockType t) {
     return "LIST_LOWER_ROMAN_PARENS";
   case LIST_UPPER_ROMAN_PARENS:
     return "LIST_UPPER_ROMAN_PARENS";
-  default:
-    return "NOT IMPLEMENTED";
   }
 }
 
@@ -2020,46 +2200,46 @@ static void dump(Scanner *s, TSLexer *lexer) {
 }
 
 static void dump_valid_symbols(const bool *valid_symbols) {
-  // printf("# valid_symbols:\n");
-  // for (int i = 0; i <= ERROR; ++i) {
-  //   if (valid_symbols[i]) {
-  //     printf("%s\n", token_type_s(i));
-  //   }
-  // }
   if (valid_symbols[ERROR]) {
     printf("# In error recovery ALL SYMBOLS ARE VALID\n");
     return;
   }
-  printf("# valid_symbols (shortened):\n");
+  printf("# valid_symbols:\n");
   for (int i = 0; i <= ERROR; ++i) {
-    switch (i) {
-    case BLOCK_CLOSE:
-    // case BLOCK_QUOTE_BEGIN:
-    case BLOCK_QUOTE_CONTINUATION:
-    case CLOSE_PARAGRAPH:
-    // case FOOTNOTE_BEGIN:
-    // case FOOTNOTE_END:
-    case NEWLINE:
-    case NEWLINE_INLINE:
-    // case LIST_MARKER_TASK_BEGIN:
-    case LIST_MARKER_DASH:
-    // case LIST_MARKER_STAR:
-    // case LIST_MARKER_PLUS:
-    case LIST_ITEM_CONTINUATION:
-    case LIST_ITEM_END:
-    case EOF_OR_NEWLINE:
-    case DIV_BEGIN:
-    case DIV_END:
-      // case TABLE_CAPTION_BEGIN:
-      // case TABLE_CAPTION_END:
-      if (valid_symbols[i]) {
-        printf("%s\n", token_type_s(i));
-      }
-      break;
-    default:
-      continue;
+    if (valid_symbols[i]) {
+      printf("%s\n", token_type_s(i));
     }
   }
+  // printf("# valid_symbols (shortened):\n");
+  // for (int i = 0; i <= ERROR; ++i) {
+  //   switch (i) {
+  //   case BLOCK_CLOSE:
+  //   // case BLOCK_QUOTE_BEGIN:
+  //   case BLOCK_QUOTE_CONTINUATION:
+  //   case CLOSE_PARAGRAPH:
+  //   // case FOOTNOTE_BEGIN:
+  //   // case FOOTNOTE_END:
+  //   case NEWLINE:
+  //   case NEWLINE_INLINE:
+  //   // case LIST_MARKER_TASK_BEGIN:
+  //   case LIST_MARKER_DASH:
+  //   // case LIST_MARKER_STAR:
+  //   // case LIST_MARKER_PLUS:
+  //   case LIST_ITEM_CONTINUATION:
+  //   case LIST_ITEM_END:
+  //   case EOF_OR_NEWLINE:
+  //   case DIV_BEGIN:
+  //   case DIV_END:
+  //     // case TABLE_CAPTION_BEGIN:
+  //     // case TABLE_CAPTION_END:
+  //     if (valid_symbols[i]) {
+  //       printf("%s\n", token_type_s(i));
+  //     }
+  //     break;
+  //   default:
+  //     continue;
+  //   }
+  // }
   printf("#\n");
 }
 

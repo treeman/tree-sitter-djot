@@ -1073,6 +1073,10 @@
       "required": true,
       "types": [
         {
+          "type": "block_quote_marker",
+          "named": true
+        },
+        {
           "type": "table_caption",
           "named": true
         },
@@ -1141,10 +1145,6 @@
       "required": true,
       "types": [
         {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
           "type": "table_cell",
           "named": true
         }
@@ -1160,10 +1160,6 @@
       "required": true,
       "types": [
         {
-          "type": "block_quote_marker",
-          "named": true
-        },
-        {
           "type": "table_cell",
           "named": true
         }
@@ -1178,10 +1174,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "block_quote_marker",
-          "named": true
-        },
         {
           "type": "table_cell_alignment",
           "named": true

@@ -2967,12 +2967,12 @@ Table: inside blockquote
         (table_header
           (table_cell (inline))
           (table_cell (inline)))
+        (block_quote_marker)
         (table_separator
-          (block_quote_marker)
           (table_cell_alignment)
           (table_cell_alignment))
+        (block_quote_marker)
         (table_row
-          (block_quote_marker)
           (table_cell (inline))
           (table_cell (inline)))))))
 

@@ -4,9 +4,7 @@ module.exports = grammar({
   extras: (_) => ["\r"],
 
   conflicts: ($) => [
-    [$._table_content],
     [$.link_reference_definition, $._symbol_fallback],
-    [$.table_row, $._symbol_fallback],
     [$.block_attribute, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
   ],
@@ -347,22 +345,30 @@ module.exports = grammar({
     table: ($) =>
       prec.right(
         seq(
-          repeat1($._table_content),
+          repeat1($._table_row),
           optional($._newline),
           optional($.table_caption),
         ),
       ),
-    _table_content: ($) =>
-      choice(
-        $.table_separator,
-        seq(alias($.table_row, $.table_header), $.table_separator),
-        $.table_row,
+    _table_row: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        choice($.table_header, $.table_separator, $.table_row),
+      ),
+    table_header: ($) =>
+      prec.right(
+        seq(
+          $._table_header_begin,
+          $.table_cell,
+          repeat(seq("|", $.table_cell)),
+          "|",
+          $._newline,
+        ),
       ),
     table_separator: ($) =>
       prec.right(
         seq(
-          optional($._block_quote_prefix),
-          "|",
+          $._table_separator_begin,
           $.table_cell_alignment,
           repeat(seq("|", $.table_cell_alignment)),
           "|",
@@ -372,8 +378,7 @@ module.exports = grammar({
     table_row: ($) =>
       prec.right(
         seq(
-          optional($._block_quote_prefix),
-          "|",
+          $._table_row_begin,
           $.table_cell,
           repeat(seq("|", $.table_cell)),
           "|",
@@ -581,7 +586,6 @@ module.exports = grammar({
           "[",
           "{",
           "{-",
-          "|",
           ".",
           "#",
           "%",
@@ -712,9 +716,15 @@ module.exports = grammar({
     // Footnotes have significant whitespace and can contain blocks,
     // the same as lists.
     $._footnote_mark_begin,
-    // Continuations consumes whitespace indentation.
     $._footnote_continuation,
     $._footnote_end,
+    // Table begin consumes a `|` if the row is a valid table row.
+    // In Djot the number of table cells don't have to match for in the table.
+    // The different types are here to let the scanner take care of the detection
+    // to avoid tree-sitter branching.
+    $._table_header_begin,
+    $._table_separator_begin,
+    $._table_row_begin,
     // Table captions have significant whitespace but contain only inline.
     $._table_caption_begin,
     $._table_caption_end,

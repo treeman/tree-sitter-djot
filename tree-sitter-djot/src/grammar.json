@@ -1476,7 +1476,7 @@
             "type": "REPEAT1",
             "content": {
               "type": "SYMBOL",
-              "name": "_table_content"
+              "name": "_table_row"
             }
           },
           {
@@ -1506,36 +1506,80 @@
         ]
       }
     },
-    "_table_content": {
-      "type": "CHOICE",
+    "_table_row": {
+      "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "table_separator"
-        },
-        {
-          "type": "SEQ",
+          "type": "CHOICE",
           "members": [
             {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "table_row"
-              },
-              "named": true,
-              "value": "table_header"
+              "type": "SYMBOL",
+              "name": "_block_quote_prefix"
             },
             {
-              "type": "SYMBOL",
-              "name": "table_separator"
+              "type": "BLANK"
             }
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "table_row"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "table_header"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "table_separator"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "table_row"
+            }
+          ]
         }
       ]
+    },
+    "table_header": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_table_header_begin"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "table_cell"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "|"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "table_cell"
+                }
+              ]
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "|"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_newline"
+          }
+        ]
+      }
     },
     "table_separator": {
       "type": "PREC_RIGHT",
@@ -1544,20 +1588,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_block_quote_prefix"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
-          {
-            "type": "STRING",
-            "value": "|"
+            "type": "SYMBOL",
+            "name": "_table_separator_begin"
           },
           {
             "type": "SYMBOL",
@@ -1597,20 +1629,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_block_quote_prefix"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
-          {
-            "type": "STRING",
-            "value": "|"
+            "type": "SYMBOL",
+            "name": "_table_row_begin"
           },
           {
             "type": "SYMBOL",
@@ -2660,10 +2680,6 @@
           },
           {
             "type": "STRING",
-            "value": "|"
-          },
-          {
-            "type": "STRING",
             "value": "."
           },
           {
@@ -2777,14 +2793,7 @@
   ],
   "conflicts": [
     [
-      "_table_content"
-    ],
-    [
       "link_reference_definition",
-      "_symbol_fallback"
-    ],
-    [
-      "table_row",
       "_symbol_fallback"
     ],
     [
@@ -2969,6 +2978,18 @@
     {
       "type": "SYMBOL",
       "name": "_footnote_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_header_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_separator_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_row_begin"
     },
     {
       "type": "SYMBOL",
