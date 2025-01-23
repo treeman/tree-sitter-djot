@@ -553,6 +553,11 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
 
 static bool parse_backtick(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
+
+  if (!valid_symbols[CODE_BLOCK_BEGIN] && !valid_symbols[CODE_BLOCK_END] &&
+      !valid_symbols[BLOCK_CLOSE]) {
+    return false;
+  }
   uint8_t ticks = consume_chars(s, lexer, '`');
   if (ticks == 0) {
     return false;
