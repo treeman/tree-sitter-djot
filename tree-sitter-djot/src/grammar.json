@@ -1417,6 +1417,10 @@
           "name": "_block_with_heading"
         },
         {
+          "type": "SYMBOL",
+          "name": "_list_item_content_spacer"
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
@@ -1443,6 +1447,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "_block_with_heading"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_list_item_content_spacer"
                   }
                 ]
               }
@@ -2875,6 +2883,10 @@
     {
       "type": "SYMBOL",
       "name": "_list_item_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_list_item_content_spacer"
     },
     {
       "type": "SYMBOL",

@@ -2465,6 +2465,28 @@ List: Unclosed List in Div
             (paragraph (inline))))))))
 
 ===============================================================================
+List: Code block starts list
+===============================================================================
+- ```
+  x
+  ```
+
+  a
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph (inline))))))
+
+
+===============================================================================
 List: Nested divs with block attributes
 ===============================================================================
 - x
@@ -2630,7 +2652,7 @@ List: Table between paragraphs
         (paragraph (inline))))))
 
 ===============================================================================
-List: Extra space between
+List: Extra space between (the Djot playground also treats them as one list)
 ===============================================================================
 - a
 
@@ -2643,11 +2665,10 @@ List: Extra space between
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph (inline))
-        (table
-          (table_row
-            (table_cell (inline))
-            (table_cell (inline))))
+        (paragraph (inline))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
         (paragraph (inline))))))
 
 ===============================================================================
@@ -2668,10 +2689,13 @@ List: Code in list item
       (list_marker_dash)
       (list_item_content
         (paragraph (inline))
-        (table
-          (table_row
-            (table_cell (inline))
-            (table_cell (inline))))
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
         (paragraph (inline))))))
 
 ===============================================================================

@@ -49,6 +49,7 @@ typedef enum {
   LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_CONTINUATION,
   LIST_ITEM_END,
+  LIST_ITEM_CONTENT_SPACER,
   CLOSE_PARAGRAPH,
   BLOCK_QUOTE_BEGIN,
   BLOCK_QUOTE_CONTINUATION,
@@ -391,29 +392,22 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   }
 }
 
+static bool parse_list_item_content_spacer(Scanner *s, TSLexer *lexer,
+                                           bool is_newline) {
+  if (is_newline) {
+    advance(s, lexer);
+    lexer->mark_end(lexer);
+  }
+  lexer->result_symbol = LIST_ITEM_CONTENT_SPACER;
+  return true;
+}
+
 // Close open list if list markers are different.
 static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
                                          bool is_newline) {
   Block *list = find_list(s);
   if (!list) {
     return false;
-  }
-
-  // A newline may be encountered when a block is wedged inside a list.
-  // For example:
-  //
-  //   - Start
-  //
-  //     [link_def]: /url
-  // ->
-  //     Another paragraph
-  //
-  // Then list item continuation should scan until `A` instead
-  // of returning false at the newline before (leading to the paragraph
-  // falling outside of the list content).
-  if (is_newline) {
-    advance(s, lexer);
-    s->indent = consume_whitespace(s, lexer);
   }
 
   if (s->indent < list->level) {
@@ -1645,6 +1639,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   // Buffered tokens can come after blocks are closed.
   if (output_delayed_token(s, lexer, valid_symbols)) {
+    return true;
+  }
+
+  if (valid_symbols[LIST_ITEM_CONTENT_SPACER] &&
+      parse_list_item_content_spacer(s, lexer, is_newline)) {
     return true;
   }
 

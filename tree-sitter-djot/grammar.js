@@ -330,12 +330,14 @@ module.exports = grammar({
     list_item_content: ($) =>
       seq(
         $._block_with_heading,
+        $._list_item_content_spacer,
         optional(
           repeat(
             seq(
               optional($._block_quote_prefix),
               $._list_item_continuation,
               $._block_with_heading,
+              $._list_item_content_spacer,
             ),
           ),
         ),
@@ -667,6 +669,16 @@ module.exports = grammar({
     // `_list_item_end` is responsible for closing an open list,
     // if indent or list markers are mismatched.
     $._list_item_end,
+    // `_list_item_content_spacer` is either a blankline separating
+    // list content or a zero-width marker if content continues immediately.
+    //
+    //    - a
+    //              <- spacer
+    //      ```
+    //      x
+    //      ```
+    //      b       <- zero-width spacer (followed by a list item continuation).
+    $._list_item_content_spacer,
     // Paragraphs are anonymous blocks and open blocks aren't tracked by the
     // external scanner. `close_paragraph` is a marker that's responsible
     // for closing the paragraph early, for example on a div marker.
