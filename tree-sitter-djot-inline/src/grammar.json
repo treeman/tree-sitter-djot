@@ -217,7 +217,7 @@
                     "members": [
                       {
                         "type": "PREC_DYNAMIC",
-                        "value": 100,
+                        "value": 200,
                         "content": {
                           "type": "FIELD",
                           "name": "attribute",
