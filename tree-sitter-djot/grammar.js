@@ -385,8 +385,8 @@ module.exports = grammar({
           $._newline,
         ),
       ),
+    table_cell: ($) => alias($._table_cell, $.inline),
     table_cell_alignment: (_) => token.immediate(prec(100, /\s*:?-+:?\s*/)),
-    table_cell: ($) => alias($._inline, $.inline),
     table_caption: ($) =>
       seq(
         field("marker", alias($._table_caption_begin, $.marker)),
@@ -585,9 +585,7 @@ module.exports = grammar({
         choice(
           "[",
           "{",
-          "{-",
           ".",
-          "#",
           "%",
           // To capture dangling identifiers after `{`
           token(seq("#", token.immediate(/[^\s\}]+/))),
@@ -725,6 +723,8 @@ module.exports = grammar({
     $._table_header_begin,
     $._table_separator_begin,
     $._table_row_begin,
+    // Use external scanner for the cell to manage escaping and verbatim.
+    $._table_cell,
     // Table captions have significant whitespace but contain only inline.
     $._table_caption_begin,
     $._table_caption_end,

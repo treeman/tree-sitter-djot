@@ -1663,6 +1663,15 @@
         ]
       }
     },
+    "table_cell": {
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_table_cell"
+      },
+      "named": true,
+      "value": "inline"
+    },
     "table_cell_alignment": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
@@ -1673,15 +1682,6 @@
           "value": "\\s*:?-+:?\\s*"
         }
       }
-    },
-    "table_cell": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SYMBOL",
-        "name": "_inline"
-      },
-      "named": true,
-      "value": "inline"
     },
     "table_caption": {
       "type": "SEQ",
@@ -2676,15 +2676,7 @@
           },
           {
             "type": "STRING",
-            "value": "{-"
-          },
-          {
-            "type": "STRING",
             "value": "."
-          },
-          {
-            "type": "STRING",
-            "value": "#"
           },
           {
             "type": "STRING",
@@ -2990,6 +2982,10 @@
     {
       "type": "SYMBOL",
       "name": "_table_row_begin"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_table_cell"
     },
     {
       "type": "SYMBOL",

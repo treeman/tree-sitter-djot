@@ -61,6 +61,7 @@ typedef enum {
   TABLE_HEADER_BEGIN,
   TABLE_SEPARATOR_BEGIN,
   TABLE_ROW_BEGIN,
+  TABLE_CELL,
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
 
@@ -1591,6 +1592,16 @@ static bool parse_table_begin(Scanner *s, TSLexer *lexer,
   return true;
 }
 
+static bool parse_table_cell(Scanner *s, TSLexer *lexer) {
+  bool separator;
+  if (!scan_table_cell(s, lexer, &separator)) {
+    return false;
+  }
+  lexer->mark_end(lexer);
+  lexer->result_symbol = TABLE_CELL;
+  return true;
+}
+
 static bool parse_table_caption_begin(Scanner *s, TSLexer *lexer) {
   if (lexer->lookahead != '^') {
     return false;
@@ -1920,6 +1931,9 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
   if (parse_table_begin(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (valid_symbols[TABLE_CELL] && parse_table_cell(s, lexer)) {
     return true;
   }
 
