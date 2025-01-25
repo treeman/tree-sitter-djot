@@ -65,59 +65,34 @@ Second
   (paragraph))
 
 ===============================================================================
-Heading 1
+Heading: 1
 ===============================================================================
 # Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
+
 ===============================================================================
-Heading 2
+Heading: 2
 ===============================================================================
 ## Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading2 (marker) (content))))
+    (heading (marker) (content))))
+
 ===============================================================================
-Heading 3
+Heading: very long
 ===============================================================================
-### Heading
+######################################### Heading
 
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading3 (marker) (content))))
-===============================================================================
-Heading 4
-===============================================================================
-#### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading4 (marker) (content))))
-===============================================================================
-Heading 5
-===============================================================================
-##### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading5 (marker) (content))))
-===============================================================================
-Heading 6
-===============================================================================
-###### Heading
-
--------------------------------------------------------------------------------
-(document
-  (section
-    (heading6 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Heading: multiple lines
@@ -132,7 +107,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -152,7 +127,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -172,7 +147,7 @@ A paragraph
 
 (document
   (section
-    (heading2
+    (heading
       (marker)
       (content
         (marker)
@@ -189,12 +164,12 @@ Heading: closed by higher heading on the next line
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
       (section
-        (heading2
+        (heading
           (marker)
           (content))))))
 
@@ -208,11 +183,11 @@ Heading: closed by lower heading on the next line
 
 (document
   (section
-    (heading2
+    (heading
       (marker)
       (content)))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -231,7 +206,7 @@ stop
   (div
     (div_marker_begin)
     (content
-      (heading4 (marker) (content)))
+      (heading (marker) (content)))
     (div_marker_end))
   (paragraph))
 
@@ -245,7 +220,7 @@ Heading 6: list closes
 
 (document
   (section
-    (heading6 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
@@ -253,7 +228,7 @@ Heading 6: list closes
           (list_item_content (paragraph)))))))
 
 ===============================================================================
-Heading: followed by list
+Heading: before list
 ===============================================================================
 # Heading
 
@@ -263,12 +238,32 @@ Heading: followed by list
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content (paragraph)))))))
+
+===============================================================================
+Heading: after list
+===============================================================================
+- list
+
+# Heading
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph))))
+  (section
+    (heading
+      (marker)
+      (content))))
+
 
 ===============================================================================
 Section: closed by the same level
@@ -281,10 +276,10 @@ Section: closed by the same level
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Section: closed by a lower level
@@ -297,10 +292,10 @@ Section: closed by a lower level
 
 (document
   (section
-    (heading2 (marker) (content))
+    (heading (marker) (content))
     (section_content))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Section: not closed by higher level
@@ -315,15 +310,13 @@ Section: not closed by higher level
 
 (document
   (section
-    (heading1
-      (marker)
-      (content))
+    (heading (marker) (content))
     (section_content
       (section
-        (heading2 (marker) (content))
+        (heading (marker) (content))
         (section_content
           (section
-            (heading3 (marker) (content))))))))
+            (heading (marker) (content))))))))
 
 ===============================================================================
 Section: only allow sections on top level
@@ -338,14 +331,14 @@ Section: only allow sections on top level
 
 (document
   (section
-    (heading1 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
             (paragraph)
-            (heading1 (marker) (content))))))))
+            (heading (marker) (content))))))))
 
 ===============================================================================
 Block quote: oneline
@@ -359,6 +352,23 @@ Block quote: oneline
     (block_quote_marker)
     (content
       (paragraph))))
+
+===============================================================================
+Block quote: directly after
+===============================================================================
+> One
+> Two
+> Three
+
+-------------------------------------------------------------------------------
+
+(document
+  (block_quote
+    (block_quote_marker)
+    (content
+      (paragraph
+        (block_quote_marker)
+        (block_quote_marker)))))
 
 ===============================================================================
 Block quote: long
@@ -592,9 +602,35 @@ Code block: don't parse heading
     (code)
     (code_block_marker_end)))
 
+===============================================================================
+Code block: in list should be closed before unindented code block
+===============================================================================
+- List
+
+  ```
+  First code
+
+```
+Second code
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)))))
+  (code_block
+    (code_block_marker_begin)
+    (code)
+    (code_block_marker_end)))
 
 ===============================================================================
-Raw block
+Raw block: with space before language
 ===============================================================================
 ``` =html
 <p>txt</p>
@@ -610,6 +646,40 @@ Raw block
       (language))
     (content)
     (raw_block_marker_end)))
+
+===============================================================================
+Raw block: in list should be closed before unindented raw block
+===============================================================================
+- a
+
+  ```=html
+  x
+
+```=html
+y
+```
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (raw_block
+          (raw_block_marker_begin)
+          (raw_block_info
+            (language_marker)
+            (language))
+          (content)))))
+  (raw_block
+    (raw_block_marker_begin)
+    (raw_block_info
+      (language_marker)
+      (language))
+      (content)
+      (raw_block_marker_end)))
+
 
 ===============================================================================
 Thematic break: star
@@ -748,7 +818,7 @@ After
 
 
 ===============================================================================
-Link: ref def
+Link reference definition: simple
 ===============================================================================
 [ref]: /url
 
@@ -759,9 +829,19 @@ Link: ref def
     (link_label)
     (link_destination)))
 
+===============================================================================
+Link reference definition: destination not required
+===============================================================================
+[ref]:
+
+-------------------------------------------------------------------------------
+
+(document
+  (link_reference_definition
+    (link_label)))
 
 ===============================================================================
-Link: ref def middle
+Link reference definition: between two paragraphs
 ===============================================================================
 Some text
 
@@ -769,8 +849,44 @@ Some text
 
 More text
 
+(document
+  (paragraph)
+  (link_reference_definition
+    (link_label)
+    (link_destination))
+  (paragraph))
+
 ===============================================================================
-Link: ref defs
+Link reference definition: multiple with emphasis
+===============================================================================
+[ref_]: /url
+[ref_]: /url
+
+-------------------------------------------------------------------------------
+
+(document
+  (link_reference_definition
+    (link_label)
+    (link_destination))
+  (link_reference_definition
+    (link_label)
+    (link_destination)))
+
+===============================================================================
+Link reference definition: no newlines
+===============================================================================
+[ref
+one]: /url
+[ref
+two]: /url
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Link reference definition: multiple close
 ===============================================================================
 Some text
 
@@ -792,6 +908,32 @@ Some text
     (link_label)
     (link_destination)))
 
+===============================================================================
+Link: inside list
+===============================================================================
+- [label](#ref)
+
++ [label](#ref)
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination))))))
+  (list
+    (list_item
+      (list_marker_plus)
+      (list_item_content
+        (paragraph
+          (inline_link
+            (link_text)
+            (inline_link_destination)))))))
 
 ===============================================================================
 Block attribute: class
@@ -914,7 +1056,7 @@ Block attribute: before heading
     (args
       (identifier)))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -985,7 +1127,8 @@ ok
     (args
       (identifier)))
   (div
-    (div_marker_begin (class_name))
+    (div_marker_begin)
+    (class_name)
     (content (paragraph))
     (div_marker_end)))
 
@@ -1081,615 +1224,47 @@ Block attribute: inside block quote
       (block_quote_marker)
       (paragraph))))
 
-
 ===============================================================================
-Inline attribute: mixed
+Block attribute: must be first
 ===============================================================================
-text{.one .two #id author="with spaces"}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)
-        (key_value
-          (key)
-          (value))))))
-
-===============================================================================
-Inline attribute: casing
-===============================================================================
-text{.snake_case .cebab-case}
+x {author=value}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)))))
+  (paragraph))
 
 ===============================================================================
-Inline attribute: key casing
+Block attribute: single new line ok if indented
 ===============================================================================
-text{snake_case=2 kebab-case=3}
+{.c
+ #i}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (inline_attribute
-      (args
-        (key_value
-          (key)
-          (value))
-        (key_value
-          (key)
-          (value))))))
+  (block_attribute
+    (args (class) (identifier))))
 
 ===============================================================================
-Inline attribute: surrounding spaces
+Block attribute: not okay if not indented
 ===============================================================================
-text{ .class }
+{.c
+#i}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)))))
+  (paragraph))
 
 ===============================================================================
-Inline attribute: with newlines
+Block attribute: indent inside list
 ===============================================================================
-text{.one
-.two
-#three}
+- a
 
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (class)
-        (class)
-        (identifier)))))
-
-===============================================================================
-Inline attribute: with comment
-===============================================================================
-text{#ident % later we'll add a class %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content))))))
-
-===============================================================================
-Inline attribute: comment
-===============================================================================
-text{%
-some text here
-%}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (comment
-          (content))))))
-
-===============================================================================
-Inline attribute: standalone comment
-===============================================================================
-Foo bar {% This is a comment, spanning
-multiple lines %} baz.
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (comment
-      (content))))
-
-===============================================================================
-Inline attribute: comment escape %
-===============================================================================
-Before {% escape \% %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (comment
-      (content
-        (backslash_escape)))))
-
-===============================================================================
-Inline attribute: mixed comment escape %
-===============================================================================
-Before{#id % escape \% %}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_attribute
-      (args
-        (identifier)
-        (comment
-          (content
-            (backslash_escape)))))))
-
-===============================================================================
-Span
-===============================================================================
-One [two three]{.class
-#id}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (span
-      (inline_attribute
-        (args
-          (class)
-          (identifier))))))
-
-===============================================================================
-Autolink
-===============================================================================
-With </url> link
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (autolink)))
-
-===============================================================================
-Emphasis
-===============================================================================
-With _emphasis_ here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Strong
-===============================================================================
-With *strong* here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong (strong_begin) (content) (strong_end))))
-
-===============================================================================
-Emphasis and strong
-===============================================================================
-With _*strong* emphasis_ here
-
-With *_emphasis_ strong* here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (strong (strong_begin) (content) (strong_end)))
-      (emphasis_end)))
-  (paragraph
-    (strong
-      (strong_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (strong_end))))
-
-===============================================================================
-Emphasis and strong two chars
-===============================================================================
-*bc a*
-_bc a_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
-
-===============================================================================
-Emphasis and strong with newlines
-===============================================================================
-*a
-b*
-_a
-b_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (strong
-      (strong_begin)
-      (content)
-      (strong_end))
-    (emphasis
-      (emphasis_begin)
-      (content)
-      (emphasis_end))))
-
-===============================================================================
-Emphasis: various weird tests
-===============================================================================
-_a b c_
-
-_a b_
-
-_a_
-
-_a
-b c_
-
-_ai
-b c_
-
-_a
-b
-c_
-
-_a
-b_
-
-_ab
-cd_
-
-_ab
-x
-cd_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Superscipt: various weird tests
-===============================================================================
-^a b c^
-
-^a b^
-
-^a^
-
-^a
-b c^
-
-^ai
-b c^
-
-^a
-b
-c^
-
-^a
-b^
-
-^ab
-cd^
-
-^ab
-x
-cd^
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
-
-===============================================================================
-Emphasis: nested
-===============================================================================
-With __nested_ emphasis_
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (emphasis
-      (emphasis_begin)
-      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (emphasis_end))))
-
-===============================================================================
-Emphasis: forced despite spaces
-===============================================================================
-{_yes_}
-
-{_ yes _}
-
-_yes _}
-
-{_ yes_}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end)))
-  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
-
-===============================================================================
-Strong: forced despite spaces
-===============================================================================
-{*yes*}
-
-*yes *}
-
-{* yes*
-
-{* yes *}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end)))
-  (paragraph (strong (strong_begin) (content) (strong_end))))
-
-===============================================================================
-Subscript
-===============================================================================
-~sub~
-
-{~many sub~}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (subscript (content)))
-  (paragraph (subscript (content))))
-
-===============================================================================
-Superscript
-===============================================================================
-^sup^
-
-{^many sup^}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (superscript (content)))
-  (paragraph (superscript (content))))
-
-===============================================================================
-Highlighted
-===============================================================================
-With {=mark=} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (highlighted (content))))
-
-===============================================================================
-Insert
-===============================================================================
-With {+insert+} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (insert (content))))
-
-===============================================================================
-Delete
-===============================================================================
-With {-delete-} here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (delete (content))))
-
-===============================================================================
-Inline with newlines
-===============================================================================
-{=a
-b=}
-
-{+a
-b+}
-
-{-a
-b-}
-
-^a
-b^
-
-~a
-b~
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (highlighted
-      (content)))
-  (paragraph
-    (insert
-      (content)))
-  (paragraph
-    (delete
-      (content)))
-  (paragraph
-    (superscript
-      (content)))
-  (paragraph
-    (subscript
-      (content))))
-
-===============================================================================
-Hard line break
-===============================================================================
-With \
-break
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (hard_line_break)))
-
-===============================================================================
-Symbol
-===============================================================================
-With :wink: here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (symbol)))
-
-===============================================================================
-Link: inline
-===============================================================================
-With [link](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: with newline
-===============================================================================
-With [link
-newline](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: begin
-===============================================================================
-[link](/url)
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (inline_link
-      (link_text)
-      (inline_link_destination))))
-
-===============================================================================
-Link: collapsed reference link
-===============================================================================
-With [a reference][]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (collapsed_reference_link
-      (link_text))))
-
-===============================================================================
-Link: full reference single
-===============================================================================
-With [a reference][ref]
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label))))
-
-
-===============================================================================
-Link: full reference
-===============================================================================
-With [a reference][ref]
-
-[ref]: /url
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (full_reference_link
-      (link_text)
-      (link_label)))
-  (link_reference_definition
-    (link_label)
-    (link_destination)))
-
-===============================================================================
-Link: inside list
-===============================================================================
-- [label](#ref)
-
-+ [label](#ref)
+  {.c
+   #i}
+  x
 
 -------------------------------------------------------------------------------
 
@@ -1698,69 +1273,95 @@ Link: inside list
     (list_item
       (list_marker_dash)
       (list_item_content
-        (paragraph
-          (inline_link
-            (link_text)
-            (inline_link_destination))))))
-  (list
-    (list_item
-      (list_marker_plus)
-      (list_item_content
-        (paragraph
-          (inline_link
-            (link_text)
-            (inline_link_destination)))))))
+        (paragraph)
+        (block_attribute
+          (args
+            (class)
+            (identifier)))
+        (paragraph)))))
 
 ===============================================================================
-Image: inline
+Block attribute: not okay if two newlines in a row
 ===============================================================================
-![descr](/url)
+{.c
+
+ #i}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (inline_image
-      (image_description)
-      (inline_link_destination))))
+  (paragraph)
+  (paragraph))
 
 ===============================================================================
-Image: empty inline
+Block attribute: comment closed at }
 ===============================================================================
-![](/url)
+{% comment }
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (inline_image
-      (inline_link_destination))))
+  (block_attribute
+    (args (comment (content)))))
 
 ===============================================================================
-Image: collapsed reference link
+Block attribute: comment can contain newlines
 ===============================================================================
-![img][]
+{% a
+ b
+ c
+ %}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (collapsed_reference_image
-      (image_description))))
+  (block_attribute
+    (args (comment (content)))))
 
 ===============================================================================
-Image: full reference
+Block attribute: comment newlines must match indent
 ===============================================================================
-![descr][ref]
+{% a
+c
+ %}
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (full_reference_image
-      (image_description)
-      (link_label))))
+  (paragraph))
 
+===============================================================================
+Block attribute: comment before link def
+===============================================================================
+{% c %}
+[def]: /url
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (link_reference_definition
+    (link_label)
+    (link_destination)))
+
+===============================================================================
+Block attribute: comment before heading
+===============================================================================
+{% c %}
+# one
+
+-------------------------------------------------------------------------------
+(document
+  (block_attribute
+    (args
+      (comment
+        (content))))
+  (section
+    (heading
+      (marker)
+      (content))))
 
 ===============================================================================
 Div: simple
@@ -1791,8 +1392,8 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
       (paragraph))
     (div_marker_end)))
@@ -1809,8 +1410,8 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
       (paragraph))
     (div_marker_end)))
@@ -1827,8 +1428,8 @@ Inside
 
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
       (paragraph))
     (div_marker_end)))
@@ -1915,80 +1516,80 @@ Div: close nested div
     (div_marker_end)))
 
 ===============================================================================
-Footnote: reference
+Div: inside block quote
 ===============================================================================
-
-Here's a ref.[^foo]
+> :::
+> a
+> :::
 
 -------------------------------------------------------------------------------
 
 (document
-  (paragraph
-    (footnote_reference
-      (footnote_marker_begin)
-      (reference_label)
-      (footnote_marker_end))))
+  (block_quote
+    (block_quote_marker)
+    (content
+      (div
+        (div_marker_begin)
+        (content
+          (paragraph
+            (block_quote_marker)))
+        (block_quote_marker)
+        (div_marker_end)))))
 
 ===============================================================================
-Smart punctuation
+Div: in list should be closed before heading
 ===============================================================================
+- List
 
-Ellipsis...
+  :::
+  unclosed div
 
-Em---dash
-Eh--dash
-
-Some{"quotes"} be{'here'}yo
-
- \"Straight\" \'quotes\'
+# heading
 
 -------------------------------------------------------------------------------
-
 (document
-  (paragraph
-    (ellipsis))
-  (paragraph
-    (em_dash)
-    (en_dash))
-  (paragraph
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks))
-  (paragraph
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)
-    (quotation_marks)))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (section
+    (heading
+      (marker)
+      (content))))
 
 ===============================================================================
-Backslash escape
+Div: in list should be closed before unindented div
 ===============================================================================
+- List
 
-No \_emphasis\_
+  :::
+  nested div
 
-No \_strong\_
-
-No \<autolink>
-
-Regular \.\.\. dots
-
-Inside _x\_y_
-
-No \{+insert\*}
-
-\> no quote
+:::
+outside div
+:::
 
 -------------------------------------------------------------------------------
-
 (document
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape))
-  (paragraph (backslash_escape) (backslash_escape) (backslash_escape))
-  (paragraph (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end)))
-  (paragraph (backslash_escape) (backslash_escape))
-  (paragraph (backslash_escape)))
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (div
+          (div_marker_begin)
+          (content
+            (paragraph))))))
+  (div
+    (div_marker_begin)
+    (content
+      (paragraph))
+    (div_marker_end)))
 
 ===============================================================================
 Paragraph: not recognized
@@ -2007,7 +1608,7 @@ After
   (paragraph))
 
 ===============================================================================
-Paragraph :not recognized 2
+Paragraph: not recognized 2
 ===============================================================================
 Before
 
@@ -2021,146 +1622,6 @@ After
   (paragraph)
   (paragraph)
   (paragraph))
-
-===============================================================================
-Verbatim: single
-===============================================================================
-Simple `verbatim` here
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: double with single inside
-===============================================================================
-``verbatim with a backtick ` characters``
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: with triple inside
-===============================================================================
-`verbatim with three backtick ``` characters`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: newline closes
-===============================================================================
-`verbatim
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: can contain newlines
-===============================================================================
-`verbatim
-with
-newlines`
-
-trailing
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end)))
-  (paragraph))
-
-
-===============================================================================
-Verbatim: multiple
-===============================================================================
-`x` `y`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-===============================================================================
-Verbatim: with hash
-===============================================================================
-Don't consume `#` in heading parser code
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
-
-
-===============================================================================
-Raw inline
-===============================================================================
-`<? php echo 'yoyo' ?>`{=html}
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (raw_inline
-      (raw_inline_marker_begin)
-      (content)
-      (raw_inline_marker_end)
-      (raw_inline_attribute
-        (language)))))
-
-===============================================================================
-Math
-===============================================================================
-$`1 + 2`
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph
-    (math
-      (math_marker)
-      (math_marker_begin)
-      (content)
-      (math_marker_end))))
 
 ===============================================================================
 List: single dash
@@ -2501,8 +1962,8 @@ List: Close contained div at eof
       (list_marker_dash)
       (list_item_content
         (div
-          (div_marker_begin
-            (class_name))
+          (div_marker_begin)
+          (class_name)
           (content
             (paragraph)))))))
 
@@ -2522,8 +1983,8 @@ x
       (list_marker_dash)
       (list_item_content
         (div
-          (div_marker_begin
-            (class_name))
+          (div_marker_begin)
+          (class_name)
           (content
             (paragraph))))))
   (paragraph))
@@ -2817,6 +2278,87 @@ I) x
     (list_item
       (list_marker_upper_roman_parens)
       (list_item_content (paragraph)))))
+
+===============================================================================
+List: multi letter ordered list markers
+===============================================================================
+
+10. x
+
+10) x
+
+(10) x
+
+aa. x
+
+aa) x
+
+(aa) x
+
+AA. x
+
+AA) x
+
+(AA) x
+
+ii. x
+
+ii) x
+
+(ii) x
+
+II. x
+
+II) x
+
+(II) x
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_decimal_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_decimal_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_decimal_parens)
+      (list_item_content (paragraph))))
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (list
+    (list_item
+      (list_marker_lower_roman_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_lower_roman_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_lower_roman_parens)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_period)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_paren)
+      (list_item_content (paragraph))))
+  (list
+    (list_item
+      (list_marker_upper_roman_parens)
+      (list_item_content (paragraph)))))
+
 
 ===============================================================================
 List: close decimal sublist
@@ -3181,7 +2723,7 @@ List: Unclosed List in Section
 -------------------------------------------------------------------------------
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
@@ -3200,14 +2742,268 @@ List: Unclosed List in Div
 -------------------------------------------------------------------------------
 (document
   (div
-    (div_marker_begin
-      (class_name))
+    (div_marker_begin)
+    (class_name)
     (content
       (list
         (list_item
           (list_marker_dash)
           (list_item_content
             (paragraph)))))))
+
+===============================================================================
+List: Code block starts list
+===============================================================================
+- ```
+  x
+  ```
+
+  a
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph)))))
+
+
+===============================================================================
+List: Nested divs with block attributes
+===============================================================================
+- x
+
+  {#1}
+  :::
+  a
+  :::
+
+  {#2}
+  :::
+  b
+  :::
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (block_attribute (args (identifier)))
+        (div
+          (div_marker_begin)
+          (content (paragraph))
+          (div_marker_end))
+        (block_attribute (args (identifier)))
+        (div
+          (div_marker_begin)
+          (content (paragraph))
+          (div_marker_end))))))
+
+===============================================================================
+List: Nested code block between paragraphs
+===============================================================================
+- a
+
+  ```
+  x
+  ```
+
+  c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph)))))
+
+===============================================================================
+List: Thematic break between paragraphs
+===============================================================================
+- a
+
+  * * *
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (thematic_break)
+        (paragraph)))))
+
+===============================================================================
+List: Quote between paragraphs
+===============================================================================
+- a
+
+  > c
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (block_quote
+          (block_quote_marker)
+          (content
+            (paragraph)))
+        (paragraph)))))
+
+===============================================================================
+List: Link definition between paragraphs
+===============================================================================
+- a
+
+  [def]: /u
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (link_reference_definition
+          (link_label)
+          (link_destination))
+        (paragraph)))))
+
+===============================================================================
+List: Footnote def between paragraphs
+===============================================================================
+- a
+
+  [^def]: Footnote
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (footnote
+          (footnote_marker_begin)
+          (reference_label)
+          (footnote_marker_end)
+          (footnote_content
+            (paragraph)))
+        (paragraph)))))
+
+===============================================================================
+List: Table between paragraphs
+===============================================================================
+- a
+
+  | a | b |
+
+  b
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (table
+          (table_row
+            (table_cell)
+            (table_cell)))
+        (paragraph)))))
+
+===============================================================================
+List: Extra space between (the Djot playground also treats them as one list)
+===============================================================================
+- a
+
+
+- c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: Code in list item
+===============================================================================
+- b
+
+  ```
+  x
+  ```
+
+- c
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))))
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)))))
+
+===============================================================================
+List: With span in verbatim
+===============================================================================
+- x
+
+  `[x]{y}`
+
+-------------------------------------------------------------------------------
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (paragraph
+          (verbatim
+            (verbatim_marker_begin)
+            (content)
+            (verbatim_marker_end)))))))
 
 ===============================================================================
 Table: single row
@@ -3221,7 +3017,6 @@ Table: single row
     (table_row
       (table_cell)
       (table_cell))))
-
 
 ===============================================================================
 Table: before paragraph
@@ -3344,12 +3139,12 @@ Table: inside blockquote
         (table_header
           (table_cell)
           (table_cell))
+        (block_quote_marker)
         (table_separator
-          (block_quote_marker)
           (table_cell_alignment)
           (table_cell_alignment))
+        (block_quote_marker)
         (table_row
-          (block_quote_marker)
           (table_cell)
           (table_cell))))))
 
@@ -3363,8 +3158,16 @@ Table: with inline styling
 (document
   (table
     (table_row
-      (table_cell (emphasis (emphasis_begin) (content) (emphasis_end)))
-      (table_cell (strong (strong_begin) (content) (strong_end))))))
+      (table_cell
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end)))
+      (table_cell
+        (strong
+          (strong_begin)
+          (content)
+          (strong_end))))))
 
 ===============================================================================
 Table: with caption
@@ -3384,7 +3187,10 @@ Next paragraph
     (table_caption
       (marker)
       (content
-        (emphasis (emphasis_begin) (content) (emphasis_end)))))
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end)))))
   (paragraph))
 
 ===============================================================================
@@ -3404,7 +3210,10 @@ Next paragraph
     (table_caption
       (marker)
       (content
-        (emphasis (emphasis_begin) (content) (emphasis_end)))))
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end)))))
   (paragraph))
 
 ===============================================================================
@@ -3427,6 +3236,51 @@ Next paragraph
       (marker)
       (content)))
   (paragraph))
+
+===============================================================================
+Table: verbatim cell
+===============================================================================
+| `|` |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_row
+      (table_cell
+        (verbatim
+          (verbatim_marker_begin)
+          (content)
+          (verbatim_marker_end))))))
+
+===============================================================================
+Table: narrow verbatim cell
+===============================================================================
+|`|`|
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_row
+      (table_cell
+        (verbatim
+          (verbatim_marker_begin)
+          (content)
+          (verbatim_marker_end))))))
+
+===============================================================================
+Table: backslashed pipe
+===============================================================================
+| \| |
+
+-------------------------------------------------------------------------------
+
+(document
+  (table
+    (table_row
+      (table_cell
+        (backslash_escape)))))
 
 ===============================================================================
 Footnote: simple
@@ -3460,7 +3314,7 @@ Footnote: before heading
     (footnote_content
       (paragraph)))
   (section
-    (heading1 (marker) (content))))
+    (heading (marker) (content))))
 
 ===============================================================================
 Footnote: multiline
@@ -3503,57 +3357,232 @@ Footnote: With block quote
           (paragraph))))))
 
 ===============================================================================
+Footnote: Code block starts footnote
+===============================================================================
+[^foo]: ```
+        x
+        ```
+
+        a
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+        (code_block
+          (code_block_marker_begin)
+          (code)
+          (code_block_marker_end))
+        (paragraph))))
+
+
+===============================================================================
+Footnote: Nested divs with block attributes
+===============================================================================
+[^f]: x
+
+     {#1}
+     :::
+     a
+     :::
+
+     {#2}
+     :::
+     b
+     :::
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (block_attribute (args (identifier)))
+      (div
+        (div_marker_begin)
+        (content (paragraph))
+        (div_marker_end))
+      (block_attribute (args (identifier)))
+      (div
+        (div_marker_begin)
+        (content (paragraph))
+        (div_marker_end)))))
+
+===============================================================================
+Footnote: Nested code block between paragraphs
+===============================================================================
+[^f]: a
+
+     ```
+     x
+     ```
+
+     c
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (code_block
+        (code_block_marker_begin)
+        (code)
+        (code_block_marker_end))
+      (paragraph))))
+
+===============================================================================
+Footnote: Thematic break between paragraphs
+===============================================================================
+[^f]: a
+
+      * * *
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (thematic_break)
+      (paragraph))))
+
+===============================================================================
+Footnote: Quote between paragraphs
+===============================================================================
+[^f]: a
+
+      > c
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (block_quote
+        (block_quote_marker)
+        (content
+          (paragraph)))
+      (paragraph))))
+
+===============================================================================
+Footnote: Link definition between paragraphs
+===============================================================================
+[^f]: a
+
+      [def]: /u
+
+      b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (link_reference_definition
+        (link_label)
+        (link_destination))
+      (paragraph))))
+
+===============================================================================
+Footnote: Table between paragraphs
+===============================================================================
+[^foo]: a
+
+        | a | b |
+
+        b
+
+-------------------------------------------------------------------------------
+(document
+  (footnote
+    (footnote_marker_begin)
+    (reference_label)
+    (footnote_marker_end)
+    (footnote_content
+      (paragraph)
+      (table
+        (table_row
+          (table_cell)
+          (table_cell)))
+      (paragraph))))
+
+===============================================================================
+Paragraph: Errors if open inline aren't enforced
+===============================================================================
+*x*:
+
+```
+
+[^1]: *s*
+*e*
+```
+
+[y](#)
+
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end)))
+  (code_block
+    (code_block_marker_begin)
+    (code)
+    (code_block_marker_end))
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
 Paragraph: broken things
 ===============================================================================
-1 * 2
-
-2 _ 1
-
-1 ^ 2
-
-~ x
-
-{*x
-
-{=x
-
-{+x
-
-{-x
-
-^x
-
-{^x
-
-:x
-
-_ x _
-
-_x _
-
-_ x_
-
-x * x *
-
-x *x *
-
-x * x*
-
-[x
-
-^
-
 |
-
-`
-
-:
 
 -
 
-[x](
++
 
-)
+*
+
+[x]
+
+[^f
+
+{.a
+
+{#a
+
+{a=1
+
+{%
+
+{% a
+
+{% a %
 
 -------------------------------------------------------------------------------
 
@@ -3566,37 +3595,10 @@ x * x*
   (paragraph)
   (paragraph)
   (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph)
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end)))
   (paragraph)
   (paragraph)
   (paragraph)
   (paragraph))
-
-===============================================================================
-Paragraph: todo note fixme
-===============================================================================
-Higlight TODO NOTE and FIXME
-
--------------------------------------------------------------------------------
-
-(document
-  (paragraph (todo) (note) (fixme)))
 
 ===============================================================================
 Paragraph: Not list items
@@ -3630,7 +3632,7 @@ i.e.
   (paragraph))
 
 ===============================================================================
-Frontmatter
+Frontmatter: without language
 ===============================================================================
 ---
 key: Some value
@@ -3649,7 +3651,7 @@ x
   (paragraph))
 
 ===============================================================================
-Frontmatter
+Frontmatter: with language
 ===============================================================================
 ---toml
 key: Some value
@@ -3668,168 +3670,1944 @@ x
   (paragraph))
 
 ===============================================================================
-Heading after list
+Verbatim: single
 ===============================================================================
-- list
-
-# Heading
+Simple `verbatim` here
 
 -------------------------------------------------------------------------------
+
 (document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph))))
-  (section
-    (heading1
-      (marker)
-      (content))))
-
-===============================================================================
-Div in list should be closed before unindented div
-===============================================================================
-- List
-
-  :::
-  nested div
-
-:::
-outside div
-:::
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph)
-        (div
-          (div_marker_begin)
-          (content
-            (paragraph))))))
-  (div
-    (div_marker_begin)
-    (content
-      (paragraph))
-    (div_marker_end)))
-
-===============================================================================
-Code block in list should be closed before unindented code block
-===============================================================================
-- List
-
-  ```
-  First code
-
-```
-Second code
-```
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph)
-        (code_block
-          (code_block_marker_begin)
-          (code)))))
-  (code_block
-    (code_block_marker_begin)
-    (code)
-    (code_block_marker_end)))
-
-===============================================================================
-Raw block in list should be closed before unindented raw block
-===============================================================================
-- a
-
-  ```=html
-  x
-
-```=html
-y
-```
-
--------------------------------------------------------------------------------
-(document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph)
-        (raw_block
-          (raw_block_marker_begin)
-          (raw_block_info
-            (language_marker)
-            (language))
-          (content)))))
-  (raw_block
-    (raw_block_marker_begin)
-    (raw_block_info
-      (language_marker)
-      (language))
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
       (content)
-      (raw_block_marker_end)))
+      (verbatim_marker_end))))
 
 ===============================================================================
-Div in list should be closed before heading
+Verbatim: with emphasis inside
 ===============================================================================
-- List
-
-  :::
-  unclosed div
-
-# heading
+Simple `x _a_` here
 
 -------------------------------------------------------------------------------
+
 (document
-  (list
-    (list_item
-      (list_marker_dash)
-      (list_item_content
-        (paragraph)
-        (div
-          (div_marker_begin)
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim: double with single inside
+===============================================================================
+``verbatim with a backtick ` characters``
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim: with triple inside
+===============================================================================
+`verbatim with three backtick ``` characters`
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim: newline closes
+===============================================================================
+`verbatim
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim: can contain newlines
+===============================================================================
+`verbatim
+with
+newlines`
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+
+===============================================================================
+Verbatim: multiple
+===============================================================================
+`x` `y`
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Verbatim: with hash
+===============================================================================
+Don't consume `#` in heading parser code
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))))
+
+===============================================================================
+Paragraph: todo note fixme
+===============================================================================
+Higlight TODO NOTE and FIXME
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (todo) (note) (fixme)))
+
+===============================================================================
+Smart punctuation
+===============================================================================
+
+Ellipsis...
+Em---dash
+Eh--dash
+Some{"quotes"} be{'here'}yo
+ \"Straight\" \'quotes\'
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (ellipsis)
+      (em_dash)
+      (en_dash)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)
+      (quotation_marks)))
+
+===============================================================================
+Backslash escape
+===============================================================================
+
+No \_emphasis\_
+No \_strong\_
+No \<autolink>
+Regular \.\.\. dots
+Inside _x\_y_
+No \{+insert\*}
+\> no quote
+\\
+\ whitespace
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (backslash_escape) (backslash_escape)
+    (backslash_escape) (backslash_escape)
+    (backslash_escape)
+    (backslash_escape) (backslash_escape) (backslash_escape)
+    (emphasis (emphasis_begin) (content (backslash_escape)) (emphasis_end))
+    (backslash_escape) (backslash_escape)
+    (backslash_escape)
+    (backslash_escape)
+    (backslash_escape)))
+
+===============================================================================
+Image: inline with nested emphasis
+===============================================================================
+![descr](1_2_3_4_5)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: inline
+===============================================================================
+![descr](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: empty inline
+===============================================================================
+![](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: collapsed reference link
+===============================================================================
+![img][]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (collapsed_reference_image
+      (image_description))))
+
+===============================================================================
+Image: full reference
+===============================================================================
+![descr][ref]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_image
+      (image_description)
+      (link_label))))
+
+===============================================================================
+Image: inline precedence 1
+===============================================================================
+![x *](y)*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: inline precedence 2
+===============================================================================
+*![*](y)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Image: inline precedence 3
+===============================================================================
+*![x](y*)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Image: full precedence 1
+===============================================================================
+![x *][y]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_image
+      (image_description)
+      (link_label))))
+
+===============================================================================
+Image: full precedence 2
+===============================================================================
+*![*][y]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Image: full precedence 3
+===============================================================================
+*![x][y*]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Image: collapsed precedence 1
+===============================================================================
+![x *][]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (collapsed_reference_image
+      (image_description))))
+
+===============================================================================
+Image: collapsed precedence 2
+===============================================================================
+*![*][]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Image: collapsed precedence 3
+===============================================================================
+*![x][*]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+
+===============================================================================
+Image: document
+===============================================================================
+![descr](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: post precedence inline_link
+===============================================================================
+![x](y*)*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Image: post precedence full_reference_link
+===============================================================================
+![x][y*]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_image
+      (image_description)
+      (link_label))))
+
+===============================================================================
+Image: fallback
+===============================================================================
+![x](/u
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis
+===============================================================================
+With _em_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Strong
+===============================================================================
+With *strong* here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end))))
+
+===============================================================================
+Mixed emphasis and strong
+===============================================================================
+With _*strong* emphasis_ here
+With *_emphasis_ strong* here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content (strong (strong_begin) (content) (strong_end)))
+      (emphasis_end))
+    (strong
+      (strong_begin)
+      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
+      (strong_end))))
+
+===============================================================================
+Emphasis and strong two chars
+===============================================================================
+*bc a*
+_bc a_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Emphasis and strong with newlines
+===============================================================================
+*a
+b*
+_a
+b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Emphasis: three chars with spaces
+===============================================================================
+_a b c_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: two chars with spaces
+===============================================================================
+_a b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: one char between
+===============================================================================
+_a_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: three chars with a newline
+===============================================================================
+_a
+b c_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+
+===============================================================================
+Emphasis: three chars with a newline 2
+===============================================================================
+_ai
+b c_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: three chars with two newlines
+===============================================================================
+_a
+b
+c_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: two chars with a newline
+===============================================================================
+_a
+b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: two chars with a newline 2
+===============================================================================
+_ab
+cd_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: two chars with a newline 3
+===============================================================================
+_ab
+x
+cd_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: Shorter span
+===============================================================================
+
+{_*s*{_b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end))
+    (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Superscript: Shorter span
+===============================================================================
+
+{^*s*{^b^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end))
+    (superscript (superscript_begin) (content) (superscript_end))))
+
+===============================================================================
+Superscript: three chars with spaces
+===============================================================================
+^a b c^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: two chars with spaces
+===============================================================================
+^a b^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: one char between
+===============================================================================
+^a^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: three chars with a newline
+===============================================================================
+^a
+b c^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+
+===============================================================================
+Superscript: three chars with a newline 2
+===============================================================================
+^ai
+b c^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: three chars with a two newlines
+===============================================================================
+^a
+b
+c^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: two chars with a newline
+===============================================================================
+^a
+b^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: two chars with a newline 2
+===============================================================================
+^ab
+cd^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Superscript: two chars with a newline 3
+===============================================================================
+^ab
+x
+cd^
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+    (superscript_begin)
+    (content)
+    (superscript_end))))
+
+===============================================================================
+Emphasis: nested
+===============================================================================
+With __nested_ emphasis_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content (emphasis (emphasis_begin) (content) (emphasis_end)))
+      (emphasis_end))))
+
+===============================================================================
+Emphasis: forced despite spaces
+===============================================================================
+{_yes_}
+{_ yes _}
+_yes _}
+{_ yes_}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis (emphasis_begin) (content) (emphasis_end))
+    (emphasis (emphasis_begin) (content) (emphasis_end))
+    (emphasis (emphasis_begin) (content) (emphasis_end))
+    (emphasis (emphasis_begin) (content) (emphasis_end))))
+
+===============================================================================
+Emphasis: simple nested
+===============================================================================
+__a_ b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end)))
+      (emphasis_end))))
+
+===============================================================================
+Emphasis: nested with spaces
+===============================================================================
+_a _b_ a_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end)))
+      (emphasis_end))))
+
+===============================================================================
+Emphasis: 2 not emphasis
+===============================================================================
+__ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: 3 not emphasis
+===============================================================================
+___ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: long not emphasis
+===============================================================================
+_________ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: begin 2 not emphasis
+===============================================================================
+__a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: begin 3 not emphasis
+===============================================================================
+___a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: begin long not emphasis
+===============================================================================
+_________a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: 2 not emphasis
+===============================================================================
+^^ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: 3 not emphasis
+===============================================================================
+^^^ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: long not emphasis
+===============================================================================
+^^^^^^^^^ a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: begin 2 not emphasis
+===============================================================================
+^^a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: begin 3 not emphasis
+===============================================================================
+^^^a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Superscript: begin long not emphasis
+===============================================================================
+^^^^^^^^^a
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Strong: forced despite spaces
+===============================================================================
+{*yes*}
+*yes *}
+{* yes*
+{* yes *}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end))
+    (strong (strong_begin) (content) (strong_end))
+    (strong (strong_begin) (content) (strong_end))
+    (strong (strong_begin) (content) (strong_end))))
+
+===============================================================================
+Subscript
+===============================================================================
+~sub~
+{~many sub~}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (subscript (subscript_begin) (content) (subscript_end))
+    (subscript (subscript_begin) (content) (subscript_end))))
+
+===============================================================================
+Superscript
+===============================================================================
+^sup^
+{^many sup^}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+      (superscript_begin)
+      (content)
+      (superscript_end))
+    (superscript
+      (superscript_begin)
+      (content)
+      (superscript_end))))
+
+===============================================================================
+Highlighted
+===============================================================================
+With {=mark=} here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (highlighted
+      (highlighted_begin)
+      (content)
+      (highlighted_end))))
+
+===============================================================================
+Highlighted: Shorter span
+===============================================================================
+
+{=*s*{=b=}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong (strong_begin) (content) (strong_end))
+    (highlighted (highlighted_begin) (content) (highlighted_end))))
+
+===============================================================================
+Insert
+===============================================================================
+With {+insert+} here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (insert
+      (insert_begin)
+      (content)
+      (insert_end))))
+
+===============================================================================
+Delete
+===============================================================================
+With {-delete-} here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+    (delete_begin)
+    (content)
+    (delete_end))))
+
+===============================================================================
+Inline with newlines
+===============================================================================
+{=a
+b=}
+{+a
+b+}
+{-a
+b-}
+^a
+b^
+~a
+b~
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (highlighted
+      (highlighted_begin)
+      (content)
+      (highlighted_end))
+      (insert
+        (insert_begin)
+        (content)
+        (insert_end))
+      (delete
+        (delete_begin)
+        (content)
+        (delete_end))
+      (superscript
+        (superscript_begin)
+        (content)
+        (superscript_end))
+      (subscript
+        (subscript_begin)
+        (content)
+        (subscript_end))))
+
+===============================================================================
+Hard line break
+===============================================================================
+With \
+break
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (hard_line_break)))
+
+===============================================================================
+Symbol: Allowed characters
+===============================================================================
+With :wi_nk-12: here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (symbol)))
+
+===============================================================================
+Symbol: No symbol characters
+===============================================================================
+With :win.k: here
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Link: inline
+===============================================================================
+With [link](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: inline with nested emphasis
+===============================================================================
+With [link](1_2_3_4_5)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: with newline
+===============================================================================
+With [link
+newline](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: with url newline
+===============================================================================
+[text](url
+here
+go)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: begin
+===============================================================================
+[link](/url)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: collapsed reference link
+===============================================================================
+With [a reference][]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (collapsed_reference_link
+      (link_text))))
+
+===============================================================================
+Link: full reference single
+===============================================================================
+With [a reference][ref]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_link
+      (link_text)
+      (link_label))))
+
+===============================================================================
+Link: full reference
+===============================================================================
+With [a reference][ref]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_link
+      (link_text)
+      (link_label))))
+
+===============================================================================
+Link: empty text inline
+===============================================================================
+[](y)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: inline precedence 1
+===============================================================================
+[x *](y)*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: inline precedence 2
+===============================================================================
+*[*](y)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: inline precedence 3
+===============================================================================
+*[x](y*)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: full precedence 1
+===============================================================================
+[x *][y]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_link
+      (link_text)
+      (link_label))))
+
+===============================================================================
+Link: full precedence 2
+===============================================================================
+*[*][y]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: full precedence 3
+===============================================================================
+*[x][y*]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: collapsed precedence 1
+===============================================================================
+[x *][]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (collapsed_reference_link
+      (link_text))))
+
+===============================================================================
+Link: collapsed precedence 2
+===============================================================================
+*[*][]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: collapsed precedence 3
+===============================================================================
+*[x][*]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content)
+      (strong_end))))
+
+===============================================================================
+Link: post precedence inline_link
+===============================================================================
+[x](y*)*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))))
+
+===============================================================================
+Link: post precedence full_reference_link
+===============================================================================
+[x][y*]*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (full_reference_link
+      (link_text)
+      (link_label))))
+
+===============================================================================
+Link: fallback
+===============================================================================
+[x](/u
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Inline attribute: mixed
+===============================================================================
+text{.one .two #id author="with spaces"}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (class)
+        (class)
+        (identifier)
+        (key_value
+          (key)
+          (value))))))
+
+===============================================================================
+Inline attribute: casing
+===============================================================================
+text{.snake_case .cebab-case}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (class)
+        (class)))))
+
+===============================================================================
+Inline attribute: key casing
+===============================================================================
+text{snake_case=2 kebab-case=3}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (key_value
+          (key)
+          (value))
+        (key_value
+          (key)
+          (value))))))
+
+===============================================================================
+Inline attribute: surrounding spaces
+===============================================================================
+text{ .class }
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (class)))))
+
+===============================================================================
+Inline attribute: with newlines
+===============================================================================
+text{.one
+.two
+#three}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (class)
+        (class)
+        (identifier)))))
+
+===============================================================================
+Inline attribute: with comment
+===============================================================================
+text{#ident % later we'll add a class %}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (identifier)
+        (comment
+          (content))))))
+
+===============================================================================
+Inline attribute: comment
+===============================================================================
+text{%
+some text here
+%}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (comment
+          (content))))))
+
+===============================================================================
+Inline attribute: standalone comment
+===============================================================================
+Foo bar {% This is a comment, spanning
+multiple lines %} baz.
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_comment
+      (content))))
+
+===============================================================================
+Inline attribute: inline comment escape %
+===============================================================================
+Before {% escape \% %}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_comment
+      (content
+        (backslash_escape)))))
+
+===============================================================================
+Inline attribute: span comment escape %
+===============================================================================
+[span]{% escape \% %}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (span
+      (content)
+      (inline_attribute
+        (args
+          (comment
+            (content
+              (backslash_escape))))))))
+
+===============================================================================
+Inline attribute: mixed comment escape %
+===============================================================================
+Before{#id % escape \% %}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_attribute
+      (args
+        (identifier)
+        (comment
           (content
-            (paragraph))))))
-  (section
-    (heading1
-      (marker)
-      (content))))
+            (backslash_escape)))))))
 
 ===============================================================================
-Comment before link def
+Inline attribute: tight with on link
 ===============================================================================
-{% c %}
-[def]: /url
+1[x](u){k=v}2
 
 -------------------------------------------------------------------------------
+
 (document
-  (block_attribute
-    (args
-      (comment
-        (content))))
-  (link_reference_definition
-    (link_label)
-    (link_destination)))
+  (paragraph
+    (inline_link
+      (link_text)
+      (inline_link_destination))
+    (inline_attribute
+      (args
+        (key_value (key) (value))))))
 
 ===============================================================================
-Comment before heading
+Inline attribute: comment fallback
 ===============================================================================
-{% c %}
-# one
+Before{%
+
+Before{% Some comment%
+
+{%
 
 -------------------------------------------------------------------------------
+
 (document
-  (block_attribute
-    (args
-      (comment
-        (content))))
-  (section
-    (heading1
-      (marker)
-      (content))))
+  (paragraph)
+  (paragraph)
+  (paragraph))
+
+===============================================================================
+Span: With inline attributes
+===============================================================================
+One [two three]{.class
+#id}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (span
+      (content)
+      (inline_attribute
+        (args
+          (class)
+          (identifier))))))
+
+===============================================================================
+Span: Precedence
+===============================================================================
+_[_]{.c} Generates string then an inline attribute
+
+[_]{.c_} The Djot playground doesn't handle this case properly either
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))
+    (inline_attribute (args (class))))
+  (paragraph
+    (span
+      (content)
+      (inline_attribute
+        (args
+          (class))))))
+
+===============================================================================
+Span: Precedence prefer span
+===============================================================================
+
+[_]{.c}_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (span
+      (content)
+      (inline_attribute
+        (args
+          (class))))))
+
+===============================================================================
+Span: Precedence choose string with inline attribute
+===============================================================================
+
+_[_]{.c}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))
+    (inline_attribute
+      (args
+        (class)))))
+
+===============================================================================
+Span: Broken inline attribute
+===============================================================================
+[x]{.c
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Autolink: simple
+===============================================================================
+With </url> link
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (autolink)))
+
+===============================================================================
+Autolink: fallback
+===============================================================================
+<
+
+With </url
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph)
+  (paragraph))
+
+===============================================================================
+Footnote reference: end of line
+===============================================================================
+
+Here's a ref.[^foo]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (footnote_reference
+      (footnote_marker_begin)
+      (reference_label)
+      (footnote_marker_end))))
+
+===============================================================================
+Footnote reference: precedence, prefer emphasis
+===============================================================================
+
+_[^foo_]
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Footnote reference: precedence, prefer footnote
+===============================================================================
+
+[^foo_]_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (footnote_reference
+      (footnote_marker_begin)
+      (reference_label)
+      (footnote_marker_end))))
+
+===============================================================================
+Raw inline
+===============================================================================
+`<? php echo 'yoyo' ?>`{=html}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (raw_inline
+      (raw_inline_marker_begin)
+      (content)
+      (raw_inline_marker_end)
+      (raw_inline_attribute
+        (language)))))
+
+===============================================================================
+Math: Simple
+===============================================================================
+$`1 + 2`
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (math
+      (math_marker)
+      (math_marker_begin)
+      (content)
+      (math_marker_end))))
+
+===============================================================================
+Math: Close
+===============================================================================
+$`1 + 2
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (math
+      (math_marker)
+      (math_marker_begin)
+      (content)
+      (math_marker_end))))
+
+===============================================================================
+Math: fallback
+===============================================================================
+$1 $a $$$$
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Emphasis: no space next
+===============================================================================
+_ x_
+
+_x _
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph)
+  (paragraph))
+
+===============================================================================
+Strong: no space next
+===============================================================================
+Avoid list: * x*
+
+*x *
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph)
+  (paragraph))
+
+===============================================================================
+Inline: standalone ()
+===============================================================================
+()
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Inline: space in inline link
+===============================================================================
+[x] (/u)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Inline: broken {* (errors out)
+===============================================================================
+
+{*x
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Inline: broken list inline def (errors out)
+===============================================================================
+
+[x](
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph))
+
+===============================================================================
+Inline: broken things
+===============================================================================
+1 * 2
+
+2 _ 1
+
+~ x
+
+{*x
+
+{=x
+
+{+x
+
+{-x
+
+^x
+
+:x
+
+[x
+
+^
+
+|
+
+:
+
+-
+
+)
+
+[^f
+
+[x](
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph)
+  (paragraph))
+

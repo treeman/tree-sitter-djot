@@ -1,6 +1,7 @@
 #include "tree_sitter/alloc.h"
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
+#include <ctype.h>
 #include <stdio.h>
 
 // #define DEBUG
@@ -18,21 +19,13 @@ typedef enum {
   EOF_OR_NEWLINE,
   NEWLINE,
   NEWLINE_INLINE,
+  NON_WHITESPACE_CHECK,
+  HARD_LINE_BREAK,
 
   FRONTMATTER_MARKER,
 
-  HEADING1_BEGIN,
-  HEADING1_CONTINUATION,
-  HEADING2_BEGIN,
-  HEADING2_CONTINUATION,
-  HEADING3_BEGIN,
-  HEADING3_CONTINUATION,
-  HEADING4_BEGIN,
-  HEADING4_CONTINUATION,
-  HEADING5_BEGIN,
-  HEADING5_CONTINUATION,
-  HEADING6_BEGIN,
-  HEADING6_CONTINUATION,
+  HEADING_BEGIN,
+  HEADING_CONTINUATION,
   DIV_BEGIN,
   DIV_END,
   CODE_BLOCK_BEGIN,
@@ -59,19 +52,61 @@ typedef enum {
   LIST_MARKER_UPPER_ROMAN_PARENS,
   LIST_ITEM_CONTINUATION,
   LIST_ITEM_END,
+  INDENTED_CONTENT_SPACER,
   CLOSE_PARAGRAPH,
   BLOCK_QUOTE_BEGIN,
   BLOCK_QUOTE_CONTINUATION,
   THEMATIC_BREAK_DASH,
   THEMATIC_BREAK_STAR,
-  FOOTNOTE_BEGIN,
+  FOOTNOTE_MARK_BEGIN,
+  FOOTNOTE_CONTINUATION,
   FOOTNOTE_END,
+  LINK_REF_DEF_MARK_BEGIN,
+  LINK_REF_DEF_LABEL_END,
+  TABLE_HEADER_BEGIN,
+  TABLE_SEPARATOR_BEGIN,
+  TABLE_ROW_BEGIN,
+  TABLE_ROW_END_NEWLINE,
+  TABLE_CELL_END,
   TABLE_CAPTION_BEGIN,
   TABLE_CAPTION_END,
+  BLOCK_ATTRIBUTE_BEGIN,
+  COMMENT_END_MARKER,
+  COMMENT_CLOSE,
+  INLINE_COMMENT_BEGIN,
 
   VERBATIM_BEGIN,
   VERBATIM_END,
   VERBATIM_CONTENT,
+
+  // The different spans.
+  // Begin is marked by a zero-width token to push elements on the open stack
+  // (unless when we're parsing a fallback token).
+  // End scans an actual ending token (such as `_}` or `_`) and checks the open
+  // stack.
+  EMPHASIS_MARK_BEGIN,
+  EMPHASIS_END,
+  STRONG_MARK_BEGIN,
+  STRONG_END,
+  SUPERSCRIPT_MARK_BEGIN,
+  SUPERSCRIPT_END,
+  SUBSCRIPT_MARK_BEGIN,
+  SUBSCRIPT_END,
+  HIGHLIGHTED_MARK_BEGIN,
+  HIGHLIGHTED_END,
+  INSERT_MARK_BEGIN,
+  INSERT_END,
+  DELETE_MARK_BEGIN,
+  DELETE_END,
+
+  PARENS_SPAN_MARK_BEGIN,
+  PARENS_SPAN_END,
+  CURLY_BRACKET_SPAN_MARK_BEGIN,
+  CURLY_BRACKET_SPAN_END,
+  SQUARE_BRACKET_SPAN_MARK_BEGIN,
+  SQUARE_BRACKET_SPAN_END,
+
+  IN_FALLBACK,
 
   ERROR,
 } TokenType;
@@ -86,6 +121,8 @@ typedef enum {
   SECTION,
   HEADING,
   FOOTNOTE,
+  LINK_REF_DEF,
+  TABLE_ROW,
   TABLE_CAPTION,
   LIST_DASH,
   LIST_STAR,
@@ -120,15 +157,57 @@ typedef enum {
 
 typedef struct {
   BlockType type;
-  // Level can be either indentation or number of opening/ending symbols,
-  // or it may be unused for some block types.
-  uint8_t level;
+  // Data depends on the block type.
+  // Can be indentation, number of opening/ending symbols, or number of cells in
+  // a table row.
+  uint8_t data;
 } Block;
+
+typedef enum {
+  VERBATIM,
+  EMPHASIS,
+  STRONG,
+  SUPERSCRIPT,
+  SUBSCRIPT,
+  HIGHLIGHTED,
+  INSERT,
+  DELETE,
+  // Spans where the start token is managed by `grammar.js`
+  // and the tokens specify the ending token ), }, or ]
+  PARENS_SPAN,
+  CURLY_BRACKET_SPAN,
+  SQUARE_BRACKET_SPAN,
+} InlineType;
+
+// What kind of span we should parse.
+typedef enum {
+  // Only delimited by a single character, for example `[text]`.
+  SpanSingle,
+  // Only delimited by a curly bracketed tags, for example `{= highlight =}`.
+  SpanBracketed,
+  // Either single or bracketed, for example `^superscript^}`.
+  SpanBracketedAndSingle,
+  // Either single or bracketed, but no whitespace next to the single tags.
+  // For example `_emphasis_}` (but not `_ emphasis _`).
+  SpanBracketedAndSingleNoWhitespace,
+} SpanType;
+
+typedef struct {
+  InlineType type;
+  // Different types may use `data` differently.
+  // Spans use it to count how many fallback symbols was returned after the
+  // opening tag.
+  // Verbatim counts the number of open and closing ticks.
+  uint8_t data;
+} Inline;
 
 typedef struct {
   // Open blocks is a stack of the blocks that haven't been closed.
   // Used to match closing markers or for implicitly closing blocks.
   Array(Block *) * open_blocks;
+
+  // Open inline is a stack of non-closed inline elements.
+  Array(Inline *) * open_inline;
 
   // How many BLOCK_CLOSE we should output right now?
   uint8_t blocks_to_close;
@@ -138,15 +217,24 @@ typedef struct {
   TokenType delayed_token;
   uint8_t delayed_token_width;
 
-  // The number of ` we are currently matching, or 0 when not inside.
-  uint8_t verbatim_tick_count;
-
   // What's our current block quote level?
   uint8_t block_quote_level;
 
   // The whitespace indent of the current line.
   uint8_t indent;
+
+  // Parser state flags.
+  uint8_t state;
 } Scanner;
+
+// Tracks if a `[` starts an inline link.
+// It's used to prune branches where it does not, fixing precedence
+// issues with multiple elements inside the destination.
+static const uint8_t STATE_BRACKET_STARTS_INLINE_LINK = 1 << 0;
+// Tracks if a `[` starts a span (the Djot element).
+// It's used to prune branches where it does not, fixing precedence
+// issues where the span wasn't chosen despite being closed first.
+static const uint8_t STATE_BRACKET_STARTS_SPAN = 1 << 1;
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
@@ -269,15 +357,26 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
   return indent;
 }
 
-static Block *create_block(BlockType type, uint8_t level) {
+static Block *create_block(BlockType type, uint8_t data) {
   Block *b = ts_malloc(sizeof(Block));
   b->type = type;
-  b->level = level;
+  b->data = data;
   return b;
 }
 
-static void push_block(Scanner *s, BlockType type, uint8_t level) {
-  array_push(s->open_blocks, create_block(type, level));
+static Inline *create_inline(InlineType type, uint8_t data) {
+  Inline *res = ts_malloc(sizeof(Inline));
+  res->type = type;
+  res->data = data;
+  return res;
+}
+
+static void push_block(Scanner *s, BlockType type, uint8_t data) {
+  array_push(s->open_blocks, create_block(type, data));
+}
+
+static void push_inline(Scanner *s, InlineType type, uint8_t data) {
+  array_push(s->open_inline, create_inline(type, data));
 }
 
 static void remove_block(Scanner *s) {
@@ -289,6 +388,12 @@ static void remove_block(Scanner *s) {
   }
 }
 
+static void remove_inline(Scanner *s) {
+  if (s->open_inline->size > 0) {
+    ts_free(array_pop(s->open_inline));
+  }
+}
+
 static Block *peek_block(Scanner *s) {
   if (s->open_blocks->size > 0) {
     return *array_back(s->open_blocks);
@@ -297,7 +402,29 @@ static Block *peek_block(Scanner *s) {
   }
 }
 
-void set_delayed_token(Scanner *s, TokenType token, uint8_t token_width) {
+static Inline *peek_inline(Scanner *s) {
+  if (s->open_inline->size > 0) {
+    return *array_back(s->open_inline);
+  } else {
+    return NULL;
+  }
+}
+
+static bool disallow_newline(Block *top) {
+  if (!top)
+    return false;
+
+  switch (top->type) {
+  case TABLE_ROW:
+  case LINK_REF_DEF:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static void set_delayed_token(Scanner *s, TokenType token,
+                              uint8_t token_width) {
   s->delayed_token = token;
   s->delayed_token_width = token_width;
 }
@@ -324,7 +451,7 @@ static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
                                         uint8_t level) {
   for (int i = s->open_blocks->size - 1; i >= 0; --i) {
     Block *b = *array_get(s->open_blocks, i);
-    if (b->type == type && b->level == level) {
+    if (b->type == type && b->data == level) {
       return s->open_blocks->size - i;
     }
   }
@@ -392,6 +519,8 @@ static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
 
 // Output BLOCK_CLOSE tokens, delegated from previous iteration.
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
+  // FIXME should only be allowed to close blocks when open inline
+  // are all closed.
   if (s->open_blocks->size == 0) {
     return false;
   }
@@ -406,19 +535,56 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   }
 }
 
-// Close open list if list markers are different.
-static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer,
-                                         bool is_newline) {
-  if (is_newline) {
-    return false;
+static bool scan_identifier(Scanner *s, TSLexer *lexer) {
+  bool any_scanned = false;
+  while (!lexer->eof(lexer)) {
+    if (isalnum(lexer->lookahead) || lexer->lookahead == '-' ||
+        lexer->lookahead == '_') {
+      any_scanned = true;
+      advance(s, lexer);
+    } else {
+      return any_scanned;
+    }
   }
-  Block *list = find_list(s);
-  if (list && s->indent >= list->level) {
-    lexer->mark_end(lexer);
-    lexer->result_symbol = LIST_ITEM_CONTINUATION;
-    return true;
+  return any_scanned;
+}
+
+static bool scan_until_unescaped(Scanner *s, TSLexer *lexer, char c) {
+  while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == c) {
+      return true;
+    } else if (lexer->lookahead == '\\') {
+      advance(s, lexer);
+    }
+    advance(s, lexer);
   }
   return false;
+}
+
+static bool parse_indented_content_spacer(Scanner *s, TSLexer *lexer,
+                                          bool is_newline) {
+  if (is_newline) {
+    advance(s, lexer);
+    lexer->mark_end(lexer);
+  }
+  lexer->result_symbol = INDENTED_CONTENT_SPACER;
+  return true;
+}
+
+// Close open list if list markers are different.
+static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer) {
+  Block *list = find_list(s);
+  if (!list) {
+    return false;
+  }
+
+  if (s->indent < list->data) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = LIST_ITEM_CONTINUATION;
+  return true;
 }
 
 // Close a block inside a list.
@@ -436,7 +602,7 @@ static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
   // we should check the indentation level,
   // and if it's less than the current list, we need to close that block.
   if (non_newline && list && list != top) {
-    if (s->indent < list->level) {
+    if (s->indent < list->data) {
       lexer->result_symbol = BLOCK_CLOSE;
       remove_block(s);
       return true;
@@ -512,7 +678,7 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
     // Code blocks can't contain other blocks, so we only look at the top.
     Block *top = peek_block(s);
     if (top->type == CODE_BLOCK) {
-      if (top->level == ticks) {
+      if (top->data == ticks) {
         // Found a matching block that we should close.
         // Issue BLOCK_CLOSE before CODE_BLOCK_END.
         // Don't consume ` characters this time, do it in the future.
@@ -532,15 +698,13 @@ static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
   return true;
 }
 
-static void output_verbatim_begin(Scanner *s, TSLexer *lexer, uint8_t ticks) {
-  lexer->mark_end(lexer);
-  s->verbatim_tick_count = ticks;
-  lexer->result_symbol = VERBATIM_BEGIN;
-}
-
 static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
-  if (s->verbatim_tick_count > 0) {
-    s->verbatim_tick_count = 0;
+  Inline *top = peek_inline(s);
+  if (!top || top->type != VERBATIM) {
+    return false;
+  }
+  if (top->data > 0) {
+    remove_inline(s);
     lexer->result_symbol = VERBATIM_END;
     return true;
   } else {
@@ -550,11 +714,11 @@ static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
 
 // Parsing verbatim content is also responsible for parsing VERBATIM_END.
 static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
-  if (s->verbatim_tick_count == 0) {
+  Inline *top = peek_inline(s);
+  if (!top || top->type != VERBATIM) {
     return false;
   }
 
-  uint8_t ticks = 0;
   while (!lexer->eof(lexer)) {
     if (lexer->lookahead == '\n') {
       // We should only end verbatim if the paragraph is ended by a
@@ -571,29 +735,26 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       } else {
         // No blankline, continue parsing.
         lexer->mark_end(lexer);
-        ticks = 0;
       }
     } else if (lexer->lookahead == '`') {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(s, lexer, '`');
-      if (current == s->verbatim_tick_count) {
+      if (current == top->data) {
         // We found a matching number of `
         // We need to return VERBATIM_CONTENT then VERBATIM_END in the next
         // scan.
-        s->verbatim_tick_count = 0;
+        remove_inline(s);
         set_delayed_token(s, VERBATIM_END, current);
         break;
       } else {
         // Found a number of ` that doesn't match the start,
         // we should consume them.
         lexer->mark_end(lexer);
-        ticks = 0;
       }
     } else {
       // Non-` token found, this we should consume.
       advance(s, lexer);
       lexer->mark_end(lexer);
-      ticks = 0;
     }
   }
 
@@ -604,6 +765,11 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
 
 static bool parse_backtick(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
+  if (!valid_symbols[CODE_BLOCK_BEGIN] && !valid_symbols[CODE_BLOCK_END] &&
+      !valid_symbols[BLOCK_CLOSE] && !valid_symbols[VERBATIM_BEGIN]) {
+    return false;
+  }
+
   uint8_t ticks = consume_chars(s, lexer, '`');
   if (ticks == 0) {
     return false;
@@ -616,10 +782,10 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
       return true;
     }
   }
-  // VERBATIM_END is handled by `parse_verbatim_content`.
-  // Don't capture leading whitespace for prettier conceal.
-  if (valid_symbols[VERBATIM_BEGIN] && s->indent == 0) {
-    output_verbatim_begin(s, lexer, ticks);
+  if (valid_symbols[VERBATIM_BEGIN]) {
+    lexer->mark_end(lexer);
+    lexer->result_symbol = VERBATIM_BEGIN;
+    push_inline(s, VERBATIM, ticks);
     return true;
   }
   return false;
@@ -708,9 +874,12 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   // A valid marker is a '> ' or '>\n'.
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
 
+  bool any_open_inline = s->open_inline->size > 0;
+
   // If we have a marker but with an empty line,
   // we need to close the paragraph.
-  if (has_marker && ending_newline && valid_symbols[CLOSE_PARAGRAPH]) {
+  if (has_marker && ending_newline && !any_open_inline &&
+      valid_symbols[CLOSE_PARAGRAPH]) {
     lexer->result_symbol = CLOSE_PARAGRAPH;
     return true;
   }
@@ -723,9 +892,9 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
   // There's an open block quote with a higher nesting level.
-  if (highest_block_quote && marker_count < highest_block_quote->level) {
+  if (highest_block_quote && marker_count < highest_block_quote->data) {
     // Close the paragraph, but allow lazy continuation (without any `>`).
-    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
+    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker && !any_open_inline) {
       lexer->result_symbol = CLOSE_PARAGRAPH;
       return true;
     }
@@ -813,6 +982,16 @@ static bool matches_ordered_list(OrderedListType type, char c) {
   }
 }
 
+static bool single_letter_list_marker(OrderedListType type) {
+  switch (type) {
+  case LOWER_ALPHA:
+  case UPPER_ALPHA:
+    return true;
+  default:
+    return false;
+  }
+}
+
 // Return true if we scan any character.
 static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
                                          OrderedListType type) {
@@ -826,7 +1005,11 @@ static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
       break;
     }
   }
-  return scanned > 0;
+  if (single_letter_list_marker(type)) {
+    return scanned == 1;
+  } else {
+    return scanned > 0;
+  }
 }
 
 static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
@@ -1024,7 +1207,7 @@ static bool scan_containing_block_closing_marker(Scanner *s, TSLexer *lexer) {
 static void ensure_list_open(Scanner *s, BlockType type, uint8_t indent) {
   Block *top = peek_block(s);
   // Found a list with the same type and indent, we should continue it.
-  if (top && top->type == type && top->level == indent) {
+  if (top && top->type == type && top->data == indent) {
     return;
     // There might be other cases, like if the top list is a list of different
     // types, but that's handled by BLOCK_CLOSE in `close_list_if_needed` and
@@ -1146,6 +1329,171 @@ static bool parse_list_marker_or_thematic_break(
   return false;
 }
 
+static bool scan_verbatim_to_end_no_newline(Scanner *s, TSLexer *lexer) {
+  uint8_t tick_count = consume_chars(s, lexer, '`');
+  if (tick_count == 0) {
+    return false;
+  }
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '\\':
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '`':
+      if (consume_chars(s, lexer, '`') == tick_count) {
+        return true;
+      }
+      break;
+    case '\n':
+      return false;
+    default:
+      advance(s, lexer);
+    }
+  }
+  return false;
+}
+
+static bool scan_ref_def(Scanner *s, TSLexer *lexer) {
+  // Link label in a definition can be any inline except newlines.
+  while (!lexer->eof(lexer) && lexer->lookahead != ']') {
+    switch (lexer->lookahead) {
+    case '\\':
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '\n':
+      return false;
+    case '`':
+      // We must have ending ticks for this to be a valid label.
+      if (!scan_verbatim_to_end_no_newline(s, lexer)) {
+        return false;
+      }
+      break;
+    default:
+      advance(s, lexer);
+    }
+  }
+
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != ':') {
+    return false;
+  }
+  advance(s, lexer);
+
+  // Don't actually have to have anything else after the colon.
+  return true;
+}
+
+static bool parse_ref_def_begin(Scanner *s, TSLexer *lexer,
+                                const bool *valid_symbols) {
+  if (!valid_symbols[LINK_REF_DEF_MARK_BEGIN]) {
+    return false;
+  }
+  if (!scan_ref_def(s, lexer)) {
+    return false;
+  }
+
+  push_block(s, LINK_REF_DEF, 0);
+  lexer->result_symbol = LINK_REF_DEF_MARK_BEGIN;
+  return true;
+}
+
+static bool parse_link_ref_def_label_end(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  Block *top = peek_block(s);
+  if (!top || top->type != LINK_REF_DEF) {
+    return false;
+  }
+
+  if (s->open_inline->size > 0) {
+    return false;
+  }
+
+  remove_block(s);
+  lexer->result_symbol = LINK_REF_DEF_LABEL_END;
+  return true;
+}
+
+static bool scan_footnote_begin(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '^') {
+    return false;
+  }
+  advance(s, lexer);
+
+  // Identifier can have surrounding whitespace
+  consume_whitespace(s, lexer);
+  if (!scan_identifier(s, lexer)) {
+    return false;
+  }
+  consume_whitespace(s, lexer);
+
+  // Scan `]:`
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != ':') {
+    return false;
+  }
+  advance(s, lexer);
+
+  // Don't actually have to have anything else after the colon.
+  return true;
+}
+
+static bool parse_footnote_begin(Scanner *s, TSLexer *lexer,
+                                 const bool *valid_symbols) {
+  if (!valid_symbols[FOOTNOTE_MARK_BEGIN]) {
+    return false;
+  }
+  if (!scan_footnote_begin(s, lexer)) {
+    return false;
+  }
+
+  // TODO maybe these aren't even necessary anymore?
+  if (!valid_symbols[IN_FALLBACK]) {
+    push_block(s, FOOTNOTE, s->indent + 2);
+  }
+
+  lexer->result_symbol = FOOTNOTE_MARK_BEGIN;
+
+  return true;
+}
+
+static bool parse_open_bracket(Scanner *s, TSLexer *lexer,
+                               const bool *valid_symbols) {
+  // Needs to differentiate between:
+  //
+  //   [^x]: footnote
+  //   [yy]: link definition
+  //
+  // Both markers are zero-width tokens that scans the entire line for
+  // validity.
+
+  if (!valid_symbols[FOOTNOTE_MARK_BEGIN] &&
+      !valid_symbols[LINK_REF_DEF_MARK_BEGIN]) {
+    return false;
+  }
+
+  // Scan initial `[^`
+  if (lexer->lookahead != '[') {
+    return false;
+  }
+  advance(s, lexer);
+
+  if (lexer->lookahead == '^') {
+    return parse_footnote_begin(s, lexer, valid_symbols);
+  } else {
+    return parse_ref_def_begin(s, lexer, valid_symbols);
+  }
+}
+
 static bool parse_dash(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   return parse_list_marker_or_thematic_break(s, lexer, valid_symbols, '-',
                                              LIST_MARKER_DASH, LIST_DASH,
@@ -1198,7 +1546,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   }
 
   // We're still inside the list, don't end it yet.
-  if (s->indent >= list->level) {
+  if (s->indent >= list->data) {
     return false;
   }
 
@@ -1267,7 +1615,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     //
     if (has_block_quote_continuation) {
       s->indent = consume_whitespace(s, lexer);
-      if (s->indent >= list->level) {
+      if (s->indent >= list->data) {
         lexer->mark_end(lexer);
         output_block_quote_continuation(s, lexer, block_quote_markers,
                                         ending_newline);
@@ -1286,7 +1634,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   TokenType next_marker = scan_list_marker_token(s, lexer);
   if (next_marker != IGNORED) {
     bool different_type = list_marker_to_block(next_marker) != list->type;
-    bool different_indent = list->level != s->indent + 1;
+    bool different_indent = list->data != s->indent + 1;
 
     // If we're continuing the list we shouldn't emit a BLOCK_CLOSE.
     if (different_type || different_indent) {
@@ -1349,51 +1697,13 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 }
 
-static TokenType heading_start_token(uint8_t level) {
-  switch (level) {
-  case 1:
-    return HEADING1_BEGIN;
-  case 2:
-    return HEADING2_BEGIN;
-  case 3:
-    return HEADING3_BEGIN;
-  case 4:
-    return HEADING4_BEGIN;
-  case 5:
-    return HEADING5_BEGIN;
-  case 6:
-    return HEADING6_BEGIN;
-  default:
-    return ERROR;
-  }
-}
-
-static TokenType heading_continuation_token(uint8_t level) {
-  switch (level) {
-  case 1:
-    return HEADING1_CONTINUATION;
-  case 2:
-    return HEADING2_CONTINUATION;
-  case 3:
-    return HEADING3_CONTINUATION;
-  case 4:
-    return HEADING4_CONTINUATION;
-  case 5:
-    return HEADING5_CONTINUATION;
-  case 6:
-    return HEADING6_CONTINUATION;
-  default:
-    return ERROR;
-  }
-}
-
 static bool parse_heading(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
   // Note that headings don't contain other blocks, only inline.
   Block *top = peek_block(s);
 
   // Avoids consuming `#` inside code/verbatim contexts.
-  if ((top && top->type == CODE_BLOCK) || s->verbatim_tick_count > 0) {
+  if ((top && top->type == CODE_BLOCK)) {
     return false;
   }
 
@@ -1403,25 +1713,22 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
   // We found a `# ` that can start or continue a heading.
   if (hash_count > 0 && lexer->lookahead == ' ') {
-    TokenType start_token = heading_start_token(hash_count);
-    TokenType continuation_token = heading_continuation_token(hash_count);
-
-    if (!valid_symbols[start_token] && !valid_symbols[continuation_token] &&
+    if (!valid_symbols[HEADING_BEGIN] && !valid_symbols[HEADING_CONTINUATION] &&
         !valid_symbols[BLOCK_CLOSE]) {
       return false;
     }
 
     advance(s, lexer); // Consume the ' '.
 
-    if (valid_symbols[continuation_token] && top_heading &&
-        top->level == hash_count) {
+    if (valid_symbols[HEADING_CONTINUATION] && top_heading &&
+        top->data == hash_count) {
       // We're in a heading matching the same number of '#'.
       lexer->mark_end(lexer);
-      lexer->result_symbol = continuation_token;
+      lexer->result_symbol = HEADING_CONTINUATION;
       return true;
     }
 
-    if (valid_symbols[BLOCK_CLOSE] && top_heading && top->level != hash_count) {
+    if (valid_symbols[BLOCK_CLOSE] && top_heading && top->data != hash_count) {
       // Found a mismatched heading level, need to close the previous
       // before opening this one.
       lexer->result_symbol = BLOCK_CLOSE;
@@ -1430,13 +1737,13 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     // Open a new heading.
-    if (valid_symbols[start_token]) {
+    if (valid_symbols[HEADING_BEGIN]) {
       // Sections are created on the root level (or nested inside other
       // sections). They should be closed when a header with the same or fewer
       // `#` is encountered, and then a new section should be started.
-      if (!top || (top->type == SECTION && top->level < hash_count)) {
+      if (!top || (top->type == SECTION && top->data < hash_count)) {
         push_block(s, SECTION, hash_count);
-      } else if (top && top->type == SECTION && top->level >= hash_count) {
+      } else if (top && top->type == SECTION && top->data >= hash_count) {
         // NOTE closing multiple nested sections requires us to re-scan the
         // heading when we return without saving our work.
         lexer->result_symbol = BLOCK_CLOSE;
@@ -1446,7 +1753,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
 
       push_block(s, HEADING, hash_count);
       lexer->mark_end(lexer);
-      lexer->result_symbol = start_token;
+      lexer->result_symbol = HEADING_BEGIN;
       return true;
     }
   } else if (hash_count == 0 && top_heading) {
@@ -1465,9 +1772,8 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     // We should continue the heading, if it's open.
-    TokenType res = heading_continuation_token(top->level);
-    if (valid_symbols[res]) {
-      lexer->result_symbol = res;
+    if (valid_symbols[HEADING_CONTINUATION]) {
+      lexer->result_symbol = HEADING_CONTINUATION;
       return true;
     }
   }
@@ -1475,40 +1781,261 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static bool parse_open_bracket(Scanner *s, TSLexer *lexer,
-                               const bool *valid_symbols) {
-  if (!valid_symbols[FOOTNOTE_BEGIN]) {
+static bool scan_footnote(Scanner *s, TSLexer *lexer) {
+  // Scan initial `[^`
+  if (lexer->lookahead != '[') {
     return false;
   }
-
   advance(s, lexer);
   if (lexer->lookahead != '^') {
     return false;
   }
   advance(s, lexer);
-  push_block(s, FOOTNOTE, s->indent + 2);
-  lexer->mark_end(lexer);
-  lexer->result_symbol = FOOTNOTE_BEGIN;
+
+  // Identifier can have surrounding whitespace
+  consume_whitespace(s, lexer);
+  if (!scan_identifier(s, lexer)) {
+    return false;
+  }
+  consume_whitespace(s, lexer);
+
+  // Scan `]:`
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != ':') {
+    return false;
+  }
+  advance(s, lexer);
+
+  // Don't actually have to have anything else after the colon.
   return true;
 }
 
-static bool parse_footnote_end(Scanner *s, TSLexer *lexer,
-                               const bool *valid_symbols) {
-  if (!valid_symbols[FOOTNOTE_END]) {
+static bool parse_footnote_end(Scanner *s, TSLexer *lexer) {
+  Block *top = peek_block(s);
+  if (!top || top->type != FOOTNOTE) {
     return false;
   }
 
-  Block *footnote = peek_block(s);
-  if (!footnote || footnote->type != FOOTNOTE) {
+  if (s->indent >= top->data) {
     return false;
   }
-
-  if (s->indent >= footnote->level) {
+  if (s->open_inline->size > 0) {
     return false;
   }
 
   remove_block(s);
   lexer->result_symbol = FOOTNOTE_END;
+  return true;
+}
+
+static bool parse_footnote_continuation(Scanner *s, TSLexer *lexer) {
+  Block *footnote = peek_block(s);
+  if (!footnote || footnote->type != FOOTNOTE) {
+    return false;
+  }
+
+  if (s->indent < footnote->data) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = FOOTNOTE_CONTINUATION;
+  return true;
+}
+
+// Scan from a `|` to the next `|`, respecting verbatim and escapes.
+// May not contain any newline.
+static bool scan_table_cell(Scanner *s, TSLexer *lexer, bool *separator) {
+  consume_whitespace(s, lexer);
+
+  *separator = true;
+
+  bool first_char = true;
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '\\':
+      *separator = false;
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '\n':
+      return false;
+    case '`':
+      *separator = false;
+      // We must have ending ticks for this to be a valid table cell.
+      if (!scan_verbatim_to_end_no_newline(s, lexer)) {
+        return false;
+      }
+      break;
+
+    case '|':
+      return true;
+    case ':':
+      advance(s, lexer);
+
+      consume_whitespace(s, lexer);
+      // A `:` can begin or end a separator cell.
+      if (lexer->lookahead == '|') {
+        return true;
+      } else if (!first_char) {
+        *separator = false;
+      }
+      break;
+    case '-':
+      advance(s, lexer);
+      break;
+    default:
+      *separator = false;
+      advance(s, lexer);
+      break;
+    }
+
+    first_char = false;
+  }
+  return false;
+}
+
+static bool scan_separator_row(Scanner *s, TSLexer *lexer) {
+  uint8_t cell_count = 0;
+  bool curr_separator;
+  while (scan_table_cell(s, lexer, &curr_separator)) {
+    if (!curr_separator) {
+      return false;
+    }
+    ++cell_count;
+    if (lexer->lookahead == '|') {
+      advance(s, lexer);
+    }
+  }
+
+  if (cell_count == 0) {
+    return false;
+  }
+
+  // Nothing but whitespace and then a newline may follow a table row.
+  consume_whitespace(s, lexer);
+  return lexer->lookahead == '\n';
+}
+
+static uint8_t scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
+
+  uint8_t cell_count = 0;
+  bool all_separators = true;
+  bool curr_separator;
+  while (scan_table_cell(s, lexer, &curr_separator)) {
+    if (!curr_separator) {
+      all_separators = false;
+    }
+    ++cell_count;
+    if (lexer->lookahead == '|') {
+      advance(s, lexer);
+    }
+  }
+
+  if (cell_count == 0) {
+    return 0;
+  }
+
+  // Nothing but whitespace and then a newline may follow a table row.
+  consume_whitespace(s, lexer);
+  if (lexer->lookahead != '\n') {
+    return 0;
+  }
+
+  // Consume newline.
+  advance(s, lexer);
+  if (all_separators) {
+    *row_type = TABLE_SEPARATOR_BEGIN;
+  } else {
+    // We need to check the next row and if that is full of separators then
+    // this is a header, otherwise it's a regular row.
+    // We also need to check for any block quote markers on that row.
+    bool newline = false;
+    scan_block_quote_markers(s, lexer, &newline);
+
+    if (!newline && scan_separator_row(s, lexer)) {
+      *row_type = TABLE_HEADER_BEGIN;
+    } else {
+      *row_type = TABLE_ROW_BEGIN;
+    }
+  }
+  return cell_count;
+}
+
+static bool parse_table_begin(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (lexer->lookahead != '|') {
+    return false;
+  }
+  if (!valid_symbols[TABLE_ROW_BEGIN] &&
+      !valid_symbols[TABLE_SEPARATOR_BEGIN] &&
+      !valid_symbols[TABLE_HEADER_BEGIN]) {
+    return false;
+  }
+
+  // The tokens should consume the pipe.
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+
+  TokenType row_type;
+  uint8_t cell_count = scan_table_row(s, lexer, &row_type);
+  if (cell_count == 0) {
+    return false;
+  }
+
+  // Use cell_count + 1 to emit `TABLE_ROW_END` when it goes to 0.
+  push_block(s, TABLE_ROW, cell_count);
+  lexer->result_symbol = row_type;
+  return true;
+}
+
+static bool parse_table_end_newline(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '\n') {
+    return false;
+  }
+  Block *top = peek_block(s);
+  if (!top || top->type != TABLE_ROW) {
+    return false;
+  }
+
+  // This may not even be needed?
+  if (top->data != 0) {
+    return false;
+  }
+
+  remove_block(s);
+  advance(s, lexer);
+  lexer->result_symbol = TABLE_ROW_END_NEWLINE;
+  lexer->mark_end(lexer);
+  return true;
+}
+
+static bool parse_table_cell_end(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '|') {
+    return false;
+  }
+  // Can only close a cell (or row) if all inline spans have been closed.
+  if (s->open_inline->size > 0) {
+    return false;
+  }
+
+  Block *top = peek_block(s);
+  if (!top || top->type != TABLE_ROW) {
+    return false;
+  }
+
+  // All cells are closed, should end the row.
+  if (top->data == 0) {
+    return false;
+  }
+
+  --top->data;
+  advance(s, lexer); // Consumes the `|`
+  lexer->result_symbol = TABLE_CELL_END;
+  lexer->mark_end(lexer);
   return true;
 }
 
@@ -1536,12 +2063,175 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
 
   // End is only checked at the beginning of a line, and should stop if we're
   // not indented enough.
-  if (s->indent >= caption->level) {
+  if (s->indent >= caption->data) {
     return false;
   }
 
   remove_block(s);
   lexer->result_symbol = TABLE_CAPTION_END;
+  return true;
+}
+
+// Scan until the end of a comment, either consuming the next `%`
+// or before the ending `}`.
+static bool scan_comment(Scanner *s, TSLexer *lexer, uint8_t indent,
+                         bool *must_be_inline_comment) {
+  if (lexer->lookahead != '%') {
+    return false;
+  }
+  advance(s, lexer);
+
+  while (!lexer->eof(lexer)) {
+    switch (lexer->lookahead) {
+    case '%':
+      advance(s, lexer);
+      return true;
+    case '}':
+      return true;
+    case '\\':
+      advance(s, lexer);
+      break;
+    case '\n':
+      advance(s, lexer);
+      // Need to match indent for comments inside attributes
+      // but not for inline comments.
+      if (indent != consume_whitespace(s, lexer)) {
+        *must_be_inline_comment = true;
+      }
+      // Can only have one newline in a row for a valid attribute.
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+      break;
+    }
+    advance(s, lexer);
+  }
+  return false;
+}
+
+static bool scan_value(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead == '"') {
+    // First "
+    advance(s, lexer);
+    if (!scan_until_unescaped(s, lexer, '"')) {
+      return false;
+    }
+    // Last "
+    advance(s, lexer);
+    return true;
+  } else {
+    return scan_identifier(s, lexer);
+  }
+}
+
+static bool parse_open_curly_bracket(Scanner *s, TSLexer *lexer,
+                                     const bool *valid_symbols) {
+
+  // TODO
+  // if (valid_symbols[INLINE_COMMENT_MARKER_BEGIN] &&
+  // parse_inline_comment(begin(s, lexer))
+  if (!valid_symbols[BLOCK_ATTRIBUTE_BEGIN] &&
+      !valid_symbols[INLINE_COMMENT_BEGIN]) {
+    return false;
+  }
+  if (lexer->lookahead != '{') {
+    return false;
+  }
+  // Only consume the `{`, if successful.
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+
+  // Match indent to one past the `{`
+  uint8_t indent = s->indent + 1;
+
+  // An inline comment must follow the `{% ... %}` format.
+  bool can_be_inline_comment = lexer->lookahead == '%';
+  bool must_be_inline_comment = false;
+
+  while (!lexer->eof(lexer)) {
+    uint8_t space = consume_whitespace(s, lexer);
+    if (space > 0) {
+      can_be_inline_comment = false;
+    }
+
+    switch (lexer->lookahead) {
+    case '\\':
+      can_be_inline_comment = false;
+      advance(s, lexer);
+      advance(s, lexer);
+      break;
+    case '}':
+      if (can_be_inline_comment && valid_symbols[INLINE_COMMENT_BEGIN]) {
+        lexer->result_symbol = INLINE_COMMENT_BEGIN;
+        return true;
+      } else if (!must_be_inline_comment &&
+                 valid_symbols[BLOCK_ATTRIBUTE_BEGIN]) {
+        lexer->result_symbol = BLOCK_ATTRIBUTE_BEGIN;
+        return true;
+      } else {
+        return false;
+      }
+    case '.':
+      can_be_inline_comment = false;
+      advance(s, lexer);
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      break;
+    case '#':
+      can_be_inline_comment = false;
+      advance(s, lexer);
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      break;
+    case '%':
+      if (!scan_comment(s, lexer, indent, &must_be_inline_comment)) {
+        return false;
+      }
+      break;
+    case '\n':
+      can_be_inline_comment = false;
+      advance(s, lexer);
+      // Need to match indent!
+      if (indent != consume_whitespace(s, lexer)) {
+        return false;
+      }
+      // Can only have one newline in a row for a valid attribute.
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+      break;
+    default:
+      can_be_inline_comment = false;
+      // First scan a key
+      if (!scan_identifier(s, lexer)) {
+        return false;
+      }
+      // Must have equals
+      if (lexer->lookahead != '=') {
+        return false;
+      }
+      advance(s, lexer);
+      // Then scan the value
+      if (!scan_value(s, lexer)) {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+static bool parse_hard_line_break(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '\\') {
+    return false;
+  }
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+  if (lexer->lookahead != '\n') {
+    return false;
+  }
+  lexer->result_symbol = HARD_LINE_BREAK;
   return true;
 }
 
@@ -1561,7 +2251,7 @@ static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   }
 
   // We've gone down a blockquote level, we need to close the paragraph.
-  if (marker_count < block->level || ending_newline) {
+  if (marker_count < block->data || ending_newline) {
     return true;
   }
 
@@ -1583,17 +2273,23 @@ static bool close_paragraph(Scanner *s, TSLexer *lexer) {
     return true;
   }
 
+  if (end_paragraph_in_block_quote(s, lexer)) {
+    return true;
+  }
+
   return scan_containing_block_closing_marker(s, lexer);
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
-  // TODO merge both functions
-  if (close_paragraph(s, lexer) || end_paragraph_in_block_quote(s, lexer)) {
-    lexer->result_symbol = CLOSE_PARAGRAPH;
-    return true;
+  if (s->open_inline->size > 0) {
+    return false;
+  }
+  if (!close_paragraph(s, lexer)) {
+    return false;
   }
 
-  return false;
+  lexer->result_symbol = CLOSE_PARAGRAPH;
+  return true;
 }
 
 // Decide if we should emit a `NEWLINE_INLINE` token.
@@ -1615,6 +2311,17 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  Block *top = peek_block(s);
+  if (disallow_newline(top)) {
+    return false;
+  }
+
+  // Disallow `NEWLINE_INLINE` inside headings as it uses lines of inline
+  // with heading continuations instead.
+  if (top && top->type == HEADING) {
+    return false;
+  }
+
   // This is a lookahead for the next line, to check if
   // there's a blankline ending the paragraph or not (in which case we
   // shouldn't emit a `NEWLINE_INLINE`).
@@ -1623,22 +2330,14 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  Block *top = peek_block(s);
-
-  // Disallow `NEWLINE_INLINE` inside headings as it uses lines of inline
-  // with heading continuations instead.
-  if (top && top->type == HEADING) {
-    return false;
-  }
-
   // Need an extra check so we don't emit a NEWLINE_INLINE at the end
   // of a table caption if there's a mismatched indent.
-  if (top && top->type == TABLE_CAPTION && next_line_whitespace < top->level) {
+  if (top && top->type == TABLE_CAPTION && next_line_whitespace < top->data) {
     return false;
   }
 
   // Paragraph should end, don't continue.
-  if (close_paragraph(s, lexer) || end_paragraph_in_block_quote(s, lexer)) {
+  if (close_paragraph(s, lexer)) {
     return false;
   }
 
@@ -1648,6 +2347,10 @@ static bool emit_newline_inline(Scanner *s, TSLexer *lexer,
 
 static bool parse_newline(Scanner *s, TSLexer *lexer,
                           const bool *valid_symbols) {
+  if (valid_symbols[TABLE_ROW_END_NEWLINE] &&
+      parse_table_end_newline(s, lexer)) {
+    return true;
+  }
   if (valid_symbols[VERBATIM_END] && try_close_verbatim(s, lexer)) {
     return true;
   }
@@ -1655,6 +2358,11 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
   // Various different newline types share the `\n` consumption.
   if (!valid_symbols[NEWLINE] && !valid_symbols[NEWLINE_INLINE] &&
       !valid_symbols[EOF_OR_NEWLINE]) {
+    return false;
+  }
+
+  Block *top = peek_block(s);
+  if (disallow_newline(top)) {
     return false;
   }
 
@@ -1672,6 +2380,11 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
       emit_newline_inline(s, lexer, newline_column)) {
     lexer->result_symbol = NEWLINE_INLINE;
     return true;
+  }
+
+  // Only allow `NEWLINE_INLINE` style of newlines with open inline elements.
+  if (s->open_inline->size > 0) {
+    return false;
   }
 
   // We need to handle NEWLINE in the external scanner for our
@@ -1692,9 +2405,418 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
   return false;
 }
 
+static bool parse_comment_end(Scanner *s, TSLexer *lexer,
+                              const bool *valid_symbols) {
+  if (valid_symbols[COMMENT_END_MARKER] && lexer->lookahead == '%') {
+    advance(s, lexer);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = COMMENT_END_MARKER;
+    return true;
+  }
+  if (valid_symbols[COMMENT_CLOSE] && lexer->lookahead == '}') {
+    lexer->result_symbol = COMMENT_CLOSE;
+    return true;
+  }
+  return false;
+}
+
+static SpanType inline_span_type(InlineType type) {
+  switch (type) {
+  case EMPHASIS:
+  case STRONG:
+    return SpanBracketedAndSingleNoWhitespace;
+  case SUPERSCRIPT:
+  case SUBSCRIPT:
+    return SpanBracketedAndSingle;
+  case HIGHLIGHTED:
+  case INSERT:
+  case DELETE:
+    return SpanBracketed;
+  case PARENS_SPAN:
+  case CURLY_BRACKET_SPAN:
+  case SQUARE_BRACKET_SPAN:
+    return SpanSingle;
+  default:
+    return SpanSingle;
+  }
+}
+
+static char inline_begin_token(InlineType type) {
+  switch (type) {
+  case VERBATIM:
+    return VERBATIM_BEGIN;
+  case EMPHASIS:
+    return EMPHASIS_MARK_BEGIN;
+  case STRONG:
+    return STRONG_MARK_BEGIN;
+  case SUPERSCRIPT:
+    return SUPERSCRIPT_MARK_BEGIN;
+  case SUBSCRIPT:
+    return SUBSCRIPT_MARK_BEGIN;
+  case HIGHLIGHTED:
+    return HIGHLIGHTED_MARK_BEGIN;
+  case INSERT:
+    return INSERT_MARK_BEGIN;
+  case DELETE:
+    return DELETE_MARK_BEGIN;
+  case PARENS_SPAN:
+    return PARENS_SPAN_MARK_BEGIN;
+  case CURLY_BRACKET_SPAN:
+    return CURLY_BRACKET_SPAN_MARK_BEGIN;
+  case SQUARE_BRACKET_SPAN:
+    return SQUARE_BRACKET_SPAN_MARK_BEGIN;
+    // default:
+    //   return ERROR;
+  }
+}
+
+static char inline_end_token(InlineType type) {
+  switch (type) {
+  case VERBATIM:
+    return VERBATIM_END;
+  case EMPHASIS:
+    return EMPHASIS_END;
+  case STRONG:
+    return STRONG_END;
+  case SUPERSCRIPT:
+    return SUPERSCRIPT_END;
+  case SUBSCRIPT:
+    return SUBSCRIPT_END;
+  case HIGHLIGHTED:
+    return HIGHLIGHTED_END;
+  case INSERT:
+    return INSERT_END;
+  case DELETE:
+    return DELETE_END;
+  case PARENS_SPAN:
+    return PARENS_SPAN_END;
+  case CURLY_BRACKET_SPAN:
+    return CURLY_BRACKET_SPAN_END;
+  case SQUARE_BRACKET_SPAN:
+    return SQUARE_BRACKET_SPAN_END;
+    // default:
+    //   return ERROR;
+  }
+}
+
+static char inline_marker(InlineType type) {
+  switch (type) {
+  case EMPHASIS:
+    return '_';
+  case STRONG:
+    return '*';
+  case SUPERSCRIPT:
+    return '^';
+  case SUBSCRIPT:
+    return '~';
+  case HIGHLIGHTED:
+    return '=';
+  case INSERT:
+    return '+';
+  case DELETE:
+    return '-';
+  case PARENS_SPAN:
+    return ')';
+  case CURLY_BRACKET_SPAN:
+    return '}';
+  case SQUARE_BRACKET_SPAN:
+    return ']';
+  default:
+    // Not used as verbatim is parsed separately.
+    return '`';
+  }
+}
+
+static Inline *find_inline(Scanner *s, InlineType type) {
+  for (int i = s->open_inline->size - 1; i >= 0; --i) {
+    Inline *e = *array_get(s->open_inline, i);
+    if (e->type == type) {
+      return e;
+    }
+  }
+  return NULL;
+}
+
+static bool scan_single_span_end(Scanner *s, TSLexer *lexer, char marker) {
+  if (lexer->lookahead != marker) {
+    return false;
+  }
+  advance(s, lexer);
+  return true;
+}
+
+// Match a `_}` style token.
+static bool scan_bracketed_span_end(Scanner *s, TSLexer *lexer, char marker) {
+  if (lexer->lookahead != marker) {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != '}') {
+    return false;
+  }
+  advance(s, lexer);
+  return true;
+}
+
+// Scan an ending token for a span (`_` or `_}`) if marker == '_'.
+//
+// This routine is responsible for parsing the trailing whitespace in a span,
+// so the token may become a `  _}`.
+//
+// If `whitespace_sensitive == true` then we should not allow a space
+// before the single marker (` _` isn't a valid ending token)
+// and only allow spaces with the bracketed variant.
+static bool scan_span_end(Scanner *s, TSLexer *lexer, char marker,
+                          bool whitespace_sensitive) {
+  // Match `_` or `_}`
+  if (lexer->lookahead == marker) {
+    advance(s, lexer);
+    if (lexer->lookahead == '}') {
+      advance(s, lexer);
+    }
+    return true;
+  }
+
+  if (whitespace_sensitive && consume_whitespace(s, lexer) == 0) {
+    return false;
+  }
+
+  // Only match `_}`.
+  return scan_bracketed_span_end(s, lexer, marker);
+}
+
+static bool scan_span_end_marker(Scanner *s, TSLexer *lexer,
+                                 InlineType element) {
+  char marker = inline_marker(element);
+
+  switch (inline_span_type(element)) {
+  case SpanSingle:
+    return scan_single_span_end(s, lexer, marker);
+  case SpanBracketed:
+    return scan_bracketed_span_end(s, lexer, marker);
+  case SpanBracketedAndSingle:
+    return scan_span_end(s, lexer, marker, false);
+  case SpanBracketedAndSingleNoWhitespace:
+    return scan_span_end(s, lexer, marker, true);
+  default:
+    return false;
+  }
+}
+
+// Scan until `c`, aborting if an ending marker for the `top` element is
+// found.
+static bool scan_until(Scanner *s, TSLexer *lexer, char c, InlineType *top) {
+  while (!lexer->eof(lexer)) {
+    if (top && scan_span_end_marker(s, lexer, *top)) {
+      return false;
+    }
+    if (lexer->lookahead == c) {
+      return true;
+    } else if (lexer->lookahead == '\\') {
+      advance(s, lexer);
+    }
+    advance(s, lexer);
+  }
+  return false;
+}
+
+// Updates lookahead states that are used to block the acceptance of
+// the fallback characters `(` and `{` if there's a valid inline link
+// or span to be chosen.
+static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
+                                                   Inline *top) {
+  // Reset flags so we can set them later if the scanning succeeds.
+  s->state &= ~STATE_BRACKET_STARTS_INLINE_LINK;
+  s->state &= ~STATE_BRACKET_STARTS_SPAN;
+
+  InlineType *top_type = NULL;
+  if (top) {
+    top_type = &top->type;
+  }
+
+  // Scan the `[some text]` span.
+  if (!scan_until(s, lexer, ']', top_type)) {
+    return;
+  }
+  advance(s, lexer);
+
+  if (lexer->lookahead == '(') {
+    // An inline link may follow.
+    if (scan_until(s, lexer, ')', top_type)) {
+      s->state |= STATE_BRACKET_STARTS_INLINE_LINK;
+    }
+  } else if (lexer->lookahead == '{') {
+    // An inline attribute my follow, turning it into the Djot `span` type.
+    //
+    // Please note that we're not parsing the actual inline attribute
+    // that may have false positives.
+    //
+    // An invalid attribute may error out whole tree-sitter parsing
+    // because we're actively blocking fallback characters, preventing
+    // the parser from falling back to a paragraph.
+    //
+    // For a more correct implementation we should scan the inline attribute
+    // in the same way as defined in `grammar.js`.
+    if (scan_until(s, lexer, '}', top_type)) {
+      s->state |= STATE_BRACKET_STARTS_SPAN;
+    }
+  }
+}
+
+static bool mark_span_begin(Scanner *s, TSLexer *lexer,
+                            const bool *valid_symbols, InlineType inline_type,
+                            TokenType token) {
+  Inline *top = peek_inline(s);
+  // If IN_FALLBACK is valid then it means we're processing the
+  // `_symbol_fallback` branch (see `grammar.js`).
+  if (valid_symbols[IN_FALLBACK]) {
+    // There's a challenge when we have multiple elements inside an inline
+    // link:
+    //
+    //     [x](a_b_c_d_e)
+    //
+    // Because of the dynamic precedence treesitter will not parse this as a
+    // link but as some fallback characters and then some emphasis.
+    //
+    // To prevent this we don't allow the parsing of `(` when it's a fallback
+    // symbol if we can scan ahead and see that we should be able to parse it
+    // as a link, stopping the contained emphasis from being considered.
+    //
+    // This is done here at `[` as a fallback character so when we reach `(`
+    // we can abort and prune that branch (since we should parse it as a
+    // link).
+    if (inline_type == SQUARE_BRACKET_SPAN) {
+      update_square_bracket_lookahead_states(s, lexer, top);
+    }
+
+    // This is where we've reached the `(` in:
+    //
+    //     [x](a_b_c_d_e)
+    //
+    // and if `STATE_BRACKET_CAN_START_INLINE_LINK` is true then we should
+    // prune the branch and instead treat it as a link.
+    if (inline_type == PARENS_SPAN &&
+        (s->state & STATE_BRACKET_STARTS_INLINE_LINK)) {
+      return false;
+    }
+
+    // For spans `[text]{.class}` we use the same mechanism to solve
+    // precedence in this example:
+    //
+    //     [_]{.c}_
+    //
+    // Where we'll block at `{` if we should instead treat it as a span.
+    if (inline_type == CURLY_BRACKET_SPAN &&
+        (s->state & STATE_BRACKET_STARTS_SPAN)) {
+      return false;
+    }
+
+    // If there's multiple valid opening spans, for example:
+    //
+    //      {_ {_ a_
+    //
+    // Then we should choose the shorter one and the first `{_`
+    // should be regarded as regular text.
+    // To handle this case we count the number of opening tags
+    // an open element has and when we try to close an element with
+    // open tags then we issue an error (in `parse_span_end`).
+    //
+    // The reason we're not immediately issuing an error here
+    // is that spans might be nested, for example:
+    //
+    //      _a _b_ a_
+    //
+    // If we issue an error here at `_b` then we won't find the nested
+    // emphasis. The solution i found was to do the check when closing the
+    // span instead.
+    Inline *open = find_inline(s, inline_type);
+    if (open != NULL) {
+      ++open->data;
+    }
+    // We need to output the token common to both the fallback symbol and
+    // the span so the resolver will detect the collision.
+    lexer->result_symbol = token;
+    return true;
+  } else {
+    // Reset blocking states when the correct branch was chosen.
+    if (inline_type == PARENS_SPAN) {
+      s->state &= ~STATE_BRACKET_STARTS_INLINE_LINK;
+    } else if (inline_type == CURLY_BRACKET_SPAN) {
+      s->state &= ~STATE_BRACKET_STARTS_SPAN;
+    }
+
+    lexer->result_symbol = token;
+    push_inline(s, inline_type, 0);
+    return true;
+  }
+}
+
+// Parse a span ending token, either `_` or `_}`.
+static bool parse_span_end(Scanner *s, TSLexer *lexer, InlineType element,
+                           TokenType token) {
+  // if (!scan_span_end_element(s, lexer, element)) {
+  //   return false;
+  // }
+  // Only close the topmost element, so in:
+  //
+  //    _a *b_
+  //
+  // The `*` isn't allowed to open a span, and that branch should not be
+  // valid.
+  Inline *top = peek_inline(s);
+  if (!top || top->type != element) {
+    return false;
+  }
+  // If we've chosen any fallback symbols inside the span then we
+  // should not accept the span.
+  if (top->data > 0) {
+    return false;
+  }
+
+  if (!scan_span_end_marker(s, lexer, element)) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = token;
+  remove_inline(s);
+  return true;
+}
+
+// Parse a span delimited with `marker`, with `_`, `{_`, and `_}` being valid
+// delimiters.
+static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
+                       InlineType element) {
+  TokenType begin_token = inline_begin_token(element);
+  TokenType end_token = inline_end_token(element);
+  if (valid_symbols[end_token] &&
+      parse_span_end(s, lexer, element, end_token)) {
+    return true;
+  }
+  if (valid_symbols[begin_token] &&
+      mark_span_begin(s, lexer, valid_symbols, element, begin_token)) {
+    return true;
+  }
+  return false;
+}
+
+static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
+  switch (lexer->lookahead) {
+  case ' ':
+  case '\t':
+  case '\r':
+  case '\n':
+    return false;
+  default:
+    lexer->result_symbol = NON_WHITESPACE_CHECK;
+    return true;
+  }
+}
+
 #ifdef DEBUG
 static void dump(Scanner *s, TSLexer *lexer);
-static void dump_valid_symbols(const bool *valid_symbols);
+static void dump_all_valid_symbols(const bool *valid_symbols);
+static void dump_some_valid_symbols(const bool *valid_symbols);
 #endif
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
@@ -1705,7 +2827,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 #ifdef DEBUG
   printf("SCAN\n");
   dump(s, lexer);
-  dump_valid_symbols(valid_symbols);
+  dump_some_valid_symbols(valid_symbols);
 #endif
 
   // Mark end right from the start and then when outputting results
@@ -1733,6 +2855,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   printf("---\n");
 #endif
 
+  if (valid_symbols[ERROR]) {
+    lexer->result_symbol = ERROR;
+    return true;
+  }
+
   if (valid_symbols[BLOCK_CLOSE] && handle_blocks_to_close(s, lexer)) {
     return true;
   }
@@ -1751,26 +2878,17 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
+  if (valid_symbols[INDENTED_CONTENT_SPACER] &&
+      parse_indented_content_spacer(s, lexer, is_newline)) {
+    return true;
+  }
+
   if (valid_symbols[LIST_ITEM_CONTINUATION] &&
-      parse_list_item_continuation(s, lexer, is_newline)) {
+      parse_list_item_continuation(s, lexer)) {
     return true;
   }
-
-  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
-    return true;
-  }
-  if (parse_footnote_end(s, lexer, valid_symbols)) {
-    return true;
-  }
-
-  if (valid_symbols[BLOCK_CLOSE] &&
-      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
-    return true;
-  }
-
-  // End previous list item before opening new ones.
-  if (valid_symbols[LIST_ITEM_END] &&
-      parse_list_item_end(s, lexer, valid_symbols)) {
+  if (valid_symbols[FOOTNOTE_CONTINUATION] &&
+      parse_footnote_continuation(s, lexer)) {
     return true;
   }
 
@@ -1785,14 +2903,44 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     }
   }
 
+  if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
+    return true;
+  }
+  if (valid_symbols[FOOTNOTE_END] && parse_footnote_end(s, lexer)) {
+    return true;
+  }
+  if (valid_symbols[LINK_REF_DEF_LABEL_END] &&
+      parse_link_ref_def_label_end(s, lexer)) {
+    return true;
+  }
+
+  if (valid_symbols[BLOCK_CLOSE] &&
+      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
+    return true;
+  }
+
+  // End previous list item before opening new ones.
+  if (valid_symbols[LIST_ITEM_END] &&
+      parse_list_item_end(s, lexer, valid_symbols)) {
+    return true;
+  }
+
   if (parse_block_quote(s, lexer, valid_symbols)) {
     return true;
   }
   if (parse_heading(s, lexer, valid_symbols)) {
     return true;
   }
+  if (parse_comment_end(s, lexer, valid_symbols)) {
+    return true;
+  }
 
   switch (lexer->lookahead) {
+  case '[':
+    if (parse_open_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
   case '-':
     if (parse_dash(s, lexer, valid_symbols)) {
       return true;
@@ -1818,18 +2966,63 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
     break;
-  case '[':
-    if (parse_open_bracket(s, lexer, valid_symbols)) {
-      return true;
-    }
-    break;
   case '\n':
     if (parse_newline(s, lexer, valid_symbols)) {
       return true;
     }
     break;
+  case '|':
+    if (parse_table_begin(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '{':
+    if (parse_open_curly_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
   default:
     break;
+  }
+
+  if (valid_symbols[NON_WHITESPACE_CHECK] && check_non_whitespace(s, lexer)) {
+    return true;
+  }
+  // There's no overlap of leading characters that the scanner needs to
+  // manage, so we can hide all individual character checks inside these parse
+  // functions.
+  // if (parse_verbatim(s, lexer, valid_symbols)) {
+  //   return true;
+  // }
+  if (parse_span(s, lexer, valid_symbols, EMPHASIS)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, STRONG)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SUPERSCRIPT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SUBSCRIPT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, HIGHLIGHTED)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, INSERT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, DELETE)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, PARENS_SPAN)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, CURLY_BRACKET_SPAN)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SQUARE_BRACKET_SPAN)) {
+    return true;
   }
 
   // Scan ordered list markers outside because the parsing may conflict with
@@ -1849,6 +3042,14 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
+  if (valid_symbols[TABLE_CELL_END] && parse_table_cell_end(s, lexer)) {
+    return true;
+  }
+
+  if (valid_symbols[HARD_LINE_BREAK] && parse_hard_line_break(s, lexer)) {
+    return true;
+  }
+
   // May scan a complete list marker, which we can't do before checking if
   // we should output the list marker itself.
   // Yeah, the order dependencies aren't very nice.
@@ -1865,19 +3066,21 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   return false;
 }
 
-void init(Scanner *s) {
+static void init(Scanner *s) {
+  array_init(s->open_inline);
   array_init(s->open_blocks);
   s->blocks_to_close = 0;
   s->delayed_token = IGNORED;
   s->delayed_token_width = 0;
-  s->verbatim_tick_count = 0;
   s->block_quote_level = 0;
   s->indent = 0;
+  s->state = 0;
 }
 
 void *tree_sitter_djot_external_scanner_create() {
   Scanner *s = (Scanner *)ts_malloc(sizeof(Scanner));
   s->open_blocks = ts_malloc(sizeof(Array(Block *)));
+  s->open_inline = ts_malloc(sizeof(Array(Inline *)));
   init(s);
   return s;
 }
@@ -1888,6 +3091,10 @@ void tree_sitter_djot_external_scanner_destroy(void *payload) {
     ts_free(*array_get(s->open_blocks, i));
   }
   array_delete(s->open_blocks);
+  for (size_t i = 0; i < s->open_inline->size; ++i) {
+    ts_free(*array_get(s->open_inline, i));
+  }
+  array_delete(s->open_inline);
   ts_free(s);
 }
 
@@ -1898,14 +3105,21 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->blocks_to_close;
   buffer[size++] = (char)s->delayed_token;
   buffer[size++] = (char)s->delayed_token_width;
-  buffer[size++] = (char)s->verbatim_tick_count;
   buffer[size++] = (char)s->block_quote_level;
   buffer[size++] = (char)s->indent;
+  buffer[size++] = (char)s->state;
 
+  buffer[size++] = (char)s->open_blocks->size;
   for (size_t i = 0; i < s->open_blocks->size; ++i) {
     Block *b = *array_get(s->open_blocks, i);
     buffer[size++] = (char)b->type;
-    buffer[size++] = (char)b->level;
+    buffer[size++] = (char)b->data;
+  }
+
+  for (size_t i = 0; i < s->open_inline->size; ++i) {
+    Inline *x = *array_get(s->open_inline, i);
+    buffer[size++] = (char)x->type;
+    buffer[size++] = (char)x->data;
   }
 
   return size;
@@ -1920,14 +3134,20 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     s->blocks_to_close = (uint8_t)buffer[size++];
     s->delayed_token = (TokenType)buffer[size++];
     s->delayed_token_width = (uint8_t)buffer[size++];
-    s->verbatim_tick_count = (uint8_t)buffer[size++];
     s->block_quote_level = (uint8_t)buffer[size++];
     s->indent = (uint8_t)buffer[size++];
+    s->state = (uint8_t)buffer[size++];
 
-    while (size < length) {
+    uint8_t open_blocks = (uint8_t)buffer[size++];
+    while (open_blocks-- > 0) {
       BlockType type = (BlockType)buffer[size++];
       uint8_t level = (uint8_t)buffer[size++];
       array_push(s->open_blocks, create_block(type, level));
+    }
+    while (size < length) {
+      InlineType type = (InlineType)buffer[size++];
+      uint8_t data = (uint8_t)buffer[size++];
+      array_push(s->open_inline, create_inline(type, data));
     }
   }
 }
@@ -1936,6 +3156,9 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
 
 static char *token_type_s(TokenType t) {
   switch (t) {
+  case IGNORED:
+    return "IGNORED";
+
   case BLOCK_CLOSE:
     return "BLOCK_CLOSE";
   case EOF_OR_NEWLINE:
@@ -1944,34 +3167,16 @@ static char *token_type_s(TokenType t) {
     return "NEWLINE";
   case NEWLINE_INLINE:
     return "NEWLINE_INLINE";
+  case NON_WHITESPACE_CHECK:
+    return "NON_WHITESPACE_CHECK";
 
   case FRONTMATTER_MARKER:
     return "FRONTMATTER_MARKER";
 
-  case HEADING1_BEGIN:
-    return "HEADING1_BEGIN";
-  case HEADING1_CONTINUATION:
-    return "HEADING1_CONTINUATION";
-  case HEADING2_BEGIN:
-    return "HEADING2_BEGIN";
-  case HEADING2_CONTINUATION:
-    return "HEADING2_CONTINUATION";
-  case HEADING3_BEGIN:
-    return "HEADING3_BEGIN";
-  case HEADING3_CONTINUATION:
-    return "HEADING3_CONTINUATION";
-  case HEADING4_BEGIN:
-    return "HEADING4_BEGIN";
-  case HEADING4_CONTINUATION:
-    return "HEADING4_CONTINUATION";
-  case HEADING5_BEGIN:
-    return "HEADING5_BEGIN";
-  case HEADING5_CONTINUATION:
-    return "HEADING5_CONTINUATION";
-  case HEADING6_BEGIN:
-    return "HEADING6_BEGIN";
-  case HEADING6_CONTINUATION:
-    return "HEADING6_CONTINUATION";
+  case HEADING_BEGIN:
+    return "HEADING";
+  case HEADING_CONTINUATION:
+    return "HEADING_CONTINUATION";
   case DIV_BEGIN:
     return "DIV_BEGIN";
   case DIV_END:
@@ -2024,6 +3229,8 @@ static char *token_type_s(TokenType t) {
     return "LIST_ITEM_CONTINUATION";
   case LIST_ITEM_END:
     return "LIST_ITEM_END";
+  case INDENTED_CONTENT_SPACER:
+    return "INDENTED_CONTENT_SPACER";
   case CLOSE_PARAGRAPH:
     return "CLOSE_PARAGRAPH";
   case BLOCK_QUOTE_BEGIN:
@@ -2034,14 +3241,36 @@ static char *token_type_s(TokenType t) {
     return "THEMATIC_BREAK_DASH";
   case THEMATIC_BREAK_STAR:
     return "THEMATIC_BREAK_STAR";
-  case FOOTNOTE_BEGIN:
-    return "FOOTNOTE_BEGIN";
+  case FOOTNOTE_MARK_BEGIN:
+    return "FOOTNOTE_MARK_BEGIN";
+  case FOOTNOTE_CONTINUATION:
+    return "FOOTNOTE_CONTINUATION";
   case FOOTNOTE_END:
     return "FOOTNOTE_END";
+  case LINK_REF_DEF_MARK_BEGIN:
+    return "LINK_REF_DEF_MARK_BEGIN";
+  case LINK_REF_DEF_LABEL_END:
+    return "LINK_REF_DEF_LABEL_END";
+  case TABLE_HEADER_BEGIN:
+    return "TABLE_HEADER_BEGIN";
+  case TABLE_SEPARATOR_BEGIN:
+    return "TABLE_SEPARATOR_BEGIN";
+  case TABLE_ROW_BEGIN:
+    return "TABLE_ROW_BEGIN";
+  case TABLE_ROW_END_NEWLINE:
+    return "TABLE_ROW_END_NEWLINE";
+  case TABLE_CELL_END:
+    return "TABLE_CELL_END";
   case TABLE_CAPTION_BEGIN:
     return "TABLE_CAPTION_BEGIN";
   case TABLE_CAPTION_END:
     return "TABLE_CAPTION_END";
+  case BLOCK_ATTRIBUTE_BEGIN:
+    return "BLOCK_ATTRIBUTE_BEGIN";
+  case COMMENT_END_MARKER:
+    return "COMMENT_END_MARKER";
+  case COMMENT_CLOSE:
+    return "COMMENT_CLOSE";
 
   case VERBATIM_BEGIN:
     return "VERBATIM_BEGIN";
@@ -2050,12 +3279,55 @@ static char *token_type_s(TokenType t) {
   case VERBATIM_CONTENT:
     return "VERBATIM_CONTENT";
 
+  case EMPHASIS_MARK_BEGIN:
+    return "EMPHASIS_MARK_BEGIN";
+  case EMPHASIS_END:
+    return "EMPHASIS_END";
+  case STRONG_MARK_BEGIN:
+    return "STRONG_MARK_BEGIN";
+  case STRONG_END:
+    return "STRONG_END";
+  case SUPERSCRIPT_MARK_BEGIN:
+    return "SUPERSCRIPT_MARK_BEGIN";
+  case SUPERSCRIPT_END:
+    return "SUPERSCRIPT_END";
+  case SUBSCRIPT_MARK_BEGIN:
+    return "SUBSCRIPT_MARK_BEGIN";
+  case SUBSCRIPT_END:
+    return "SUBSCRIPT_END";
+  case HIGHLIGHTED_MARK_BEGIN:
+    return "HIGHLIGHTED_MARK_BEGIN";
+  case HIGHLIGHTED_END:
+    return "HIGHLIGHTED_END";
+  case INSERT_MARK_BEGIN:
+    return "INSERT_MARK_BEGIN";
+  case INSERT_END:
+    return "INSERT_END";
+  case DELETE_MARK_BEGIN:
+    return "DELETE_MARK_BEGIN";
+  case DELETE_END:
+    return "DELETE_END";
+
+  case PARENS_SPAN_MARK_BEGIN:
+    return "PARENS_SPAN_MARK_BEGIN";
+  case PARENS_SPAN_END:
+    return "PARENS_SPAN_END";
+  case CURLY_BRACKET_SPAN_MARK_BEGIN:
+    return "CURLY_BRACKET_SPAN_MARK_BEGIN";
+  case CURLY_BRACKET_SPAN_END:
+    return "CURLY_BRACKET_SPAN_END";
+  case SQUARE_BRACKET_SPAN_MARK_BEGIN:
+    return "SQUARE_BRACKET_SPAN_MARK_BEGIN";
+  case SQUARE_BRACKET_SPAN_END:
+    return "SQUARE_BRACKET_SPAN_END";
+
+  case IN_FALLBACK:
+    return "IN_FALLBACK";
+
   case ERROR:
     return "ERROR";
-  case IGNORED:
-    return "IGNORED";
-  default:
-    return "NOT IMPLEMENTED";
+    // default:
+    //   return "NOT IMPLEMENTED";
   }
 }
 
@@ -2073,6 +3345,10 @@ static char *block_type_s(BlockType t) {
     return "CODE_BLOCK";
   case FOOTNOTE:
     return "FOOTNOTE";
+  case LINK_REF_DEF:
+    return "LINK_REF_DEF";
+  case TABLE_ROW:
+    return "TABLE_ROW";
   case TABLE_CAPTION:
     return "TABLE_CAPTION";
   case LIST_DASH:
@@ -2115,26 +3391,76 @@ static char *block_type_s(BlockType t) {
     return "LIST_LOWER_ROMAN_PARENS";
   case LIST_UPPER_ROMAN_PARENS:
     return "LIST_UPPER_ROMAN_PARENS";
+    // default:
+    //   return "NOT IMPLEMENTED";
+  }
+}
+
+static char *inline_type_s(InlineType t) {
+  switch (t) {
+  case VERBATIM:
+    return "VERBATIM";
+  case EMPHASIS:
+    return "EMPHASIS";
+  case STRONG:
+    return "STRONG";
+  case SUPERSCRIPT:
+    return "SUPERSCRIPT";
+  case SUBSCRIPT:
+    return "SUBSCRIPT";
+  case HIGHLIGHTED:
+    return "HIGHLIGHTED";
+  case INSERT:
+    return "INSERT";
+  case DELETE:
+    return "DELETE";
+  case PARENS_SPAN:
+    return "PARENS_SPAN";
+  case CURLY_BRACKET_SPAN:
+    return "CURLY_BRACKET_SPAN";
+  case SQUARE_BRACKET_SPAN:
+    return "SQUARE_BRACKET_SPAN";
   default:
     return "NOT IMPLEMENTED";
   }
 }
 
 static void dump_scanner(Scanner *s) {
-  printf("--- Open blocks: %u (last -> first)\n", s->open_blocks->size);
-  for (size_t i = 0; i < s->open_blocks->size; ++i) {
-    Block *b = *array_get(s->open_blocks, i);
-    printf("  %d %s\n", b->level, block_type_s(b->type));
+  if (s->open_blocks->size == 0) {
+    printf("0 open blocks\n");
+  } else {
+
+    printf("--- Open blocks: %u (last -> first)\n", s->open_blocks->size);
+    for (size_t i = 0; i < s->open_blocks->size; ++i) {
+      Block *b = *array_get(s->open_blocks, i);
+      printf("  %d %s\n", b->data, block_type_s(b->type));
+    }
+    printf("---\n");
   }
-  printf("---\n");
+  if (s->open_inline->size == 0) {
+    printf("0 open inline\n");
+  } else {
+    printf("--- Open inline: %u (last -> first)\n", s->open_inline->size);
+    for (size_t i = 0; i < s->open_inline->size; ++i) {
+      Inline *x = *array_get(s->open_inline, i);
+      printf("  %d %s\n", x->data, inline_type_s(x->type));
+    }
+    printf("---\n");
+  }
   printf("  blocks_to_close: %d\n", s->blocks_to_close);
   if (s->delayed_token != IGNORED) {
     printf("  delayed_token: %s\n", token_type_s(s->delayed_token));
     printf("  delayed_token_width: %d\n", s->delayed_token_width);
   }
-  printf("  verbatim_tick_count: %u\n", s->verbatim_tick_count);
   printf("  block_quote_level: %u\n", s->block_quote_level);
   printf("  indent: %u\n", s->indent);
+  printf("  state: %u\n", s->state);
+  if (s->state & STATE_BRACKET_STARTS_SPAN) {
+    printf("    STATE_BRACKET_STARTS_SPAN");
+  }
+  if (s->state & STATE_BRACKET_STARTS_INLINE_LINK) {
+    printf("    STATE_BRACKET_STARTS_INLINE_LINK");
+  }
   printf("===\n");
 }
 
@@ -2148,13 +3474,7 @@ static void dump(Scanner *s, TSLexer *lexer) {
   dump_scanner(s);
 }
 
-static void dump_valid_symbols(const bool *valid_symbols) {
-  // printf("# valid_symbols:\n");
-  // for (int i = 0; i <= ERROR; ++i) {
-  //   if (valid_symbols[i]) {
-  //     printf("%s\n", token_type_s(i));
-  //   }
-  // }
+static void dump_some_valid_symbols(const bool *valid_symbols) {
   if (valid_symbols[ERROR]) {
     printf("# In error recovery ALL SYMBOLS ARE VALID\n");
     return;
@@ -2164,21 +3484,32 @@ static void dump_valid_symbols(const bool *valid_symbols) {
     switch (i) {
     case BLOCK_CLOSE:
     // case BLOCK_QUOTE_BEGIN:
-    case BLOCK_QUOTE_CONTINUATION:
-    case CLOSE_PARAGRAPH:
-    // case FOOTNOTE_BEGIN:
-    // case FOOTNOTE_END:
+    // case BLOCK_QUOTE_CONTINUATION:
+    // case CLOSE_PARAGRAPH:
+    case FOOTNOTE_MARK_BEGIN:
+    case FOOTNOTE_END:
+    case EOF_OR_NEWLINE:
     case NEWLINE:
     case NEWLINE_INLINE:
-    // case LIST_MARKER_TASK_BEGIN:
-    case LIST_MARKER_DASH:
-    // case LIST_MARKER_STAR:
-    // case LIST_MARKER_PLUS:
-    case LIST_ITEM_CONTINUATION:
-    case LIST_ITEM_END:
-    case EOF_OR_NEWLINE:
-    case DIV_BEGIN:
-    case DIV_END:
+    case LINK_REF_DEF_MARK_BEGIN:
+    case LINK_REF_DEF_LABEL_END:
+    case SQUARE_BRACKET_SPAN_MARK_BEGIN:
+    case SQUARE_BRACKET_SPAN_END:
+      // case TABLE_HEADER_BEGIN:
+      // case TABLE_SEPARATOR_BEGIN:
+      // case TABLE_ROW_BEGIN:
+      // case TABLE_ROW_END_NEWLINE:
+      // case TABLE_CELL_END:
+      // case TABLE_CAPTION_BEGIN:
+      // case TABLE_CAPTION_END:
+      // case LIST_MARKER_TASK_BEGIN:
+      // case LIST_MARKER_DASH:
+      // case LIST_MARKER_STAR:
+      // case LIST_MARKER_PLUS:
+      // case LIST_ITEM_CONTINUATION:
+      // case LIST_ITEM_END:
+      // case DIV_BEGIN:
+      // case DIV_END:
       // case TABLE_CAPTION_BEGIN:
       // case TABLE_CAPTION_END:
       if (valid_symbols[i]) {
@@ -2187,6 +3518,20 @@ static void dump_valid_symbols(const bool *valid_symbols) {
       break;
     default:
       continue;
+    }
+  }
+  printf("#\n");
+}
+
+static void dump_all_valid_symbols(const bool *valid_symbols) {
+  if (valid_symbols[ERROR]) {
+    printf("# In error recovery ALL SYMBOLS ARE VALID\n");
+    return;
+  }
+  printf("# all valid_symbols:\n");
+  for (int i = 0; i <= ERROR; ++i) {
+    if (valid_symbols[i]) {
+      printf("%s\n", token_type_s(i));
     }
   }
   printf("#\n");

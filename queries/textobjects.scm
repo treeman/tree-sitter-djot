@@ -12,22 +12,7 @@
   (#offset! @class.inner 0 0 -1 0)) @class.outer
 
 ; Functions, the next level
-(heading1
-  (content) @function.inner) @function.outer
-
-(heading2
-  (content) @function.inner) @function.outer
-
-(heading3
-  (content) @function.inner) @function.outer
-
-(heading4
-  (content) @function.inner) @function.outer
-
-(heading5
-  (content) @function.inner) @function.outer
-
-(heading6
+(heading
   (content) @function.inner) @function.outer
 
 (div
