@@ -230,6 +230,8 @@ static const uint8_t STATE_BRACKET_STARTS_INLINE_LINK = 1 << 0;
 // It's used to prune branches where it does not, fixing precedence
 // issues where the span wasn't chosen despite being closed first.
 static const uint8_t STATE_BRACKET_STARTS_SPAN = 1 << 1;
+// Tracks if the next table row is a separator row.
+static const uint8_t STATE_TABLE_SEPARATOR_NEXT = 1 << 2;
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
@@ -1449,7 +1451,6 @@ static bool parse_footnote_begin(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // TODO maybe these aren't even necessary anymore?
   if (!valid_symbols[IN_FALLBACK]) {
     push_block(s, FOOTNOTE, s->indent + 2);
   }
@@ -1938,7 +1939,12 @@ static bool scan_separator_row(Scanner *s, TSLexer *lexer) {
   return lexer->lookahead == '\n';
 }
 
-static uint8_t scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
+static bool scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
+  if (s->state & STATE_TABLE_SEPARATOR_NEXT) {
+    s->state &= ~STATE_TABLE_SEPARATOR_NEXT;
+    *row_type = TABLE_SEPARATOR_BEGIN;
+    return true;
+  }
 
   uint8_t cell_count = 0;
   bool all_separators = true;
@@ -1954,13 +1960,13 @@ static uint8_t scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
   }
 
   if (cell_count == 0) {
-    return 0;
+    return false;
   }
 
   // Nothing but whitespace and then a newline may follow a table row.
   consume_whitespace(s, lexer);
   if (lexer->lookahead != '\n') {
-    return 0;
+    return false;
   }
 
   // Consume newline.
@@ -1975,12 +1981,13 @@ static uint8_t scan_table_row(Scanner *s, TSLexer *lexer, TokenType *row_type) {
     scan_block_quote_markers(s, lexer, &newline);
 
     if (!newline && scan_separator_row(s, lexer)) {
+      s->state |= STATE_TABLE_SEPARATOR_NEXT;
       *row_type = TABLE_HEADER_BEGIN;
     } else {
       *row_type = TABLE_ROW_BEGIN;
     }
   }
-  return cell_count;
+  return true;
 }
 
 static bool parse_table_begin(Scanner *s, TSLexer *lexer,
@@ -1999,13 +2006,11 @@ static bool parse_table_begin(Scanner *s, TSLexer *lexer,
   lexer->mark_end(lexer);
 
   TokenType row_type;
-  uint8_t cell_count = scan_table_row(s, lexer, &row_type);
-  if (cell_count == 0) {
+  if (!scan_table_row(s, lexer, &row_type)) {
     return false;
   }
 
-  // Use cell_count + 1 to emit `TABLE_ROW_END` when it goes to 0.
-  push_block(s, TABLE_ROW, cell_count);
+  push_block(s, TABLE_ROW, 0);
   lexer->result_symbol = row_type;
   return true;
 }
@@ -2016,11 +2021,6 @@ static bool parse_table_end_newline(Scanner *s, TSLexer *lexer) {
   }
   Block *top = peek_block(s);
   if (!top || top->type != TABLE_ROW) {
-    return false;
-  }
-
-  // This may not even be needed?
-  if (top->data != 0) {
     return false;
   }
 
@@ -2042,11 +2042,6 @@ static bool parse_table_cell_end(Scanner *s, TSLexer *lexer) {
 
   Block *top = peek_block(s);
   if (!top || top->type != TABLE_ROW) {
-    return false;
-  }
-
-  // All cells are closed, should end the row.
-  if (top->data == 0) {
     return false;
   }
 
@@ -2149,9 +2144,6 @@ static bool scan_value(Scanner *s, TSLexer *lexer) {
 static bool parse_open_curly_bracket(Scanner *s, TSLexer *lexer,
                                      const bool *valid_symbols) {
 
-  // TODO
-  // if (valid_symbols[INLINE_COMMENT_MARKER_BEGIN] &&
-  // parse_inline_comment(begin(s, lexer))
   if (!valid_symbols[BLOCK_ATTRIBUTE_BEGIN] &&
       !valid_symbols[INLINE_COMMENT_BEGIN]) {
     return false;
