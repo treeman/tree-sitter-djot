@@ -364,22 +364,3 @@
 
 (full_reference_image
   (link_label) @nospell)
-
-; Please note that each editor handles highlighting differently.
-; This file is made with Neovim in mind and will not
-; work correctly in other editors, but can serve as a starting point.
-;
-;
-;
-;
-;
-;
-;
-;
-; ; Note that these aren't standard in nvim-treesitter,
-; ; but I didn't find any that fit well.
-; (highlighted) @markup.highlighted
-;
-; (superscript) @markup.superscript
-;
-; (subscript) @markup.subscript
