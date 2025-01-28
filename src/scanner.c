@@ -1798,38 +1798,6 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static bool scan_footnote(Scanner *s, TSLexer *lexer) {
-  // Scan initial `[^`
-  if (lexer->lookahead != '[') {
-    return false;
-  }
-  advance(s, lexer);
-  if (lexer->lookahead != '^') {
-    return false;
-  }
-  advance(s, lexer);
-
-  // Identifier can have surrounding whitespace
-  consume_whitespace(s, lexer);
-  if (!scan_identifier(s, lexer)) {
-    return false;
-  }
-  consume_whitespace(s, lexer);
-
-  // Scan `]:`
-  if (lexer->lookahead != ']') {
-    return false;
-  }
-  advance(s, lexer);
-  if (lexer->lookahead != ':') {
-    return false;
-  }
-  advance(s, lexer);
-
-  // Don't actually have to have anything else after the colon.
-  return true;
-}
-
 static bool parse_footnote_end(Scanner *s, TSLexer *lexer) {
   Block *top = peek_block(s);
   if (!top || top->type != FOOTNOTE) {
@@ -2480,8 +2448,8 @@ static char inline_begin_token(InlineType type) {
     return CURLY_BRACKET_SPAN_MARK_BEGIN;
   case SQUARE_BRACKET_SPAN:
     return SQUARE_BRACKET_SPAN_MARK_BEGIN;
-    // default:
-    //   return ERROR;
+  default:
+    return ERROR;
   }
 }
 
@@ -2509,8 +2477,8 @@ static char inline_end_token(InlineType type) {
     return CURLY_BRACKET_SPAN_END;
   case SQUARE_BRACKET_SPAN:
     return SQUARE_BRACKET_SPAN_END;
-    // default:
-    //   return ERROR;
+  default:
+    return ERROR;
   }
 }
 
