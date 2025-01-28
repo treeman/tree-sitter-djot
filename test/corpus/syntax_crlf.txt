@@ -39,7 +39,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -59,7 +59,7 @@ A paragraph
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content
         (marker)
@@ -76,12 +76,12 @@ Heading: closed by higher heading on the next line
 
 (document
   (section
-    (heading1
+    (heading
       (marker)
       (content))
     (section_content
       (section
-        (heading2
+        (heading
           (marker)
           (content))))))
 
@@ -95,11 +95,11 @@ Heading: closed by lower heading on the next line
 
 (document
   (section
-    (heading2
+    (heading
       (marker)
       (content)))
   (section
-    (heading1
+    (heading
       (marker)
       (content))))
 
@@ -118,7 +118,7 @@ stop
   (div
     (div_marker_begin)
     (content
-      (heading4 (marker) (content)))
+      (heading (marker) (content)))
     (div_marker_end))
   (paragraph))
 
@@ -132,7 +132,7 @@ Heading 6: list closes
 
 (document
   (section
-    (heading6 (marker) (content))
+    (heading (marker) (content))
     (section_content
       (list
         (list_item
@@ -358,12 +358,12 @@ Table: inside blockquote
         (table_header
           (table_cell)
           (table_cell))
+        (block_quote_marker)
         (table_separator
-          (block_quote_marker)
           (table_cell_alignment)
           (table_cell_alignment))
+        (block_quote_marker)
         (table_row
-          (block_quote_marker)
           (table_cell)
           (table_cell))))))
 

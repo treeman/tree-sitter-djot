@@ -1,0 +1,29 @@
+{
+  "grammars": [
+    {
+      "name": "djot",
+      "camelcase": "Djot",
+      "scope": "text.djot",
+      "path": ".",
+      "file-types": ["dj"],
+      "highlights": ["queries/highlights.scm"],
+      "injection-regex": "djot"
+    }
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "license": "MIT",
+    "description": "Djot grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/treeman/tree-sitter-djot"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

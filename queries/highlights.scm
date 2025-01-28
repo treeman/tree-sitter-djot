@@ -1,46 +1,22 @@
-; Please note that each editor handles highlighting differently.
-; This file is made with Neovim in mind and will not
-; work correctly in other editors, but can serve as a starting point.
-[
-  (paragraph)
-  (comment)
-  (table_cell)
-] @spell
+(heading) @markup.heading
 
-[
-  (autolink)
-  (inline_link_destination)
-  (link_destination)
-  (code_block)
-  (raw_block)
-  (math)
-  (raw_inline)
-  (verbatim)
-  (reference_label)
-  (class)
-  (class_name)
-  (identifier)
-  (key_value)
-  (frontmatter)
-] @nospell
+((heading) @markup.heading.1
+  (#match? @markup.heading.1 "^# "))
 
-(full_reference_link
-  (link_label) @nospell)
+((heading) @markup.heading.2
+  (#match? @markup.heading.2 "^## "))
 
-(full_reference_image
-  (link_label) @nospell)
+((heading) @markup.heading.3
+  (#match? @markup.heading.3 "^### "))
 
-(heading1) @markup.heading.1
+((heading) @markup.heading.4
+  (#match? @markup.heading.4 "^#### "))
 
-(heading2) @markup.heading.2
+((heading) @markup.heading.5
+  (#match? @markup.heading.5 "^##### "))
 
-(heading3) @markup.heading.3
-
-(heading4) @markup.heading.4
-
-(heading5) @markup.heading.5
-
-(heading6) @markup.heading.6
+((heading) @markup.heading.6
+  (#match? @markup.heading.6 "^###### "))
 
 (thematic_break) @string.special
 
@@ -80,10 +56,9 @@
 ((language_marker) @punctuation.delimiter
   (#set! conceal ""))
 
-[
-  (block_quote)
-  (block_quote_marker)
-] @markup.quote
+(block_quote) @markup.quote
+
+(block_quote_marker) @punctuation.special
 
 (table_header) @markup.heading
 
@@ -136,38 +111,27 @@
   (ellipsis)
   (en_dash)
   (em_dash)
+  (quotation_marks)
 ] @string.special
 
 (list_item
   (term) @type.definition)
 
-(quotation_marks) @string.special
+; Conceal { and } but leave " and '
+((quotation_marks) @string.special
+  (#any-of? @string.special "\"}" "'}")
+  (#offset! @string.special 0 1 0 0)
+  (#set! conceal ""))
 
 ((quotation_marks) @string.special
-  (#eq? @string.special "{\"")
-  (#set! conceal "“"))
-
-((quotation_marks) @string.special
-  (#eq? @string.special "\"}")
-  (#set! conceal "”"))
-
-((quotation_marks) @string.special
-  (#eq? @string.special "{'")
-  (#set! conceal "‘"))
-
-((quotation_marks) @string.special
-  (#eq? @string.special "'}")
-  (#set! conceal "’"))
-
-((quotation_marks) @string.special
-  (#any-of? @string.special "\\\"" "\\'")
+  (#any-of? @string.special "\\\"" "\\'" "{'" "{\"")
   (#offset! @string.special 0 0 0 -1)
   (#set! conceal ""))
 
-((hard_line_break) @string.escape
-  (#set! conceal "↵"))
-
-(backslash_escape) @string.escape
+[
+  (hard_line_break)
+  (backslash_escape)
+] @string.escape
 
 ; Only conceal \ but leave escaped character.
 ((backslash_escape) @string.escape
@@ -186,58 +150,27 @@
 
 (delete) @markup.strikethrough
 
-; Note that these aren't standard in nvim-treesitter,
-; but I didn't find any that fit well.
-(highlighted) @markup.highlighted
-
-(superscript) @markup.superscript
-
-(subscript) @markup.subscript
-
-; We need to target tokens specifically because `{=` etc can exist as fallback symbols in
-; regular text, which we don't want to highlight or conceal.
-(highlighted
-  [
-    "{="
-    "=}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(insert
-  [
-    "{+"
-    "+}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(delete
-  [
-    "{-"
-    "-}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(superscript
-  [
-    "^"
-    "{^"
-    "^}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
-
-(subscript
-  [
-    "~"
-    "{~"
-    "~}"
-  ] @punctuation.delimiter
-  (#set! conceal ""))
+[
+  (highlighted)
+  (superscript)
+  (subscript)
+] @string.special
 
 ([
   (emphasis_begin)
   (emphasis_end)
   (strong_begin)
   (strong_end)
+  (superscript_begin)
+  (superscript_end)
+  (subscript_begin)
+  (subscript_end)
+  (highlighted_begin)
+  (highlighted_end)
+  (insert_begin)
+  (insert_end)
+  (delete_begin)
+  (delete_end)
   (verbatim_marker_begin)
   (verbatim_marker_end)
   (math_marker)
@@ -257,16 +190,10 @@
 ((raw_inline) @markup.raw
   (#set! "priority" 90))
 
-(comment) @comment
-
-; Don't conceal standalone comments themselves, only delimiters.
-(comment
-  [
-    "{"
-    "}"
-    "%"
-  ] @comment
-  (#set! conceal ""))
+[
+  (comment)
+  (inline_comment)
+] @comment
 
 (span
   [
@@ -355,30 +282,20 @@
 
 (full_reference_image
   [
-    "!["
     "["
     "]"
   ] @punctuation.bracket)
 
 (collapsed_reference_image
-  [
-    "!["
-    "]"
-  ] @punctuation.bracket)
+  "[]" @punctuation.bracket)
 
-(inline_image
+(image_description
   [
     "!["
     "]"
   ] @punctuation.bracket)
 
 (image_description) @markup.italic
-
-(image_description
-  [
-    "["
-    "]"
-  ] @punctuation.bracket)
 
 (link_reference_definition
   [
@@ -418,3 +335,32 @@
 (note) @comment.note
 
 (fixme) @comment.error
+
+[
+  (paragraph)
+  (comment)
+  (table_cell)
+] @spell
+
+[
+  (autolink)
+  (inline_link_destination)
+  (link_destination)
+  (code_block)
+  (raw_block)
+  (math)
+  (raw_inline)
+  (verbatim)
+  (reference_label)
+  (class)
+  (class_name)
+  (identifier)
+  (key_value)
+  (frontmatter)
+] @nospell
+
+(full_reference_link
+  (link_label) @nospell)
+
+(full_reference_image
+  (link_label) @nospell)

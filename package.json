@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-djot",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "",
   "main": "bindings/node",
   "types": "bindings/node",
@@ -13,7 +13,7 @@
     "prebuildify": "prebuildify --napi --strip"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "node-addon-api": "^7.1.0",
     "node-gyp-build": "^4.8.0"
@@ -30,18 +30,6 @@
     "tree-sitter-cli": "^0.22.1",
     "prebuildify": "^6.0.0"
   },
-  "tree-sitter": [
-    {
-      "scope": "source.djot",
-      "file-types": [
-        "dj"
-      ],
-      "injection-regex": "djot",
-      "highlights": [
-        "queries/highlights.scm"
-      ]
-    }
-  ],
   "files": [
     "grammar.js",
     "binding.gyp",
