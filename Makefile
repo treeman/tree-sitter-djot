@@ -1,4 +1,4 @@
-VERSION := 0.0.1
+VERSION := 2.0.0
 
 LANGUAGE_NAME := tree-sitter-djot
 
