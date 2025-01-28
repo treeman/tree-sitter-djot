@@ -212,11 +212,6 @@ typedef struct {
   // How many BLOCK_CLOSE we should output right now?
   uint8_t blocks_to_close;
 
-  // Delayed output of a token, used to first output closing token(s)
-  // before this token.
-  TokenType delayed_token;
-  uint8_t delayed_token_width;
-
   // What's our current block quote level?
   uint8_t block_quote_level;
 
@@ -242,6 +237,9 @@ static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
 #ifdef DEBUG
 static char *block_type_s(BlockType t);
 static char *token_type_s(TokenType t);
+static void dump(Scanner *s, TSLexer *lexer);
+static void dump_all_valid_symbols(const bool *valid_symbols);
+static void dump_some_valid_symbols(const bool *valid_symbols);
 #endif
 
 static bool is_list(BlockType type) {
@@ -423,27 +421,6 @@ static bool disallow_newline(Block *top) {
   }
 }
 
-static void set_delayed_token(Scanner *s, TokenType token,
-                              uint8_t token_width) {
-  s->delayed_token = token;
-  s->delayed_token_width = token_width;
-}
-
-static bool output_delayed_token(Scanner *s, TSLexer *lexer,
-                                 const bool *valid_symbols) {
-  if (s->delayed_token == IGNORED || !valid_symbols[s->delayed_token]) {
-    return false;
-  }
-
-  lexer->result_symbol = s->delayed_token;
-  s->delayed_token = IGNORED;
-  while (s->delayed_token_width--) {
-    advance(s, lexer);
-  }
-  lexer->mark_end(lexer);
-  return true;
-}
-
 // How many blocks from the top of the stack can we find a matching block?
 // If it's directly on the top, returns 1.
 // If it cannot be found, returns 0.
@@ -501,20 +478,6 @@ static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
     s->blocks_to_close = s->blocks_to_close + count - 1;
   }
   lexer->result_symbol = BLOCK_CLOSE;
-}
-
-// Mark that we should close `count` blocks.
-// This call will only emit a single BLOCK_CLOSE token,
-// the other are emitted in `handle_blocks_to_close`.
-//
-// The final block type (such as a `DIV_END` token)
-// is emitted from `output_delayed_token` when all BLOCK_CLOSE
-// tokens are handled.
-static void close_blocks_with_final_token(Scanner *s, TSLexer *lexer,
-                                          size_t count, TokenType final,
-                                          uint8_t final_token_width) {
-  close_blocks(s, lexer, count);
-  set_delayed_token(s, final, final_token_width);
 }
 
 // Output BLOCK_CLOSE tokens, delegated from previous iteration.
@@ -669,36 +632,9 @@ static bool is_div_marker_next(Scanner *s, TSLexer *lexer) {
   return scan_div_marker(s, lexer, &colons, &from_top);
 }
 
-static bool parse_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
-  if (ticks < 3) {
-    return false;
-  }
-
-  if (s->open_blocks->size > 0) {
-    // Code blocks can't contain other blocks, so we only look at the top.
-    Block *top = peek_block(s);
-    if (top->type == CODE_BLOCK) {
-      if (top->data == ticks) {
-        // Found a matching block that we should close.
-        // Issue BLOCK_CLOSE before CODE_BLOCK_END.
-        // Don't consume ` characters this time, do it in the future.
-        close_blocks_with_final_token(s, lexer, 1, CODE_BLOCK_END, ticks);
-        return true;
-      } else {
-        // We're in a code block with a different number of `, ignore these.
-        return false;
-      }
-    }
-  }
-
-  // Not in a code block, let's start a new one.
-  lexer->mark_end(lexer);
-  push_block(s, CODE_BLOCK, ticks);
-  lexer->result_symbol = CODE_BLOCK_BEGIN;
-  return true;
-}
-
-static bool try_close_verbatim(Scanner *s, TSLexer *lexer) {
+// Try to close an open verbatim implicitly
+// (should happen on a newline).
+static bool try_implicit_close_verbatim(Scanner *s, TSLexer *lexer) {
   Inline *top = peek_inline(s);
   if (!top || top->type != VERBATIM) {
     return false;
@@ -740,11 +676,7 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
       // If we find a `, we need to count them to see if we should stop.
       uint8_t current = consume_chars(s, lexer, '`');
       if (current == top->data) {
-        // We found a matching number of `
-        // We need to return VERBATIM_CONTENT then VERBATIM_END in the next
-        // scan.
-        remove_inline(s);
-        set_delayed_token(s, VERBATIM_END, current);
+        // We found a matching number of `, stop content parsing.
         break;
       } else {
         // Found a number of ` that doesn't match the start,
@@ -763,10 +695,48 @@ static bool parse_verbatim_content(Scanner *s, TSLexer *lexer) {
   return true;
 }
 
+static bool try_end_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+  Block *top = peek_block(s);
+  if (!top || top->type != CODE_BLOCK) {
+    return false;
+  }
+  if (top->data != ticks) {
+    return false;
+  }
+  remove_block(s);
+  lexer->mark_end(lexer);
+  lexer->result_symbol = CODE_BLOCK_END;
+  return true;
+}
+
+static bool try_close_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+  Block *top = peek_block(s);
+  if (!top || top->type != CODE_BLOCK) {
+    return false;
+  }
+  if (top->data != ticks) {
+    return false;
+  }
+  lexer->result_symbol = BLOCK_CLOSE;
+  return true;
+}
+
+static bool try_begin_code_block(Scanner *s, TSLexer *lexer, uint8_t ticks) {
+  Block *top = peek_block(s);
+  if (top && top->type == CODE_BLOCK) {
+    return false;
+  }
+  push_block(s, CODE_BLOCK, ticks);
+  lexer->mark_end(lexer);
+  lexer->result_symbol = CODE_BLOCK_BEGIN;
+  return true;
+}
+
 static bool parse_backtick(Scanner *s, TSLexer *lexer,
                            const bool *valid_symbols) {
   if (!valid_symbols[CODE_BLOCK_BEGIN] && !valid_symbols[CODE_BLOCK_END] &&
-      !valid_symbols[BLOCK_CLOSE] && !valid_symbols[VERBATIM_BEGIN]) {
+      !valid_symbols[BLOCK_CLOSE] && !valid_symbols[VERBATIM_BEGIN] &&
+      !valid_symbols[VERBATIM_END]) {
     return false;
   }
 
@@ -775,12 +745,25 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // CODE_BLOCK_END is issued after BLOCK_CLOSE and is handled with a delayed
-  // output.
-  if (valid_symbols[CODE_BLOCK_BEGIN] || valid_symbols[BLOCK_CLOSE]) {
-    if (parse_code_block(s, lexer, ticks)) {
+  if (ticks >= 3) {
+    if (valid_symbols[CODE_BLOCK_END] && try_end_code_block(s, lexer, ticks)) {
       return true;
     }
+    if (valid_symbols[BLOCK_CLOSE] && try_close_code_block(s, lexer, ticks)) {
+      return true;
+    }
+    if (valid_symbols[CODE_BLOCK_BEGIN] &&
+        try_begin_code_block(s, lexer, ticks)) {
+      return true;
+    }
+  }
+
+  Inline *top = peek_inline(s);
+  if (valid_symbols[VERBATIM_END] && top && top->type == VERBATIM) {
+    remove_inline(s);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = VERBATIM_END;
+    return true;
   }
   if (valid_symbols[VERBATIM_BEGIN]) {
     lexer->mark_end(lexer);
@@ -1650,7 +1633,8 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 }
 
 static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  bool can_be_div = valid_symbols[DIV_BEGIN] || valid_symbols[DIV_END];
+  bool can_be_div = valid_symbols[DIV_BEGIN] || valid_symbols[DIV_END] ||
+                    valid_symbols[BLOCK_CLOSE];
   if (!valid_symbols[LIST_MARKER_DEFINITION] && !can_be_div) {
     return false;
   }
@@ -1684,17 +1668,28 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
 
   size_t from_top = number_of_blocks_from_top(s, DIV, colons);
 
-  if (from_top > 0) {
-    // Found a div we should close.
-    close_blocks_with_final_token(s, lexer, from_top, DIV_END, colons);
-    return true;
-  } else {
-    // We can consume the colons as we start a new div now.
-    lexer->mark_end(lexer);
+  if (from_top == 0) {
+    if (!valid_symbols[DIV_BEGIN]) {
+      return false;
+    }
     push_block(s, DIV, colons);
+    lexer->mark_end(lexer);
     lexer->result_symbol = DIV_BEGIN;
     return true;
   }
+
+  if (valid_symbols[DIV_END]) {
+    remove_block(s);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DIV_END;
+    return true;
+  }
+  if (valid_symbols[BLOCK_CLOSE]) {
+    s->blocks_to_close = from_top - 1;
+    lexer->result_symbol = BLOCK_CLOSE;
+    return true;
+  }
+  return false;
 }
 
 static bool parse_heading(Scanner *s, TSLexer *lexer,
@@ -2351,7 +2346,7 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
       parse_table_end_newline(s, lexer)) {
     return true;
   }
-  if (valid_symbols[VERBATIM_END] && try_close_verbatim(s, lexer)) {
+  if (valid_symbols[VERBATIM_END] && try_implicit_close_verbatim(s, lexer)) {
     return true;
   }
 
@@ -2813,12 +2808,6 @@ static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
   }
 }
 
-#ifdef DEBUG
-static void dump(Scanner *s, TSLexer *lexer);
-static void dump_all_valid_symbols(const bool *valid_symbols);
-static void dump_some_valid_symbols(const bool *valid_symbols);
-#endif
-
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
 
@@ -2873,8 +2862,20 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
 #endif
 
-  // Buffered tokens can come after blocks are closed.
-  if (output_delayed_token(s, lexer, valid_symbols)) {
+  if (valid_symbols[BLOCK_CLOSE] &&
+      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
+    return true;
+  }
+
+  if (is_newline && parse_newline(s, lexer, valid_symbols)) {
+    return true;
+  }
+
+  // Needs to be done before indented content spacer and list item continuation
+  if (lexer->lookahead == '`' && parse_backtick(s, lexer, valid_symbols)) {
+    return true;
+  }
+  if (lexer->lookahead == ':' && parse_colon(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -2897,11 +2898,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (valid_symbols[VERBATIM_CONTENT] && parse_verbatim_content(s, lexer)) {
     return true;
   }
-  if (valid_symbols[VERBATIM_END] && lexer->eof) {
-    if (try_close_verbatim(s, lexer)) {
-      return true;
-    }
-  }
 
   if (valid_symbols[CLOSE_PARAGRAPH] && parse_close_paragraph(s, lexer)) {
     return true;
@@ -2911,11 +2907,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
   if (valid_symbols[LINK_REF_DEF_LABEL_END] &&
       parse_link_ref_def_label_end(s, lexer)) {
-    return true;
-  }
-
-  if (valid_symbols[BLOCK_CLOSE] &&
-      close_list_nested_block_if_needed(s, lexer, !is_newline)) {
     return true;
   }
 
@@ -2956,21 +2947,16 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
     break;
-  case ':':
-    if (parse_colon(s, lexer, valid_symbols)) {
-      return true;
-    }
-    break;
-  case '`':
-    if (parse_backtick(s, lexer, valid_symbols)) {
-      return true;
-    }
-    break;
-  case '\n':
-    if (parse_newline(s, lexer, valid_symbols)) {
-      return true;
-    }
-    break;
+  // case ':':
+  //   if (parse_colon(s, lexer, valid_symbols)) {
+  //     return true;
+  //   }
+  //   break;
+  // case '\n':
+  //   if (parse_newline(s, lexer, valid_symbols)) {
+  //     return true;
+  //   }
+  //   break;
   case '|':
     if (parse_table_begin(s, lexer, valid_symbols)) {
       return true;
@@ -3070,8 +3056,6 @@ static void init(Scanner *s) {
   array_init(s->open_inline);
   array_init(s->open_blocks);
   s->blocks_to_close = 0;
-  s->delayed_token = IGNORED;
-  s->delayed_token_width = 0;
   s->block_quote_level = 0;
   s->indent = 0;
   s->state = 0;
@@ -3103,8 +3087,6 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   Scanner *s = (Scanner *)payload;
   unsigned size = 0;
   buffer[size++] = (char)s->blocks_to_close;
-  buffer[size++] = (char)s->delayed_token;
-  buffer[size++] = (char)s->delayed_token_width;
   buffer[size++] = (char)s->block_quote_level;
   buffer[size++] = (char)s->indent;
   buffer[size++] = (char)s->state;
@@ -3132,8 +3114,6 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
   if (length > 0) {
     size_t size = 0;
     s->blocks_to_close = (uint8_t)buffer[size++];
-    s->delayed_token = (TokenType)buffer[size++];
-    s->delayed_token_width = (uint8_t)buffer[size++];
     s->block_quote_level = (uint8_t)buffer[size++];
     s->indent = (uint8_t)buffer[size++];
     s->state = (uint8_t)buffer[size++];
@@ -3448,10 +3428,6 @@ static void dump_scanner(Scanner *s) {
     printf("---\n");
   }
   printf("  blocks_to_close: %d\n", s->blocks_to_close);
-  if (s->delayed_token != IGNORED) {
-    printf("  delayed_token: %s\n", token_type_s(s->delayed_token));
-    printf("  delayed_token_width: %d\n", s->delayed_token_width);
-  }
   printf("  block_quote_level: %u\n", s->block_quote_level);
   printf("  indent: %u\n", s->indent);
   printf("  state: %u\n", s->state);
