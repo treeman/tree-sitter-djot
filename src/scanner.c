@@ -482,8 +482,6 @@ static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
 
 // Output BLOCK_CLOSE tokens, delegated from previous iteration.
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
-  // FIXME should only be allowed to close blocks when open inline
-  // are all closed.
   if (s->open_blocks->size == 0) {
     return false;
   }
@@ -558,6 +556,11 @@ static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  // No open inline at block boundary.
+  if (s->open_inline->size > 0) {
+    return false;
+  }
+
   Block *top = peek_block(s);
   Block *list = find_list(s);
 
@@ -577,6 +580,10 @@ static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
 
 static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
                                            Block *list, TokenType list_marker) {
+  // No open inline at block boundary.
+  if (s->open_inline->size > 0) {
+    return false;
+  }
   if (list_marker != IGNORED) {
     BlockType to_open = list_marker_to_block(list_marker);
     if (list->type != to_open) {
@@ -857,6 +864,7 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   // A valid marker is a '> ' or '>\n'.
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
 
+  // No open inline at block boundary.
   bool any_open_inline = s->open_inline->size > 0;
 
   // If we have a marker but with an empty line,
@@ -875,9 +883,10 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   Block *highest_block_quote = find_block(s, BLOCK_QUOTE);
 
   // There's an open block quote with a higher nesting level.
-  if (highest_block_quote && marker_count < highest_block_quote->data) {
+  if (highest_block_quote && marker_count < highest_block_quote->data &&
+      !any_open_inline) {
     // Close the paragraph, but allow lazy continuation (without any `>`).
-    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker && !any_open_inline) {
+    if (valid_symbols[CLOSE_PARAGRAPH] && has_marker) {
       lexer->result_symbol = CLOSE_PARAGRAPH;
       return true;
     }
@@ -1394,6 +1403,7 @@ static bool parse_link_ref_def_label_end(Scanner *s, TSLexer *lexer) {
     return false;
   }
 
+  // Prevent inline from reaching outside of the link label.
   if (s->open_inline->size > 0) {
     return false;
   }
@@ -1530,6 +1540,11 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
 
   // We're still inside the list, don't end it yet.
   if (s->indent >= list->data) {
+    return false;
+  }
+
+  // No open inline at block boundary.
+  if (s->open_inline->size > 0) {
     return false;
   }
 
@@ -1678,6 +1693,11 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
     return true;
   }
 
+  // Don't let inline escape block boundary.
+  if (s->open_inline->size > 0) {
+    return false;
+  }
+
   if (valid_symbols[DIV_END]) {
     remove_block(s);
     lexer->mark_end(lexer);
@@ -1723,7 +1743,8 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
       return true;
     }
 
-    if (valid_symbols[BLOCK_CLOSE] && top_heading && top->data != hash_count) {
+    if (valid_symbols[BLOCK_CLOSE] && top_heading && top->data != hash_count &&
+        s->open_inline->size == 0) {
       // Found a mismatched heading level, need to close the previous
       // before opening this one.
       lexer->result_symbol = BLOCK_CLOSE;
@@ -1817,6 +1838,8 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer) {
   if (s->indent >= top->data) {
     return false;
   }
+
+  // Don't let inline escape boundary.
   if (s->open_inline->size > 0) {
     return false;
   }
@@ -2055,6 +2078,10 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
   if (!caption || caption->type != TABLE_CAPTION) {
     return false;
   }
+  // Don't let inline escape caption.
+  if (s->open_inline->size > 0) {
+    return false;
+  }
 
   // End is only checked at the beginning of a line, and should stop if we're
   // not indented enough.
@@ -2276,6 +2303,7 @@ static bool close_paragraph(Scanner *s, TSLexer *lexer) {
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
+  // No open inline at paragraph boundary.
   if (s->open_inline->size > 0) {
     return false;
   }
