@@ -4,42 +4,8 @@ This is an experimental [Tree-sitter][] grammar for [Djot][].
 
 # Features
 
-Aims to be fully feature complete with the [Djot specification][]:
+Aims to be fully feature complete with the [Djot specification][] with a few extra features:
 
-- [x] Inline syntax
-    - [x] Links
-    - [x] Image
-    - [x] Autolink
-    - [x] Verbatim
-    - [x] Emphasis/strong
-    - [x] Highlighted
-    - [x] Super/subscript
-    - [x] Insert/delete
-    - [x] Smart punctuation
-    - [x] Math
-    - [x] Footnote reference
-    - [x] Line break
-    - [x] Comment
-    - [x] Symbols
-    - [x] Raw inline
-    - [x] Span
-    - [x] Inline attributes
-- [x] Block syntax
-    - [x] Paragraph
-    - [x] Heading
-    - [x] Block quote
-    - [x] List item with the different marker types
-    - [x] List
-    - [x] Code block
-    - [x] Thematic break
-    - [x] Raw block
-    - [x] Div
-    - [x] Pipe table
-    - [x] Reference link definition
-    - [x] Footnote
-    - [x] Block attribute
-
-Also contains some extra features not included in the Djot standard:
 
 - Parses an optional frontmatter at the very start of the file, e.g:
 
@@ -49,7 +15,26 @@ Also contains some extra features not included in the Djot standard:
   ---
   ````
 
-- Highlights standalone `TODO`, `NOTE` and `FIXME`.
+- Parses tight sublists.
+
+  Normally in Djot you need to surround a list inside a list with spaces:
+
+  ```
+  - List
+
+    - Another
+    - list
+  ```
+
+  This grammar doesn't require a space and recognizes this as a sublist:
+
+  ```
+  - List
+    - Another
+    - list
+   ```
+
+- Parses standalone `TODO`, `NOTE` and `FIXME`.
 
 [Tree-sitter]: https://tree-sitter.github.io/tree-sitter/
 [Djot]: https://djot.net/
