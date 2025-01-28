@@ -2850,6 +2850,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
 #endif
 
+  // Please note that the parse ordering here is quite messy and there's
+  // a lot of order dependencies implicit in the implementation.
+  // One day we should clean it up but for now just be aware that
+  // it's not possible to simply reorder these however we want.
+
   if (valid_symbols[BLOCK_CLOSE] &&
       close_list_nested_block_if_needed(s, lexer, !is_newline)) {
     return true;
@@ -2935,16 +2940,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
       return true;
     }
     break;
-  // case ':':
-  //   if (parse_colon(s, lexer, valid_symbols)) {
-  //     return true;
-  //   }
-  //   break;
-  // case '\n':
-  //   if (parse_newline(s, lexer, valid_symbols)) {
-  //     return true;
-  //   }
-  //   break;
   case '|':
     if (parse_table_begin(s, lexer, valid_symbols)) {
       return true;
@@ -2962,12 +2957,9 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (valid_symbols[NON_WHITESPACE_CHECK] && check_non_whitespace(s, lexer)) {
     return true;
   }
-  // There's no overlap of leading characters that the scanner needs to
-  // manage, so we can hide all individual character checks inside these parse
-  // functions.
-  // if (parse_verbatim(s, lexer, valid_symbols)) {
-  //   return true;
-  // }
+
+  // Span scanning for inline elements, implemented
+  // in the same way to have consistent precedence handling.
   if (parse_span(s, lexer, valid_symbols, EMPHASIS)) {
     return true;
   }
