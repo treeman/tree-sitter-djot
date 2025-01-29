@@ -1,22 +1,28 @@
 (heading) @markup.heading
 
-((heading) @markup.heading.1
-  (#match? @markup.heading.1 "^# "))
+((heading
+  (marker) @_heading.marker) @markup.heading.1
+  (#eq? @_heading.marker "# "))
 
-((heading) @markup.heading.2
-  (#match? @markup.heading.2 "^## "))
+((heading
+  (marker) @_heading.marker) @markup.heading.2
+  (#eq? @_heading.marker "## "))
 
-((heading) @markup.heading.3
-  (#match? @markup.heading.3 "^### "))
+((heading
+  (marker) @_heading.marker) @markup.heading.3
+  (#eq? @_heading.marker "### "))
 
-((heading) @markup.heading.4
-  (#match? @markup.heading.4 "^#### "))
+((heading
+  (marker) @_heading.marker) @markup.heading.4
+  (#eq? @_heading.marker "##### "))
 
-((heading) @markup.heading.5
-  (#match? @markup.heading.5 "^##### "))
+((heading
+  (marker) @_heading.marker) @markup.heading.5
+  (#eq? @_heading.marker "###### "))
 
-((heading) @markup.heading.6
-  (#match? @markup.heading.6 "^###### "))
+((heading
+  (marker) @_heading.marker) @markup.heading.6
+  (#eq? @_heading.marker "####### "))
 
 (thematic_break) @string.special
 
@@ -30,7 +36,7 @@
   (raw_block)
   (frontmatter)
 ] @markup.raw.block
-  (#set! "priority" 90))
+  (#set! priority 90))
 
 ; Remove @markup.raw for code with a language spec
 (code_block
@@ -38,7 +44,7 @@
   (code_block_marker_begin)
   (language)
   (code) @none
-  (#set! "priority" 90))
+  (#set! priority 90))
 
 [
   (code_block_marker_begin)
@@ -103,9 +109,9 @@
 (list_marker_task
   (checked)) @markup.list.checked
 
+; Colorize `x` in `[x]`
 ((checked) @constant.builtin
-  (#offset! @constant.builtin 0 1 0 -1)
-  (#set! conceal "✓"))
+  (#offset! @constant.builtin 0 1 0 -1))
 
 [
   (ellipsis)
@@ -183,12 +189,12 @@
   (#set! conceal ""))
 
 ((math) @markup.math
-  (#set! "priority" 90))
+  (#set! priority 90))
 
 (verbatim) @markup.raw
 
 ((raw_inline) @markup.raw
-  (#set! "priority" 90))
+  (#set! priority 90))
 
 [
   (comment)

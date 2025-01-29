@@ -2798,7 +2798,6 @@ static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
 
 bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
-
   Scanner *s = (Scanner *)payload;
 
 #ifdef DEBUG
