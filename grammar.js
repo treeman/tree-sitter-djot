@@ -189,6 +189,7 @@ module.exports = grammar({
       ),
     _list_item_decimal_period: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_decimal_period),
         field("content", $.list_item_content),
       ),
@@ -199,6 +200,7 @@ module.exports = grammar({
       ),
     _list_item_decimal_paren: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_decimal_paren),
         field("content", $.list_item_content),
       ),
@@ -209,6 +211,7 @@ module.exports = grammar({
       ),
     _list_item_decimal_parens: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_decimal_parens),
         field("content", $.list_item_content),
       ),
@@ -220,6 +223,7 @@ module.exports = grammar({
       ),
     _list_item_lower_alpha_period: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_alpha_period),
         field("content", $.list_item_content),
       ),
@@ -230,6 +234,7 @@ module.exports = grammar({
       ),
     _list_item_lower_alpha_paren: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_alpha_paren),
         field("content", $.list_item_content),
       ),
@@ -240,6 +245,7 @@ module.exports = grammar({
       ),
     _list_item_lower_alpha_parens: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_alpha_parens),
         field("content", $.list_item_content),
       ),
@@ -251,6 +257,7 @@ module.exports = grammar({
       ),
     _list_item_upper_alpha_period: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_alpha_period),
         field("content", $.list_item_content),
       ),
@@ -261,6 +268,7 @@ module.exports = grammar({
       ),
     _list_item_upper_alpha_paren: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_alpha_paren),
         field("content", $.list_item_content),
       ),
@@ -271,6 +279,7 @@ module.exports = grammar({
       ),
     _list_item_upper_alpha_parens: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_alpha_parens),
         field("content", $.list_item_content),
       ),
@@ -282,6 +291,7 @@ module.exports = grammar({
       ),
     _list_item_lower_roman_period: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_roman_period),
         field("content", $.list_item_content),
       ),
@@ -292,6 +302,7 @@ module.exports = grammar({
       ),
     _list_item_lower_roman_paren: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_roman_paren),
         field("content", $.list_item_content),
       ),
@@ -302,6 +313,7 @@ module.exports = grammar({
       ),
     _list_item_lower_roman_parens: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_lower_roman_parens),
         field("content", $.list_item_content),
       ),
@@ -313,6 +325,7 @@ module.exports = grammar({
       ),
     _list_item_upper_roman_period: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_roman_period),
         field("content", $.list_item_content),
       ),
@@ -323,6 +336,7 @@ module.exports = grammar({
       ),
     _list_item_upper_roman_paren: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_roman_paren),
         field("content", $.list_item_content),
       ),
@@ -333,6 +347,7 @@ module.exports = grammar({
       ),
     _list_item_upper_roman_parens: ($) =>
       seq(
+        optional($._block_quote_prefix),
         field("marker", $.list_marker_upper_roman_parens),
         field("content", $.list_item_content),
       ),
