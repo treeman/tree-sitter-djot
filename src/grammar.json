@@ -3746,8 +3746,8 @@
           "name": "_parens_span_mark_begin"
         },
         {
-          "type": "PATTERN",
-          "value": "([^\\)]|\\\\\\))+"
+          "type": "SYMBOL",
+          "name": "_inline_link_url"
         },
         {
           "type": "ALIAS",
@@ -3759,6 +3759,22 @@
           "value": ")"
         }
       ]
+    },
+    "_inline_link_url": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "([^\\)\\n]|\\\\\\))+"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_newline_inline"
+          }
+        ]
+      }
     },
     "_parens_span_begin": {
       "type": "STRING",

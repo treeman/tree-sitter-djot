@@ -856,10 +856,12 @@ module.exports = grammar({
       seq(
         $._parens_span_begin,
         $._parens_span_mark_begin,
-        // Can escape `)`, but shouldn't capture it.
-        /([^\)]|\\\))+/,
+        $._inline_link_url,
         alias($._parens_span_end, ")"),
       ),
+    _inline_link_url: ($) =>
+      // Can escape `)`, but shouldn't capture it.
+      repeat1(choice(/([^\)\n]|\\\))+/, $._newline_inline)),
     _parens_span_begin: (_) => "(",
 
     _comment: ($) =>
@@ -1117,10 +1119,11 @@ module.exports = grammar({
     // A comment can be closed by a `%` or implicitly when the attribute closes at `}`.
     $._comment_end_marker,
     $._comment_close,
-    // Zero-width check if a standalone comment is valid.
-    $._inline_comment_begin,
 
     // Inline elements.
+
+    // Zero-width check if a standalone comment is valid.
+    $._inline_comment_begin,
 
     // Verbatim is handled externally to match a varying number of `,
     // and to close open verbatim when a paragraph ends with a blankline.

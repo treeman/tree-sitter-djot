@@ -73,6 +73,7 @@ typedef enum {
   BLOCK_ATTRIBUTE_BEGIN,
   COMMENT_END_MARKER,
   COMMENT_CLOSE,
+
   INLINE_COMMENT_BEGIN,
 
   VERBATIM_BEGIN,
@@ -2597,8 +2598,17 @@ static bool scan_until(Scanner *s, TSLexer *lexer, char c, InlineType *top) {
       return true;
     } else if (lexer->lookahead == '\\') {
       advance(s, lexer);
+      advance(s, lexer);
+    } else if (lexer->lookahead == '\n') {
+      // One newline is ok in inline spans, but not several in a row.
+      advance(s, lexer);
+      consume_whitespace(s, lexer);
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+    } else {
+      advance(s, lexer);
     }
-    advance(s, lexer);
   }
   return false;
 }
@@ -3411,10 +3421,10 @@ static void dump_scanner(Scanner *s) {
   printf("  indent: %u\n", s->indent);
   printf("  state: %u\n", s->state);
   if (s->state & STATE_BRACKET_STARTS_SPAN) {
-    printf("    STATE_BRACKET_STARTS_SPAN");
+    printf("    STATE_BRACKET_STARTS_SPAN\n");
   }
   if (s->state & STATE_BRACKET_STARTS_INLINE_LINK) {
-    printf("    STATE_BRACKET_STARTS_INLINE_LINK");
+    printf("    STATE_BRACKET_STARTS_INLINE_LINK\n");
   }
   printf("===\n");
 }
