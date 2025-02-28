@@ -323,6 +323,21 @@ static BlockType list_marker_to_block(TokenType type) {
   }
 }
 
+static bool is_alpha_list(BlockType type) {
+
+  switch (type) {
+  case LIST_LOWER_ALPHA_PERIOD:
+  case LIST_LOWER_ALPHA_PAREN:
+  case LIST_LOWER_ALPHA_PARENS:
+  case LIST_UPPER_ALPHA_PERIOD:
+  case LIST_UPPER_ALPHA_PAREN:
+  case LIST_UPPER_ALPHA_PARENS:
+    return true;
+  default:
+    return false;
+  }
+}
+
 static void advance(Scanner *s, TSLexer *lexer) {
   lexer->advance(lexer, false);
   // Carriage returns should simply be ignored.
@@ -987,46 +1002,104 @@ static bool single_letter_list_marker(OrderedListType type) {
   }
 }
 
-// Return true if we scan any character.
-static bool scan_ordered_list_enumerator(Scanner *s, TSLexer *lexer,
-                                         OrderedListType type) {
-  uint8_t scanned = 0;
-  while (!lexer->eof(lexer)) {
-    // Note that we don't check if marker is a valid roman numeral.
-    if (matches_ordered_list(type, lexer->lookahead)) {
-      ++scanned;
-      advance(s, lexer);
-    } else {
-      break;
-    }
-  }
-  if (single_letter_list_marker(type)) {
-    return scanned == 1;
-  } else {
-    return scanned > 0;
-  }
-}
-
 static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
                                    OrderedListType *res) {
-  if (scan_ordered_list_enumerator(s, lexer, DECIMAL)) {
+  bool can_be_decimal = true;
+  uint8_t scanned_decimal = 0;
+  bool can_be_lower_roman = true;
+  uint8_t scanned_lower_roman = 0;
+  bool can_be_upper_roman = true;
+  uint8_t scanned_upper_roman = 0;
+  bool can_be_lower_alpha = true;
+  uint8_t scanned_lower_alpha = 0;
+  bool can_be_upper_alpha = true;
+  uint8_t scanned_upper_alpha = 0;
+
+  uint8_t scanned = 0;
+  while (!lexer->eof(lexer)) {
+    char c = lexer->lookahead;
+
+    if (can_be_decimal) {
+      if (matches_ordered_list(DECIMAL, c)) {
+        ++scanned_decimal;
+      } else {
+        can_be_decimal = false;
+      }
+    }
+    if (can_be_lower_roman) {
+      if (matches_ordered_list(LOWER_ROMAN, c)) {
+        ++scanned_lower_roman;
+      } else {
+        can_be_lower_roman = false;
+      }
+    }
+    if (can_be_upper_roman) {
+      if (matches_ordered_list(UPPER_ROMAN, c)) {
+        ++scanned_upper_roman;
+      } else {
+        can_be_upper_roman = false;
+      }
+    }
+    if (can_be_lower_alpha) {
+      if (matches_ordered_list(LOWER_ALPHA, c)) {
+        ++scanned_lower_alpha;
+      } else {
+        can_be_lower_alpha = false;
+      }
+    }
+    if (can_be_upper_alpha) {
+      if (matches_ordered_list(UPPER_ALPHA, c)) {
+        ++scanned_upper_alpha;
+      } else {
+        can_be_upper_alpha = false;
+      }
+    }
+    if (!can_be_decimal && !can_be_lower_roman && !can_be_upper_roman &&
+        !can_be_lower_alpha && !can_be_upper_alpha) {
+      break;
+    }
+
+    advance(s, lexer);
+  }
+
+  if (scanned_decimal > 0) {
     *res = DECIMAL;
     return true;
   }
-  // We don't differentiate between alpha and roman lists, but prefer roman.
-  if (scan_ordered_list_enumerator(s, lexer, LOWER_ROMAN)) {
+
+  // If we're already inside an alpha list then we should
+  // prioritize to continue the alpha list, otherwise we should
+  // prioritize roman lists.
+  Block *top = peek_block(s);
+  bool inside_alpha_list = top && is_alpha_list(top->type);
+
+  if (inside_alpha_list) {
+    // Alpha lists are only a single letter wide.
+    if (scanned_lower_alpha == 1) {
+      *res = LOWER_ALPHA;
+      return true;
+    }
+    if (scanned_upper_alpha == 1) {
+      *res = UPPER_ALPHA;
+      return true;
+    }
+  }
+
+  // Note that we don't check if marker is a valid roman numeral.
+  if (scanned_lower_roman > 0) {
     *res = LOWER_ROMAN;
     return true;
   }
-  if (scan_ordered_list_enumerator(s, lexer, UPPER_ROMAN)) {
+  if (scanned_upper_roman > 0) {
     *res = UPPER_ROMAN;
     return true;
   }
-  if (scan_ordered_list_enumerator(s, lexer, LOWER_ALPHA)) {
+
+  if (scanned_lower_alpha == 1) {
     *res = LOWER_ALPHA;
     return true;
   }
-  if (scan_ordered_list_enumerator(s, lexer, UPPER_ALPHA)) {
+  if (scanned_upper_alpha == 1) {
     *res = UPPER_ALPHA;
     return true;
   }
