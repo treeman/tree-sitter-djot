@@ -16,7 +16,8 @@ module.exports = grammar({
     [$._bracketed_text_begin, $._symbol_fallback],
     [$._image_description_begin, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
-    [$.math, $._symbol_fallback],
+    [$.block_math, $._symbol_fallback],
+    [$.inline_math, $._symbol_fallback],
     [$.link_text, $._symbol_fallback],
     [$._curly_bracket_span_begin, $._curly_bracket_span_fallback],
   ],
@@ -55,6 +56,7 @@ module.exports = grammar({
         $.code_block,
         $.thematic_break,
         $.block_quote,
+        alias($.block_math, $.math),
         $.link_reference_definition,
         $.block_attribute,
         $._paragraph,
@@ -515,6 +517,15 @@ module.exports = grammar({
         ),
       ),
 
+    block_math: ($) =>
+      seq(
+        field("math_marker", alias("$$", $.math_marker)),
+        field("begin_marker", alias($._verbatim_begin, $.math_marker_begin)),
+        field("content", alias($._verbatim_content, $.content)),
+        field("end_marker", alias($._verbatim_end, $.math_marker_end)),
+        $._newline,
+      ),
+
     link_reference_definition: ($) =>
       seq(
         $._link_ref_def_mark_begin,
@@ -639,7 +650,7 @@ module.exports = grammar({
               prec.dynamic(ELEMENT_PRECEDENCE, $._link),
               $.autolink,
               $.verbatim,
-              $.math,
+              alias($.inline_math, $.math),
               $.raw_inline,
               $.symbol,
               $.inline_comment,
@@ -910,7 +921,7 @@ module.exports = grammar({
       ),
     raw_inline_attribute: ($) =>
       seq(token.immediate("{="), field("language", $.language), "}"),
-    math: ($) =>
+    inline_math: ($) =>
       seq(
         field("math_marker", alias("$", $.math_marker)),
         field("begin_marker", alias($._verbatim_begin, $.math_marker_begin)),
@@ -977,6 +988,7 @@ module.exports = grammar({
         seq("<", /[^>\s]+/),
 
         // Math
+        "$$",
         "$",
 
         // Empty link text

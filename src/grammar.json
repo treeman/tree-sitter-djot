@@ -169,6 +169,15 @@
           "name": "block_quote"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "block_math"
+          },
+          "named": true,
+          "value": "math"
+        },
+        {
           "type": "SYMBOL",
           "name": "link_reference_definition"
         },
@@ -2455,6 +2464,67 @@
         }
       }
     },
+    "block_math": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "math_marker",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "STRING",
+              "value": "$$"
+            },
+            "named": true,
+            "value": "math_marker"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "begin_marker",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_verbatim_begin"
+            },
+            "named": true,
+            "value": "math_marker_begin"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "content",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_verbatim_content"
+            },
+            "named": true,
+            "value": "content"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "end_marker",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_verbatim_end"
+            },
+            "named": true,
+            "value": "math_marker_end"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_newline"
+        }
+      ]
+    },
     "link_reference_definition": {
       "type": "SEQ",
       "members": [
@@ -2954,8 +3024,13 @@
                     "name": "verbatim"
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "math"
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "inline_math"
+                    },
+                    "named": true,
+                    "value": "math"
                   },
                   {
                     "type": "SYMBOL",
@@ -4118,7 +4193,7 @@
         }
       ]
     },
-    "math": {
+    "inline_math": {
       "type": "SEQ",
       "members": [
         {
@@ -4596,6 +4671,10 @@
         },
         {
           "type": "STRING",
+          "value": "$$"
+        },
+        {
+          "type": "STRING",
           "value": "$"
         },
         {
@@ -4682,7 +4761,11 @@
       "_symbol_fallback"
     ],
     [
-      "math",
+      "block_math",
+      "_symbol_fallback"
+    ],
+    [
+      "inline_math",
       "_symbol_fallback"
     ],
     [
