@@ -434,6 +434,10 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
           "type": "paragraph",
           "named": true
         },
@@ -576,6 +580,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "math",
           "named": true
         },
         {
@@ -724,6 +732,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "math",
           "named": true
         },
         {
@@ -1737,6 +1749,10 @@
           "named": true
         },
         {
+          "type": "math",
+          "named": true
+        },
+        {
           "type": "paragraph",
           "named": true
         },
@@ -2165,6 +2181,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "math",
           "named": true
         },
         {
@@ -2803,6 +2823,10 @@
   },
   {
     "type": "$",
+    "named": false
+  },
+  {
+    "type": "$$",
     "named": false
   },
   {

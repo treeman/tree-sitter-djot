@@ -2321,6 +2321,22 @@ static bool end_paragraph_in_block_quote(Scanner *s, TSLexer *lexer) {
   return lexer->lookahead == '\n';
 }
 
+static bool scan_block_math_marker(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != '$') {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != '$') {
+    return false;
+  }
+  advance(s, lexer);
+  if (lexer->lookahead != '`') {
+    return false;
+  }
+  advance(s, lexer);
+  return true;
+}
+
 static bool close_paragraph(Scanner *s, TSLexer *lexer) {
   // Workaround for not including the following blankline when closing a
   // paragraph inside a block.
@@ -2333,7 +2349,15 @@ static bool close_paragraph(Scanner *s, TSLexer *lexer) {
     return true;
   }
 
-  return scan_containing_block_closing_marker(s, lexer);
+  if (scan_containing_block_closing_marker(s, lexer)) {
+    return true;
+  }
+
+  if (scan_block_math_marker(s, lexer)) {
+    return true;
+  }
+
+  return false;
 }
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
