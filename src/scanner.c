@@ -214,10 +214,10 @@ typedef struct {
 typedef struct {
   // Open blocks is a stack of the blocks that haven't been closed.
   // Used to match closing markers or for implicitly closing blocks.
-  Array(Block *) * open_blocks;
+  Array(Block) open_blocks;
 
   // Open inline is a stack of non-closed inline elements.
-  Array(Inline *) * open_inline;
+  Array(Inline) open_inline;
 
   // How many BLOCK_CLOSE we should output right now?
   uint8_t blocks_to_close;
@@ -402,33 +402,20 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
   return indent;
 }
 
-static Block *create_block(BlockType type, uint8_t data) {
-  Block *b = ts_malloc(sizeof(Block));
-  b->type = type;
-  b->data = data;
-  return b;
-}
-
-static Inline *create_inline(InlineType type, uint8_t data, uint8_t bracketed) {
-  Inline *res = ts_malloc(sizeof(Inline));
-  res->type = type;
-  res->data = data;
-  res->bracketed = bracketed;
-  return res;
-}
-
 static void push_block(Scanner *s, BlockType type, uint8_t data) {
-  array_push(s->open_blocks, create_block(type, data));
+  Block b = {type, data};
+  array_push(&s->open_blocks, b);
 }
 
 static void push_inline(Scanner *s, InlineType type, uint8_t data,
                         uint8_t bracketed) {
-  array_push(s->open_inline, create_inline(type, data, bracketed));
+  Inline e = {type, data, bracketed};
+  array_push(&s->open_inline, e);
 }
 
 static void remove_block(Scanner *s) {
-  if (s->open_blocks->size > 0) {
-    ts_free(array_pop(s->open_blocks));
+  if (s->open_blocks.size > 0) {
+    --s->open_blocks.size;
     if (s->blocks_to_close > 0) {
       --s->blocks_to_close;
     }
@@ -436,22 +423,22 @@ static void remove_block(Scanner *s) {
 }
 
 static void remove_inline(Scanner *s) {
-  if (s->open_inline->size > 0) {
-    ts_free(array_pop(s->open_inline));
+  if (s->open_inline.size > 0) {
+    --s->open_inline.size;
   }
 }
 
 static Block *peek_block(Scanner *s) {
-  if (s->open_blocks->size > 0) {
-    return *array_back(s->open_blocks);
+  if (s->open_blocks.size > 0) {
+    return array_back(&s->open_blocks);
   } else {
     return NULL;
   }
 }
 
 static Inline *peek_inline(Scanner *s) {
-  if (s->open_inline->size > 0) {
-    return *array_back(s->open_inline);
+  if (s->open_inline.size > 0) {
+    return array_back(&s->open_inline);
   } else {
     return NULL;
   }
@@ -475,18 +462,18 @@ static bool disallow_newline(Block *top) {
 // If it cannot be found, returns 0.
 static size_t number_of_blocks_from_top(Scanner *s, BlockType type,
                                         uint8_t level) {
-  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
-    Block *b = *array_get(s->open_blocks, i);
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+    Block *b = array_get(&s->open_blocks, i);
     if (b->type == type && b->data == level) {
-      return s->open_blocks->size - i;
+      return s->open_blocks.size - i;
     }
   }
   return 0;
 }
 
 static Block *find_block(Scanner *s, BlockType type) {
-  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
-    Block *b = *array_get(s->open_blocks, i);
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+    Block *b = array_get(&s->open_blocks, i);
     if (b->type == type) {
       return b;
     }
@@ -495,8 +482,8 @@ static Block *find_block(Scanner *s, BlockType type) {
 }
 
 static Block *find_list(Scanner *s) {
-  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
-    Block *b = *array_get(s->open_blocks, i);
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+    Block *b = array_get(&s->open_blocks, i);
     if (is_list(b->type)) {
       return b;
     }
@@ -506,8 +493,8 @@ static Block *find_list(Scanner *s) {
 
 static uint8_t count_blocks(Scanner *s, BlockType type) {
   uint8_t count = 0;
-  for (int i = s->open_blocks->size - 1; i >= 0; --i) {
-    Block *b = *array_get(s->open_blocks, i);
+  for (int i = s->open_blocks.size - 1; i >= 0; --i) {
+    Block *b = array_get(&s->open_blocks, i);
     if (b->type == type) {
       ++count;
     }
@@ -520,9 +507,9 @@ static uint8_t count_blocks(Scanner *s, BlockType type) {
 // the other are emitted in `handle_blocks_to_close`.
 static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
 #ifdef DEBUG
-  assert(s->open_blocks->size > 0);
+  assert(s->open_blocks.size > 0);
 #endif
-  if (s->open_blocks->size > 0) {
+  if (s->open_blocks.size > 0) {
     remove_block(s);
     s->blocks_to_close = s->blocks_to_close + count - 1;
   }
@@ -531,7 +518,7 @@ static void close_blocks(Scanner *s, TSLexer *lexer, size_t count) {
 
 // Output BLOCK_CLOSE tokens, delegated from previous iteration.
 static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
-  if (s->open_blocks->size == 0) {
+  if (s->open_blocks.size == 0) {
     return false;
   }
 
@@ -622,12 +609,12 @@ static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer) {
 // They should be closed if indentation is too little.
 static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
                                               bool non_newline) {
-  if (s->open_blocks->size == 0) {
+  if (s->open_blocks.size == 0) {
     return false;
   }
 
   // No open inline at block boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -651,7 +638,7 @@ static bool close_list_nested_block_if_needed(Scanner *s, TSLexer *lexer,
 static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
                                            Block *list, TokenType list_marker) {
   // No open inline at block boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
   if (list_marker != IGNORED) {
@@ -668,7 +655,7 @@ static bool close_different_list_if_needed(Scanner *s, TSLexer *lexer,
 // Check if we're starting a list of a different type and close the open one.
 static bool try_close_different_typed_list(Scanner *s, TSLexer *lexer,
                                            TokenType ordered_list_marker) {
-  if (s->open_blocks->size == 0) {
+  if (s->open_blocks.size == 0) {
     return false;
   }
 
@@ -935,7 +922,7 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
   bool has_marker = scan_block_quote_marker(s, lexer, &ending_newline);
 
   // No open inline at block boundary.
-  bool any_open_inline = s->open_inline->size > 0;
+  bool any_open_inline = s->open_inline.size > 0;
 
   // If we have a marker but with an empty line,
   // we need to close the paragraph.
@@ -1555,7 +1542,7 @@ static bool parse_link_ref_def_label_end(Scanner *s, TSLexer *lexer) {
   }
 
   // Prevent inline from reaching outside of the link label.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -1689,7 +1676,7 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
   }
 
   // No open inline at block boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -1856,7 +1843,7 @@ static bool parse_colon(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   }
 
   // Don't let inline escape block boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -1906,7 +1893,7 @@ static bool parse_heading(Scanner *s, TSLexer *lexer,
     }
 
     if (valid_symbols[BLOCK_CLOSE] && top_heading && top->data != hash_count &&
-        s->open_inline->size == 0) {
+        s->open_inline.size == 0) {
       // Found a mismatched heading level, need to close the previous
       // before opening this one.
       lexer->result_symbol = BLOCK_CLOSE;
@@ -1970,7 +1957,7 @@ static bool parse_footnote_end(Scanner *s, TSLexer *lexer) {
   }
 
   // Don't let inline escape boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -2165,7 +2152,7 @@ static bool parse_table_cell_end(Scanner *s, TSLexer *lexer) {
     return false;
   }
   // Can only close a cell (or row) if all inline spans have been closed.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -2203,7 +2190,7 @@ static bool parse_table_caption_end(Scanner *s, TSLexer *lexer) {
     return false;
   }
   // Don't let inline escape caption.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -2449,7 +2436,7 @@ static bool close_paragraph(Scanner *s, TSLexer *lexer) {
 
 static bool parse_close_paragraph(Scanner *s, TSLexer *lexer) {
   // No open inline at paragraph boundary.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
   if (!close_paragraph(s, lexer)) {
@@ -2551,7 +2538,7 @@ static bool parse_newline(Scanner *s, TSLexer *lexer,
   }
 
   // Only allow `NEWLINE_INLINE` style of newlines with open inline elements.
-  if (s->open_inline->size > 0) {
+  if (s->open_inline.size > 0) {
     return false;
   }
 
@@ -2696,8 +2683,8 @@ static char inline_marker(InlineType type) {
 }
 
 static Inline *find_inline(Scanner *s, InlineType type) {
-  for (int i = s->open_inline->size - 1; i >= 0; --i) {
-    Inline *e = *array_get(s->open_inline, i);
+  for (int i = s->open_inline.size - 1; i >= 0; --i) {
+    Inline *e = array_get(&s->open_inline, i);
     if (e->type == type) {
       return e;
     }
@@ -3656,9 +3643,13 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   return false;
 }
 
-static void init(Scanner *s) {
-  array_init(s->open_inline);
-  array_init(s->open_blocks);
+// Reset all transient scanner state. Used both on initial create and on
+// every deserialize. The arrays are cleared (size = 0) but their backing
+// buffers are retained — `array_init` would null out `contents` and leak
+// the previously-allocated buffer on every fork-restore.
+static void reset(Scanner *s) {
+  array_clear(&s->open_inline);
+  array_clear(&s->open_blocks);
   s->blocks_to_close = 0;
   s->block_quote_level = 0;
   s->indent = 0;
@@ -3668,22 +3659,16 @@ static void init(Scanner *s) {
 
 void *tree_sitter_djot_external_scanner_create() {
   Scanner *s = (Scanner *)ts_malloc(sizeof(Scanner));
-  s->open_blocks = ts_malloc(sizeof(Array(Block *)));
-  s->open_inline = ts_malloc(sizeof(Array(Inline *)));
-  init(s);
+  array_init(&s->open_blocks);
+  array_init(&s->open_inline);
+  reset(s);
   return s;
 }
 
 void tree_sitter_djot_external_scanner_destroy(void *payload) {
   Scanner *s = (Scanner *)payload;
-  for (size_t i = 0; i < s->open_blocks->size; ++i) {
-    ts_free(*array_get(s->open_blocks, i));
-  }
-  array_delete(s->open_blocks);
-  for (size_t i = 0; i < s->open_inline->size; ++i) {
-    ts_free(*array_get(s->open_inline, i));
-  }
-  array_delete(s->open_inline);
+  array_delete(&s->open_blocks);
+  array_delete(&s->open_inline);
   ts_free(s);
 }
 
@@ -3697,15 +3682,15 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->state;
   buffer[size++] = (char)s->pending_inline_open_before_bracket;
 
-  buffer[size++] = (char)s->open_blocks->size;
-  for (size_t i = 0; i < s->open_blocks->size; ++i) {
-    Block *b = *array_get(s->open_blocks, i);
+  buffer[size++] = (char)s->open_blocks.size;
+  for (size_t i = 0; i < s->open_blocks.size; ++i) {
+    Block *b = array_get(&s->open_blocks, i);
     buffer[size++] = (char)b->type;
     buffer[size++] = (char)b->data;
   }
 
-  for (size_t i = 0; i < s->open_inline->size; ++i) {
-    Inline *x = *array_get(s->open_inline, i);
+  for (size_t i = 0; i < s->open_inline.size; ++i) {
+    Inline *x = array_get(&s->open_inline, i);
     buffer[size++] = (char)x->type;
     buffer[size++] = (char)x->data;
     buffer[size++] = (char)x->bracketed;
@@ -3717,7 +3702,7 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
 void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
                                                    unsigned length) {
   Scanner *s = (Scanner *)payload;
-  init(s);
+  reset(s);
   if (length > 0) {
     size_t size = 0;
     s->blocks_to_close = (uint8_t)buffer[size++];
@@ -3730,13 +3715,13 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     while (open_blocks-- > 0) {
       BlockType type = (BlockType)buffer[size++];
       uint8_t level = (uint8_t)buffer[size++];
-      array_push(s->open_blocks, create_block(type, level));
+      push_block(s, type, level);
     }
     while (size < length) {
       InlineType type = (InlineType)buffer[size++];
       uint8_t data = (uint8_t)buffer[size++];
       uint8_t bracketed = (uint8_t)buffer[size++];
-      array_push(s->open_inline, create_inline(type, data, bracketed));
+      push_inline(s, type, data, bracketed);
     }
   }
 }
@@ -4024,23 +4009,23 @@ static char *inline_type_s(InlineType t) {
 }
 
 static void dump_scanner(Scanner *s) {
-  if (s->open_blocks->size == 0) {
+  if (s->open_blocks.size == 0) {
     printf("0 open blocks\n");
   } else {
 
-    printf("--- Open blocks: %u (last -> first)\n", s->open_blocks->size);
-    for (size_t i = 0; i < s->open_blocks->size; ++i) {
-      Block *b = *array_get(s->open_blocks, i);
+    printf("--- Open blocks: %u (last -> first)\n", s->open_blocks.size);
+    for (size_t i = 0; i < s->open_blocks.size; ++i) {
+      Block *b = array_get(&s->open_blocks, i);
       printf("  %d %s\n", b->data, block_type_s(b->type));
     }
     printf("---\n");
   }
-  if (s->open_inline->size == 0) {
+  if (s->open_inline.size == 0) {
     printf("0 open inline\n");
   } else {
-    printf("--- Open inline: %u (last -> first)\n", s->open_inline->size);
-    for (size_t i = 0; i < s->open_inline->size; ++i) {
-      Inline *x = *array_get(s->open_inline, i);
+    printf("--- Open inline: %u (last -> first)\n", s->open_inline.size);
+    for (size_t i = 0; i < s->open_inline.size; ++i) {
+      Inline *x = array_get(&s->open_inline, i);
       printf("  %d %s\n", x->data, inline_type_s(x->type));
     }
     printf("---\n");
