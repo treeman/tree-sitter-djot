@@ -81,9 +81,15 @@ module.exports = grammar({
         optional($._eof_or_newline),
       ),
     _heading_content: ($) =>
-      seq(
-        $._inline_line,
-        repeat(seq(alias($._heading_continuation, $.marker), $._inline_line)),
+      choice(
+        seq(
+          $._inline_line,
+          repeat(seq(alias($._heading_continuation, $.marker), $._inline_line)),
+        ),
+        // Empty heading: `# ` followed only by a newline. The trailing
+        // space's `_eof_or_newline` consumes the line break so the
+        // section closes cleanly.
+        $._eof_or_newline,
       ),
 
     // Djot has a crazy number of different list types

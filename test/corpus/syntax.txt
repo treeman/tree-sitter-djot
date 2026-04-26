@@ -301,13 +301,13 @@ _a_
   (section
     (heading
       (marker)
-      (content
-        (marker)))
+      (content))
     (section_content
       (paragraph
-        (emphasis_begin)
-        (content)
-        (emphasis_end)))))
+        (emphasis
+          (emphasis_begin)
+          (content)
+          (emphasis_end))))))
 
 ===============================================================================
 Section: closed by the same level
