@@ -224,6 +224,17 @@ typedef struct {
 
   // Parser state flags.
   uint8_t state;
+
+  // Set to the marker character (`*`, `_`, `^`, or `~`) when
+  // `mark_span_begin` emits a single-char inline opener whose next
+  // character is `[`. Read by `parse_bracketed_text_open_check` to
+  // detect the `*[` / `_[` / etc. shape so the bracketed branch can
+  // reject when the bracket region contains that opener's end marker
+  // — those cases need to lose to the opener-fork in djot's
+  // "leftmost open wins" precedence, but the GLR-shared scanner state
+  // doesn't see the speculative emphasis/strong open in this fork.
+  // Cleared on the next non-zero-width scanner emission.
+  uint8_t pending_inline_open_before_bracket;
 } Scanner;
 
 // Tracks if a `[` starts an inline link.
@@ -236,6 +247,15 @@ static const uint8_t STATE_BRACKET_STARTS_INLINE_LINK = 1 << 0;
 static const uint8_t STATE_BRACKET_STARTS_SPAN = 1 << 1;
 // Tracks if the next table row is a separator row.
 static const uint8_t STATE_TABLE_SEPARATOR_NEXT = 1 << 2;
+
+// Set when the previous scanner call emitted `NON_WHITESPACE_CHECK`. The
+// `_non_whitespace_check` external is only used in the single-char form of
+// emphasis/strong's opener (`_` / `*` followed by a non-whitespace check),
+// so its presence on the just-emitted token implies the next mark_begin
+// emission is for the single-char (not bracketed) form. `mark_span_begin`
+// reads this to decide whether to record the marker for the bracketed-text
+// gate. Cleared at the start of every dispatch (so a single emission lifetime).
+static const uint8_t STATE_AFTER_NON_WHITESPACE_CHECK = 1 << 3;
 
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
@@ -2687,6 +2707,25 @@ static bool scan_span_end_marker(Scanner *s, TSLexer *lexer,
   }
 }
 
+// Non-destructive span-end-marker check: returns true if the lookahead
+// *could* start a valid end marker for `element`, without advancing the
+// lexer. Used by the bracketed/image gate scans so their failure path
+// doesn't move the lexer past a marker — which would otherwise leak into
+// the next parse_X in the same dispatch call (e.g. the fallback path's
+// `update_square_bracket_lookahead_states`) and corrupt its scan.
+//
+// For SpanSingle types (PARENS_SPAN/CURLY_BRACKET_SPAN/SQUARE_BRACKET_SPAN)
+// the marker char alone is the full close, so the peek is exact. For the
+// emphasis/strong/superscript/subscript family the close can be either
+// `_` alone or `_}` etc.; the marker char is sufficient for the gate's
+// purpose since both forms start with it. SpanBracketed types
+// (highlighted/insert/delete) need `=}` etc. — peeking the marker alone
+// is over-aggressive but only matters when those types enclose a `[`,
+// which is uncommon and not covered by the failing tests.
+static bool peek_span_end_marker(TSLexer *lexer, InlineType element) {
+  return lexer->lookahead == inline_marker(element);
+}
+
 // Scan until `c`, aborting if an ending marker for the `top` element is
 // found.
 //
@@ -2700,7 +2739,7 @@ static bool scan_until(Scanner *s, TSLexer *lexer, char c, InlineType *top) {
     if (lexer->lookahead == c) {
       return true;
     }
-    if (top && scan_span_end_marker(s, lexer, *top)) {
+    if (top && peek_span_end_marker(lexer, *top)) {
       return false;
     }
     if (lexer->lookahead == '\\') {
@@ -2742,7 +2781,7 @@ static bool scan_balanced_close_bracket(Scanner *s, TSLexer *lexer,
       advance(s, lexer);
       continue;
     }
-    if (top && scan_span_end_marker(s, lexer, *top)) {
+    if (top && peek_span_end_marker(lexer, *top)) {
       return false;
     }
     if (lexer->lookahead == '[') {
@@ -2856,6 +2895,33 @@ static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
   Inline *peek = peek_inline(s);
   InlineType *top = peek ? &peek->type : NULL;
 
+  // If a single-char inline opener was just emitted right before this `[`
+  // (set by `mark_span_begin`), there's a speculative emphasis/strong open
+  // that the scanner stack doesn't reflect — the GLR fork that took the
+  // opener path didn't push because IN_FALLBACK was also valid. Use the
+  // recorded marker as a synthetic `top` so the gate scans for it as a
+  // span end, matching what would happen in the opener fork. This biases
+  // tie-break toward the opener for `*[*](y)` / `_[_]{.c}` / etc., where
+  // the bracket region contains the marker that would close the opener
+  // before the bracket structure could complete.
+  //
+  // Pending is only cleared on a *successful* gate emission. If the gate
+  // rejects, the fallback path's `update_square_bracket_lookahead_states`
+  // also needs to read pending, and clears it after.
+  InlineType synthetic_top;
+  if (top == NULL && s->pending_inline_open_before_bracket != 0) {
+    if (s->pending_inline_open_before_bracket == '_') {
+      synthetic_top = EMPHASIS;
+    } else if (s->pending_inline_open_before_bracket == '*') {
+      synthetic_top = STRONG;
+    } else if (s->pending_inline_open_before_bracket == '^') {
+      synthetic_top = SUPERSCRIPT;
+    } else {
+      synthetic_top = SUBSCRIPT;
+    }
+    top = &synthetic_top;
+  }
+
   if (!scan_balanced_close_bracket(s, lexer, top)) {
     return false;
   }
@@ -2866,6 +2932,7 @@ static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
     return false;
   }
 
+  s->pending_inline_open_before_bracket = 0;
   lexer->result_symbol = BRACKETED_TEXT_OPEN_CHECK;
   return true;
 }
@@ -2880,9 +2947,36 @@ static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
   s->state &= ~STATE_BRACKET_STARTS_SPAN;
 
   InlineType *top_type = NULL;
+  InlineType synthetic_top;
   if (top) {
     top_type = &top->type;
+  } else if (s->pending_inline_open_before_bracket != 0) {
+    // No real `top` on the stack, but a single-char emphasis/strong opener
+    // was emitted right before this `[` (see `mark_span_begin`). The GLR
+    // fork that took the opener path didn't push because `IN_FALLBACK` was
+    // also valid, so the stack hides the speculative open. Use the
+    // recorded marker as a synthetic enclosing element so the lookahead
+    // scans match what the opener-fork would do — for `*[*](y)` this
+    // prevents `STATE_BRACKET_STARTS_INLINE_LINK` from being set, which
+    // would otherwise block the trailing `(...)` from being parsed as
+    // fallback after the bracketed gate has already rejected the link.
+    if (s->pending_inline_open_before_bracket == '_') {
+      synthetic_top = EMPHASIS;
+    } else if (s->pending_inline_open_before_bracket == '*') {
+      synthetic_top = STRONG;
+    } else if (s->pending_inline_open_before_bracket == '^') {
+      synthetic_top = SUPERSCRIPT;
+    } else {
+      synthetic_top = SUBSCRIPT;
+    }
+    top_type = &synthetic_top;
   }
+  // Pending has now been read by both potential consumers in a single
+  // dispatch (the gate ran first; this is the fallback path running in
+  // `mark_span_begin`). Clear it so it doesn't leak into a later scanner
+  // call — e.g. the next paragraph's `[` would otherwise see a stale
+  // marker from the previous paragraph's emphasis opener.
+  s->pending_inline_open_before_bracket = 0;
 
   // Scan the `[some text]` span.
   if (!scan_until(s, lexer, ']', top_type)) {
@@ -2917,6 +3011,27 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols, InlineType inline_type,
                             TokenType token) {
   Inline *top = peek_inline(s);
+  // Detect the single-char-opener-immediately-followed-by-`[` pattern
+  // (`*[`/`_[`/`^[`/`~[`). The previous emission was `_non_whitespace_check`
+  // (which is only used in the single-char form of emphasis/strong's
+  // begin), and the current lookahead — the first content char of the
+  // pending opener — is `[`. Record the marker so the bracketed-text gate
+  // and `update_square_bracket_lookahead_states` (called from this
+  // function's IN_FALLBACK branch for SQUARE_BRACKET_SPAN) can see the
+  // speculative opener that the GLR-shared scanner stack hides.
+  //
+  // Pending is left alone in the non-matching case so the value set by an
+  // earlier opener emission is still readable here when this call is the
+  // bracket-opening one. The two readers (`parse_bracketed_text_open_check`
+  // and `update_square_bracket_lookahead_states`) clear pending after use.
+  bool single_form_with_bracket =
+      (s->state & STATE_AFTER_NON_WHITESPACE_CHECK) && lexer->lookahead == '[';
+  s->state &= ~STATE_AFTER_NON_WHITESPACE_CHECK;
+  if (single_form_with_bracket &&
+      (inline_type == EMPHASIS || inline_type == STRONG ||
+       inline_type == SUPERSCRIPT || inline_type == SUBSCRIPT)) {
+    s->pending_inline_open_before_bracket = inline_marker(inline_type);
+  }
   // If IN_FALLBACK is valid then it means we're processing the
   // `_symbol_fallback` branch (see `grammar.js`).
   if (valid_symbols[IN_FALLBACK]) {
@@ -3059,6 +3174,7 @@ static bool check_non_whitespace(Scanner *s, TSLexer *lexer) {
     return false;
   default:
     lexer->result_symbol = NON_WHITESPACE_CHECK;
+    s->state |= STATE_AFTER_NON_WHITESPACE_CHECK;
     return true;
   }
 }
@@ -3315,6 +3431,7 @@ static void init(Scanner *s) {
   s->block_quote_level = 0;
   s->indent = 0;
   s->state = 0;
+  s->pending_inline_open_before_bracket = 0;
 }
 
 void *tree_sitter_djot_external_scanner_create() {
@@ -3346,6 +3463,7 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->block_quote_level;
   buffer[size++] = (char)s->indent;
   buffer[size++] = (char)s->state;
+  buffer[size++] = (char)s->pending_inline_open_before_bracket;
 
   buffer[size++] = (char)s->open_blocks->size;
   for (size_t i = 0; i < s->open_blocks->size; ++i) {
@@ -3373,6 +3491,7 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     s->block_quote_level = (uint8_t)buffer[size++];
     s->indent = (uint8_t)buffer[size++];
     s->state = (uint8_t)buffer[size++];
+    s->pending_inline_open_before_bracket = (uint8_t)buffer[size++];
 
     uint8_t open_blocks = (uint8_t)buffer[size++];
     while (open_blocks-- > 0) {
