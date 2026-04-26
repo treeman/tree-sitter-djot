@@ -8,12 +8,11 @@ Baseline (2026-04-26, branch `inline-scanner-rework`): m.dj parses ~150-170 ms (
 - [x] Pin precedence for `*not strong *strong*` with position-aware `:cst` test (commit `df3e042`)
 - [x] **#1** Gate `scan_ordered_list_marker_token` on `valid_symbols` (commit `9549fb5`) — m.dj 159→148 ms (~7%); test suite avg 1345→1613 bytes/ms
 - [x] **#2** Lookahead early-out in `parse_span` — restricted to the end-only path (begin tokens fire after the opener is already consumed, so lookahead is arbitrary on begin). Test suite 1728→1943 bytes/ms (+12%); m.dj wall time unchanged (~140 ms — m.dj is begin-token heavy).
+- [x] **#3** Replaced `inline_*` switches with `static const` lookup tables. Within run-to-run noise (~1900 bytes/ms test suite); the compiler had already optimized the switches. Cleaner code; no regression.
 
 ## Remaining
 
 ### High impact, low risk
-
-- [ ] **#3** Replace `inline_*` switches with `static const` lookup tables — `inline_marker`, `inline_begin_token`, `inline_end_token`, `inline_span_type` (lines 2593-2698). Indexed by `InlineType` enum. Called from inside hot loops (`scan_until`, `consume_if_span_end_marker`, every `parse_span`).
 
 ### Medium impact
 

@@ -2612,111 +2612,80 @@ static bool parse_comment_end(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-static SpanType inline_span_type(InlineType type) {
-  switch (type) {
-  case EMPHASIS:
-  case STRONG:
-    return SpanBracketedAndSingleNoWhitespace;
-  case SUPERSCRIPT:
-  case SUBSCRIPT:
-    return SpanBracketedAndSingle;
-  case HIGHLIGHTED:
-  case INSERT:
-  case DELETE:
-    return SpanBracketed;
-  case PARENS_SPAN:
-  case CURLY_BRACKET_SPAN:
-  case SQUARE_BRACKET_SPAN:
-    return SpanSingle;
-  default:
-    return SpanSingle;
-  }
+// Per-InlineType lookup tables. Indexed by the InlineType enum so the
+// compiler can fold a load instead of generating a switch dispatch — these
+// are called from hot paths (`parse_span`, `scan_until`, etc.).
+static const SpanType inline_span_type_table[] = {
+    [VERBATIM] = SpanSingle,
+    [EMPHASIS] = SpanBracketedAndSingleNoWhitespace,
+    [STRONG] = SpanBracketedAndSingleNoWhitespace,
+    [SUPERSCRIPT] = SpanBracketedAndSingle,
+    [SUBSCRIPT] = SpanBracketedAndSingle,
+    [HIGHLIGHTED] = SpanBracketed,
+    [INSERT] = SpanBracketed,
+    [DELETE] = SpanBracketed,
+    [PARENS_SPAN] = SpanSingle,
+    [CURLY_BRACKET_SPAN] = SpanSingle,
+    [SQUARE_BRACKET_SPAN] = SpanSingle,
+};
+
+static const TokenType inline_begin_token_table[] = {
+    [VERBATIM] = VERBATIM_BEGIN,
+    [EMPHASIS] = EMPHASIS_MARK_BEGIN,
+    [STRONG] = STRONG_MARK_BEGIN,
+    [SUPERSCRIPT] = SUPERSCRIPT_MARK_BEGIN,
+    [SUBSCRIPT] = SUBSCRIPT_MARK_BEGIN,
+    [HIGHLIGHTED] = HIGHLIGHTED_MARK_BEGIN,
+    [INSERT] = INSERT_MARK_BEGIN,
+    [DELETE] = DELETE_MARK_BEGIN,
+    [PARENS_SPAN] = PARENS_SPAN_MARK_BEGIN,
+    [CURLY_BRACKET_SPAN] = CURLY_BRACKET_SPAN_MARK_BEGIN,
+    [SQUARE_BRACKET_SPAN] = SQUARE_BRACKET_SPAN_MARK_BEGIN,
+};
+
+static const TokenType inline_end_token_table[] = {
+    [VERBATIM] = VERBATIM_END,
+    [EMPHASIS] = EMPHASIS_END,
+    [STRONG] = STRONG_END,
+    [SUPERSCRIPT] = SUPERSCRIPT_END,
+    [SUBSCRIPT] = SUBSCRIPT_END,
+    [HIGHLIGHTED] = HIGHLIGHTED_END,
+    [INSERT] = INSERT_END,
+    [DELETE] = DELETE_END,
+    [PARENS_SPAN] = PARENS_SPAN_END,
+    [CURLY_BRACKET_SPAN] = CURLY_BRACKET_SPAN_END,
+    [SQUARE_BRACKET_SPAN] = SQUARE_BRACKET_SPAN_END,
+};
+
+// VERBATIM is parsed separately, so the marker char isn't used.
+static const char inline_marker_table[] = {
+    [VERBATIM] = '`',
+    [EMPHASIS] = '_',
+    [STRONG] = '*',
+    [SUPERSCRIPT] = '^',
+    [SUBSCRIPT] = '~',
+    [HIGHLIGHTED] = '=',
+    [INSERT] = '+',
+    [DELETE] = '-',
+    [PARENS_SPAN] = ')',
+    [CURLY_BRACKET_SPAN] = '}',
+    [SQUARE_BRACKET_SPAN] = ']',
+};
+
+static inline SpanType inline_span_type(InlineType type) {
+  return inline_span_type_table[type];
 }
 
-static char inline_begin_token(InlineType type) {
-  switch (type) {
-  case VERBATIM:
-    return VERBATIM_BEGIN;
-  case EMPHASIS:
-    return EMPHASIS_MARK_BEGIN;
-  case STRONG:
-    return STRONG_MARK_BEGIN;
-  case SUPERSCRIPT:
-    return SUPERSCRIPT_MARK_BEGIN;
-  case SUBSCRIPT:
-    return SUBSCRIPT_MARK_BEGIN;
-  case HIGHLIGHTED:
-    return HIGHLIGHTED_MARK_BEGIN;
-  case INSERT:
-    return INSERT_MARK_BEGIN;
-  case DELETE:
-    return DELETE_MARK_BEGIN;
-  case PARENS_SPAN:
-    return PARENS_SPAN_MARK_BEGIN;
-  case CURLY_BRACKET_SPAN:
-    return CURLY_BRACKET_SPAN_MARK_BEGIN;
-  case SQUARE_BRACKET_SPAN:
-    return SQUARE_BRACKET_SPAN_MARK_BEGIN;
-  default:
-    return ERROR;
-  }
+static inline TokenType inline_begin_token(InlineType type) {
+  return inline_begin_token_table[type];
 }
 
-static char inline_end_token(InlineType type) {
-  switch (type) {
-  case VERBATIM:
-    return VERBATIM_END;
-  case EMPHASIS:
-    return EMPHASIS_END;
-  case STRONG:
-    return STRONG_END;
-  case SUPERSCRIPT:
-    return SUPERSCRIPT_END;
-  case SUBSCRIPT:
-    return SUBSCRIPT_END;
-  case HIGHLIGHTED:
-    return HIGHLIGHTED_END;
-  case INSERT:
-    return INSERT_END;
-  case DELETE:
-    return DELETE_END;
-  case PARENS_SPAN:
-    return PARENS_SPAN_END;
-  case CURLY_BRACKET_SPAN:
-    return CURLY_BRACKET_SPAN_END;
-  case SQUARE_BRACKET_SPAN:
-    return SQUARE_BRACKET_SPAN_END;
-  default:
-    return ERROR;
-  }
+static inline TokenType inline_end_token(InlineType type) {
+  return inline_end_token_table[type];
 }
 
-static char inline_marker(InlineType type) {
-  switch (type) {
-  case EMPHASIS:
-    return '_';
-  case STRONG:
-    return '*';
-  case SUPERSCRIPT:
-    return '^';
-  case SUBSCRIPT:
-    return '~';
-  case HIGHLIGHTED:
-    return '=';
-  case INSERT:
-    return '+';
-  case DELETE:
-    return '-';
-  case PARENS_SPAN:
-    return ')';
-  case CURLY_BRACKET_SPAN:
-    return '}';
-  case SQUARE_BRACKET_SPAN:
-    return ']';
-  default:
-    // Not used as verbatim is parsed separately.
-    return '`';
-  }
+static inline char inline_marker(InlineType type) {
+  return inline_marker_table[type];
 }
 
 static Inline *find_inline(Scanner *s, InlineType type) {
