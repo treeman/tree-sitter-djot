@@ -158,16 +158,13 @@ immediately.
 Risk: easy to get the set wrong; needs full test pass. But it's a
 single-table-lookup gate in front of a lot of conditional logic.
 
-#### E. Cache `lexer->get_column(lexer)` more aggressively
+#### ~~E. Cache `lexer->get_column(lexer)` more aggressively~~
 
-**Difficulty:** low. **Payoff:** small.
-
-Last round's #5 dropped one redundant `get_column` call. There are
-several more sites in the scanner that call it inside loops or
-across function boundaries. A single call at the top of
-`tree_sitter_djot_external_scanner_scan` stored in a local could
-replace 4–5 calls in the prologue and early dispatchers. `get_column`
-is a virtual-function-style indirect call; it isn't free.
+Closed on inspection: only 2 calls remain after last round's #5, one
+in the scan prologue (column-0 gate) and one in `parse_newline`
+(records column-of-newline). They query different points in time and
+can't be coalesced into one cached value without restructuring the
+control flow more invasively than the gain would justify.
 
 ### Not applicable to djot
 
