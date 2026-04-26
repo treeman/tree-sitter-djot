@@ -7041,6 +7041,24 @@ List: emphasis-bracketed item content does not cross lines
             (strong_end)))))))
 
 ===============================================================================
+List: multi-line emphasis inside list falls back to text without erroring
+===============================================================================
+- item
+
+  _multi line
+  emphasis._ trailing
+
+-------------------------------------------------------------------------------
+
+(document
+  (list
+    (list_item
+      (list_marker_dash)
+      (list_item_content
+        (paragraph)
+        (paragraph)))))
+
+===============================================================================
 Table: cell with parenthesized content
 ===============================================================================
 | 1 | (right) |

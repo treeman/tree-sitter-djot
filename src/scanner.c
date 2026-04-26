@@ -3202,8 +3202,15 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
   // Refusing to open at the second `*` (no later `*` on its line) prunes the
   // shifted branch — the first `*` can still open and close per-item.
   // Multi-line emphasis remains valid in plain paragraphs (no enclosing list).
+  //
+  // Only gate the speculative real-opener path. The IN_FALLBACK branch must
+  // stay reachable so the `_<nws>` `_in_fallback` rule in `_symbol_fallback`
+  // can emit the `_` as plain text — without this, multi-line emphasis
+  // inside a list (e.g. `_a\n  b._` under `- item`) can't fall back to text
+  // and the parser errors. The opener-pruning purpose is unaffected because
+  // GLR still explores both forks.
   if ((inline_type == EMPHASIS || inline_type == STRONG) &&
-      find_list(s) != NULL) {
+      !valid_symbols[IN_FALLBACK] && find_list(s) != NULL) {
     if (!scan_for_same_line_close(s, lexer, inline_marker(inline_type))) {
       return false;
     }
