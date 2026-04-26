@@ -2320,31 +2320,6 @@ static bool parse_open_curly_bracket(Scanner *s, TSLexer *lexer,
   advance(s, lexer);
   lexer->mark_end(lexer);
 
-  // Fast-path bail: a valid attribute/comment can only start (after `{`) with
-  // `.`/`#` (class/id), `%` (comment), `}` (empty), `\\` (escape), `\n` (line
-  // break before content), whitespace (skipped before the body), or an
-  // identifier char (alnum/`_`/`-`). Any other byte after `{` cannot lead to
-  // a valid token, so we can skip the `consume_whitespace` + identifier walk
-  // that would otherwise crawl through plain prose like `{not an attribute}`.
-  switch (lexer->lookahead) {
-  case '.':
-  case '#':
-  case '%':
-  case '}':
-  case '\\':
-  case '\n':
-  case ' ':
-  case '\t':
-  case '\r':
-    break;
-  default:
-    if (!isalnum(lexer->lookahead) && lexer->lookahead != '_' &&
-        lexer->lookahead != '-') {
-      return false;
-    }
-    break;
-  }
-
   // Match indent to one past the `{`
   uint8_t indent = s->indent + 1;
 
