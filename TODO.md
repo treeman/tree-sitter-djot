@@ -7,12 +7,11 @@ Baseline (2026-04-26, branch `inline-scanner-rework`): m.dj parses ~150-170 ms (
 - [x] Fix `mark_span_begin` same-line gate blocking IN_FALLBACK path (commit `65fd2f2`)
 - [x] Pin precedence for `*not strong *strong*` with position-aware `:cst` test (commit `df3e042`)
 - [x] **#1** Gate `scan_ordered_list_marker_token` on `valid_symbols` (commit `9549fb5`) — m.dj 159→148 ms (~7%); test suite avg 1345→1613 bytes/ms
+- [x] **#2** Lookahead early-out in `parse_span` — restricted to the end-only path (begin tokens fire after the opener is already consumed, so lookahead is arbitrary on begin). Test suite 1728→1943 bytes/ms (+12%); m.dj wall time unchanged (~140 ms — m.dj is begin-token heavy).
 
 ## Remaining
 
 ### High impact, low risk
-
-- [ ] **#2** Lookahead early-out in `parse_span` (`scanner.c:3406`, called 10× per scan). Add `if (lexer->lookahead != inline_marker(element) && lexer->lookahead != '{') return false;` before the switch lookups. Kills 9 of 10 calls outright on a typical text byte.
 
 - [ ] **#3** Replace `inline_*` switches with `static const` lookup tables — `inline_marker`, `inline_begin_token`, `inline_end_token`, `inline_span_type` (lines 2593-2698). Indexed by `InlineType` enum. Called from inside hot loops (`scan_until`, `consume_if_span_end_marker`, every `parse_span`).
 

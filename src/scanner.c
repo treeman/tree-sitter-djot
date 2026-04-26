@@ -3407,6 +3407,26 @@ static bool parse_span(Scanner *s, TSLexer *lexer, const bool *valid_symbols,
                        InlineType element) {
   TokenType begin_token = inline_begin_token(element);
   TokenType end_token = inline_end_token(element);
+  // Lookahead early-out. Begin tokens fire AFTER the grammar has already
+  // consumed the opener (e.g. `_<nws>`, `{_`, `(`, `[`, `{=`), so lookahead
+  // is arbitrary on the begin path and we can only filter when the begin
+  // token isn't valid here. For the end-only path the close marker must
+  // start with the marker char (or whitespace, for the `  _}` / `  *}`
+  // bracketed-close form unique to EMPHASIS/STRONG).
+  if (!valid_symbols[begin_token]) {
+    if (!valid_symbols[end_token]) {
+      return false;
+    }
+    char marker = inline_marker(element);
+    int32_t la = lexer->lookahead;
+    if (la != marker) {
+      bool ws_close = (element == EMPHASIS || element == STRONG) &&
+                      (la == ' ' || la == '\t' || la == '\r');
+      if (!ws_close) {
+        return false;
+      }
+    }
+  }
   if (valid_symbols[end_token] &&
       parse_span_end(s, lexer, element, end_token)) {
     return true;
