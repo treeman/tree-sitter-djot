@@ -605,6 +605,14 @@ static bool parse_list_item_continuation(Scanner *s, TSLexer *lexer) {
     return false;
   }
 
+  // At EOF there's nothing left to continue into. Falling through lets
+  // `parse_list_item_end` (or `handle_blocks_to_close`) close the list
+  // cleanly so the document reduces, instead of shifting a continuation
+  // token that leaves the parser expecting more block content.
+  if (lexer->eof(lexer)) {
+    return false;
+  }
+
   lexer->mark_end(lexer);
   lexer->result_symbol = LIST_ITEM_CONTINUATION;
   return true;
@@ -1680,13 +1688,25 @@ static bool parse_list_item_end(Scanner *s, TSLexer *lexer,
     return false;
   }
 
-  // We're still inside the list, don't end it yet.
-  if (s->indent >= list->data) {
+  // No open inline at block boundary.
+  if (s->open_inline->size > 0) {
     return false;
   }
 
-  // No open inline at block boundary.
-  if (s->open_inline->size > 0) {
+  // At EOF, end the list_item regardless of indent so the list can
+  // reduce and the document accept. Without this, a file that ends
+  // without a trailing newline (e.g. `- > a\n  > b`) leaves the list
+  // unclosed; `handle_blocks_to_close` would eventually fire on
+  // BLOCK_CLOSE, but the parser shifts LIST_ITEM_CONTINUATION first
+  // and gets stuck expecting more content.
+  if (lexer->eof(lexer)) {
+    lexer->result_symbol = LIST_ITEM_END;
+    s->blocks_to_close = 1;
+    return true;
+  }
+
+  // We're still inside the list, don't end it yet.
+  if (s->indent >= list->data) {
     return false;
   }
 
