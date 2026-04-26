@@ -983,6 +983,11 @@ module.exports = grammar({
         seq("![", choice($._square_bracket_span_mark_begin, $._in_fallback)),
         seq("[", choice($._square_bracket_span_mark_begin, $._in_fallback)),
         seq("(", choice($._parens_span_mark_begin, $._in_fallback)),
+        // Pair off an inner fallback `[`'s matching `]` so the outer
+        // SQUARE_BRACKET_SPAN's close (`parse_span_end`) can succeed once
+        // inner brackets balance. Scanner consumes `]` and decrements the
+        // open SQUARE_BRACKET_SPAN's `data` counter.
+        $._square_bracket_span_text_close,
 
         // Autolink
         "<",
@@ -1200,6 +1205,16 @@ module.exports = grammar({
     // of `link_text` and `span`, so those branches are pruned when validation
     // fails — the parser then falls through to the `_symbol_fallback` branch.
     $._bracketed_text_open_check,
+
+    // Consumes `]` and decrements the open SQUARE_BRACKET_SPAN's `data`
+    // counter — used in `_symbol_fallback` so that an inner fallback `[`'s
+    // matching `]` (which would otherwise leave `data > 0` and block the
+    // outer span's close forever) gets paired off via this token. Emitted
+    // only when an open SQUARE_BRACKET_SPAN has `data > 0` and the
+    // lookahead is `]`. The state mutation is committed because emission
+    // returns true (mutations on `return false` get rolled back by the
+    // serialize/deserialize checkpoint).
+    $._square_bracket_span_text_close,
 
     // A signaling token that's used to signal that a fallback token should be scanned,
     // and should never be output.

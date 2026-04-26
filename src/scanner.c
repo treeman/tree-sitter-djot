@@ -109,6 +109,7 @@ typedef enum {
 
   IMAGE_OPEN_CHECK,
   BRACKETED_TEXT_OPEN_CHECK,
+  SQUARE_BRACKET_SPAN_TEXT_CLOSE,
 
   IN_FALLBACK,
 
@@ -3005,6 +3006,40 @@ static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
   return true;
 }
 
+// Pairs off an inner fallback `[`'s matching `]` against the open
+// SQUARE_BRACKET_SPAN's `data` counter. Background:
+//
+// `mark_span_begin`'s IN_FALLBACK branch increments `data` whenever a
+// `[` falls through to `_symbol_fallback` inside an open
+// SQUARE_BRACKET_SPAN (`find_inline(SQUARE_BRACKET_SPAN)`). That delays
+// `parse_span_end` from accepting the close until we've consumed enough
+// fallback `]`s — but `parse_span_end` itself can't decrement: any state
+// mutation it makes while returning false is rolled back by the
+// scanner's serialize/deserialize checkpoint. So this token serves as
+// the matching counterpart on the close side, consuming `]` and
+// decrementing the counter via a `return true` (which causes serialize
+// to commit).
+//
+// Concretely: `![[a]](u)` — the inner `[` increments the image
+// SQUARE_BRACKET_SPAN's data to 1; the inner `]` is emitted as
+// SQUARE_BRACKET_SPAN_TEXT_CLOSE (decrement to 0); the outer `]` then
+// emits as SQUARE_BRACKET_SPAN_END (close). Each fallback `[`/`]` pair
+// nets to zero; the outer's close happens at the unmatched `]`.
+static bool parse_square_bracket_span_text_close(Scanner *s, TSLexer *lexer) {
+  if (lexer->lookahead != ']') {
+    return false;
+  }
+  Inline *target = find_inline(s, SQUARE_BRACKET_SPAN);
+  if (!target || target->data == 0) {
+    return false;
+  }
+  --target->data;
+  advance(s, lexer);
+  lexer->mark_end(lexer);
+  lexer->result_symbol = SQUARE_BRACKET_SPAN_TEXT_CLOSE;
+  return true;
+}
+
 // Updates lookahead states that are used to block the acceptance of
 // the fallback characters `(` and `{` if there's a valid inline link
 // or span to be chosen.
@@ -3412,6 +3447,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
+  if (valid_symbols[SQUARE_BRACKET_SPAN_TEXT_CLOSE] &&
+      parse_square_bracket_span_text_close(s, lexer)) {
+    return true;
+  }
+
   switch (lexer->lookahead) {
   case '[':
     if (parse_open_bracket(s, lexer, valid_symbols)) {
@@ -3785,6 +3825,8 @@ static char *token_type_s(TokenType t) {
     return "IMAGE_OPEN_CHECK";
   case BRACKETED_TEXT_OPEN_CHECK:
     return "BRACKETED_TEXT_OPEN_CHECK";
+  case SQUARE_BRACKET_SPAN_TEXT_CLOSE:
+    return "SQUARE_BRACKET_SPAN_TEXT_CLOSE";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";

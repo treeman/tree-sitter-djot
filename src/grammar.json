@@ -4665,6 +4665,10 @@
           ]
         },
         {
+          "type": "SYMBOL",
+          "name": "_square_bracket_span_text_close"
+        },
+        {
           "type": "STRING",
           "value": "<"
         },
@@ -5114,6 +5118,10 @@
     {
       "type": "SYMBOL",
       "name": "_bracketed_text_open_check"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_square_bracket_span_text_close"
     },
     {
       "type": "SYMBOL",
