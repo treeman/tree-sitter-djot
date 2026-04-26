@@ -108,6 +108,7 @@ typedef enum {
   SQUARE_BRACKET_SPAN_END,
 
   IMAGE_OPEN_CHECK,
+  BRACKETED_TEXT_OPEN_CHECK,
 
   IN_FALLBACK,
 
@@ -2688,14 +2689,21 @@ static bool scan_span_end_marker(Scanner *s, TSLexer *lexer,
 
 // Scan until `c`, aborting if an ending marker for the `top` element is
 // found.
+//
+// The target `c` is checked before the span-end marker so that when the two
+// share a character (e.g. scanning a `[ref]` label's `]` while inside an
+// outer SQUARE_BRACKET_SPAN whose end marker is also `]`), the target wins.
+// The label/url/attr is closed correctly at `c`; only chars *before* `c`
+// can prematurely close the enclosing element.
 static bool scan_until(Scanner *s, TSLexer *lexer, char c, InlineType *top) {
   while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == c) {
+      return true;
+    }
     if (top && scan_span_end_marker(s, lexer, *top)) {
       return false;
     }
-    if (lexer->lookahead == c) {
-      return true;
-    } else if (lexer->lookahead == '\\') {
+    if (lexer->lookahead == '\\') {
       advance(s, lexer);
       advance(s, lexer);
     } else if (lexer->lookahead == '\n') {
@@ -2811,6 +2819,54 @@ static bool parse_image_open_check(Scanner *s, TSLexer *lexer,
   }
 
   lexer->result_symbol = IMAGE_OPEN_CHECK;
+  return true;
+}
+
+// Validates the trailing part of a bracketed-text structure. Lexer should be
+// positioned just past the closing `]`. Accepts `(...)`, `[ref]`, `[]`, or
+// `{...}` — the four shapes that can follow `[text]` to form `inline_link`,
+// `full_reference_link`, `collapsed_reference_link`, or `span` respectively.
+static bool scan_bracketed_text_trailer(Scanner *s, TSLexer *lexer,
+                                        InlineType *top) {
+  if (lexer->lookahead == '{') {
+    advance(s, lexer);
+    return scan_until(s, lexer, '}', top);
+  }
+  return scan_link_destination_or_label(s, lexer, top);
+}
+
+// Zero-width gate emitted just after a `[` literal when a complete bracketed
+// structure (`[ ... ]( ... )` / `[ ... ][ref]` / `[ ... ][]` / `[ ... ]{...}`)
+// is detected ahead. Required after `_bracketed_text_begin` in `link_text` and
+// `span`, so the bracketed branch is pruned when validation fails — the
+// parser then falls through to the `_symbol_fallback` branch in `grammar.js`.
+//
+// When inside another inline element, validation is also rejected if the
+// enclosing element's end marker would close inside the bracket region —
+// preserves djot's "shorter element wins" precedence.
+static bool parse_bracketed_text_open_check(Scanner *s, TSLexer *lexer,
+                                            const bool *valid_symbols) {
+  if (!valid_symbols[BRACKETED_TEXT_OPEN_CHECK]) {
+    return false;
+  }
+  // Token is zero-width and is requested after the `[` literal has already
+  // been consumed by the parser. Lookahead is at the first character of the
+  // bracketed text's content.
+
+  Inline *peek = peek_inline(s);
+  InlineType *top = peek ? &peek->type : NULL;
+
+  if (!scan_balanced_close_bracket(s, lexer, top)) {
+    return false;
+  }
+  // Past the closing `]` of the bracketed text.
+  advance(s, lexer);
+
+  if (!scan_bracketed_text_trailer(s, lexer, top)) {
+    return false;
+  }
+
+  lexer->result_symbol = BRACKETED_TEXT_OPEN_CHECK;
   return true;
 }
 
@@ -3131,6 +3187,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   if (valid_symbols[IMAGE_OPEN_CHECK] &&
       parse_image_open_check(s, lexer, valid_symbols)) {
+    return true;
+  }
+
+  if (valid_symbols[BRACKETED_TEXT_OPEN_CHECK] &&
+      parse_bracketed_text_open_check(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -3498,6 +3559,8 @@ static char *token_type_s(TokenType t) {
 
   case IMAGE_OPEN_CHECK:
     return "IMAGE_OPEN_CHECK";
+  case BRACKETED_TEXT_OPEN_CHECK:
+    return "BRACKETED_TEXT_OPEN_CHECK";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";

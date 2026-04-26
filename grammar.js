@@ -13,7 +13,6 @@ module.exports = grammar({
     [$.highlighted_begin, $._symbol_fallback],
     [$.insert_begin, $._symbol_fallback],
     [$.delete_begin, $._symbol_fallback],
-    [$._bracketed_text_begin, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
     [$.block_math, $._symbol_fallback],
     [$.inline_math, $._symbol_fallback],
@@ -816,6 +815,7 @@ module.exports = grammar({
       choice(
         seq(
           $._bracketed_text_begin,
+          $._bracketed_text_open_check,
           $._square_bracket_span_mark_begin,
           $._inline,
           // Alias to "]" to allow us to highlight it in Neovim.
@@ -831,6 +831,7 @@ module.exports = grammar({
     span: ($) =>
       seq(
         $._bracketed_text_begin,
+        $._bracketed_text_open_check,
         $._square_bracket_span_mark_begin,
         field("content", alias($._inline, $.content)),
         // Prefer span over regular text + inline attribute.
@@ -1191,6 +1192,14 @@ module.exports = grammar({
     // is pruned outright when validation fails — the parser then falls through
     // to the `_symbol_fallback` branch in `grammar.js`.
     $._image_open_check,
+
+    // Zero-width gate emitted by the scanner only when a full bracketed
+    // structure (`[ ... ]( ... )` / `[ ... ][ref]` / `[ ... ][]` /
+    // `[ ... ]{ ... }`) is detected ahead AND no enclosing inline element's
+    // end marker would close inside the bracket region. Required at the start
+    // of `link_text` and `span`, so those branches are pruned when validation
+    // fails — the parser then falls through to the `_symbol_fallback` branch.
+    $._bracketed_text_open_check,
 
     // A signaling token that's used to signal that a fallback token should be scanned,
     // and should never be output.
