@@ -3681,6 +3681,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "_image_open_check"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_square_bracket_span_mark_begin"
         },
         {
@@ -4753,10 +4757,6 @@
       "_symbol_fallback"
     ],
     [
-      "_image_description_begin",
-      "_symbol_fallback"
-    ],
-    [
       "footnote_marker_begin",
       "_symbol_fallback"
     ],
@@ -5105,6 +5105,10 @@
     },
     {
       "type": "SYMBOL",
+      "name": "_image_open_check"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_in_fallback"
     },
     {
@@ -5113,5 +5117,6 @@
     }
   ],
   "inline": [],
-  "supertypes": []
+  "supertypes": [],
+  "reserved": {}
 }

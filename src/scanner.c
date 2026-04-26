@@ -107,6 +107,8 @@ typedef enum {
   SQUARE_BRACKET_SPAN_MARK_BEGIN,
   SQUARE_BRACKET_SPAN_END,
 
+  IMAGE_OPEN_CHECK,
+
   IN_FALLBACK,
 
   ERROR,
@@ -2710,6 +2712,108 @@ static bool scan_until(Scanner *s, TSLexer *lexer, char c, InlineType *top) {
   return false;
 }
 
+// Scans until the matching `]` for an already-consumed opening `[`,
+// counting nested `[`/`]` pairs. Returns true with lookahead at the matching
+// `]` (without consuming it). Returns false on EOF, blank line, or if `top`
+// is supplied and its end marker appears inside the bracket region (meaning
+// the enclosing element would close before this bracket structure does, so
+// the bracket structure shouldn't claim this region).
+//
+// `]` handling runs before the span-end check so the image/link's own
+// closing `]` wins even when the enclosing element's end marker is also `]`
+// (e.g. validating an image description nested inside a link's `link_text`).
+static bool scan_balanced_close_bracket(Scanner *s, TSLexer *lexer,
+                                        InlineType *top) {
+  int depth = 1;
+  while (!lexer->eof(lexer)) {
+    if (lexer->lookahead == ']') {
+      depth--;
+      if (depth == 0) {
+        return true;
+      }
+      advance(s, lexer);
+      continue;
+    }
+    if (top && scan_span_end_marker(s, lexer, *top)) {
+      return false;
+    }
+    if (lexer->lookahead == '[') {
+      depth++;
+      advance(s, lexer);
+    } else if (lexer->lookahead == '\\') {
+      advance(s, lexer);
+      if (!lexer->eof(lexer)) {
+        advance(s, lexer);
+      }
+    } else if (lexer->lookahead == '\n') {
+      advance(s, lexer);
+      consume_whitespace(s, lexer);
+      if (lexer->lookahead == '\n') {
+        return false;
+      }
+    } else {
+      advance(s, lexer);
+    }
+  }
+  return false;
+}
+
+// Validates the destination/label trailing part of a link or image structure.
+// Lexer should be positioned just past the closing `]` of the description/text.
+// Accepts `(...)`, `[ref]`, or `[]`. Doesn't balance parens since djot URLs
+// terminate at the first unescaped `)`.
+static bool scan_link_destination_or_label(Scanner *s, TSLexer *lexer,
+                                           InlineType *top) {
+  if (lexer->lookahead == '(') {
+    advance(s, lexer);
+    return scan_until(s, lexer, ')', top);
+  } else if (lexer->lookahead == '[') {
+    advance(s, lexer);
+    if (lexer->lookahead == ']') {
+      // Collapsed `[]`.
+      return true;
+    }
+    return scan_until(s, lexer, ']', top);
+  }
+  return false;
+}
+
+// Zero-width gate emitted just after an `![` literal when a complete image
+// structure (`![ ... ]( ... )` / `![ ... ][ref]` / `![ ... ][]`) is detected
+// ahead. Required after `_image_description_begin` in `image_description`, so
+// the image branch is pruned when validation fails — the parser then falls
+// through to the `_symbol_fallback` branch in `grammar.js`.
+//
+// When inside another inline element, validation is also rejected if the
+// enclosing element's end marker would close inside the image region — that's
+// how djot's "shorter element wins" precedence (e.g. `*![*](y)` is strong,
+// not image) is preserved.
+static bool parse_image_open_check(Scanner *s, TSLexer *lexer,
+                                   const bool *valid_symbols) {
+  if (!valid_symbols[IMAGE_OPEN_CHECK]) {
+    return false;
+  }
+  // Token is zero-width and is requested after the `![` literal has already
+  // been consumed by the parser. Lookahead is at the first character of the
+  // image description's content.
+
+  Inline *peek = peek_inline(s);
+  InlineType *top = peek ? &peek->type : NULL;
+
+  if (!scan_balanced_close_bracket(s, lexer, top)) {
+    return false;
+  }
+  // Past the closing `]` of the description.
+  advance(s, lexer);
+
+  if (!scan_link_destination_or_label(s, lexer, top)) {
+    return false;
+  }
+
+  lexer->result_symbol = IMAGE_OPEN_CHECK;
+  return true;
+}
+
 // Updates lookahead states that are used to block the acceptance of
 // the fallback characters `(` and `{` if there's a valid inline link
 // or span to be chosen.
@@ -3022,6 +3126,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
   if (parse_comment_end(s, lexer, valid_symbols)) {
+    return true;
+  }
+
+  if (valid_symbols[IMAGE_OPEN_CHECK] &&
+      parse_image_open_check(s, lexer, valid_symbols)) {
     return true;
   }
 
@@ -3386,6 +3495,9 @@ static char *token_type_s(TokenType t) {
     return "SQUARE_BRACKET_SPAN_MARK_BEGIN";
   case SQUARE_BRACKET_SPAN_END:
     return "SQUARE_BRACKET_SPAN_END";
+
+  case IMAGE_OPEN_CHECK:
+    return "IMAGE_OPEN_CHECK";
 
   case IN_FALLBACK:
     return "IN_FALLBACK";

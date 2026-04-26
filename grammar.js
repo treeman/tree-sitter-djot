@@ -14,7 +14,6 @@ module.exports = grammar({
     [$.insert_begin, $._symbol_fallback],
     [$.delete_begin, $._symbol_fallback],
     [$._bracketed_text_begin, $._symbol_fallback],
-    [$._image_description_begin, $._symbol_fallback],
     [$.footnote_marker_begin, $._symbol_fallback],
     [$.block_math, $._symbol_fallback],
     [$.inline_math, $._symbol_fallback],
@@ -795,6 +794,7 @@ module.exports = grammar({
     image_description: ($) =>
       seq(
         $._image_description_begin,
+        $._image_open_check,
         $._square_bracket_span_mark_begin,
         optional($._inline),
         alias($._square_bracket_span_end, "]"),
@@ -1183,6 +1183,14 @@ module.exports = grammar({
     $._curly_bracket_span_end,
     $._square_bracket_span_mark_begin,
     $._square_bracket_span_end,
+
+    // Zero-width gate emitted by the scanner only when a full image structure
+    // (`![ ... ]( ... )` / `![ ... ][ref]` / `![ ... ][]`) is detected ahead AND
+    // no enclosing inline element's end marker would close inside the image
+    // region. Required at the start of `image_description`, so the image branch
+    // is pruned outright when validation fails — the parser then falls through
+    // to the `_symbol_fallback` branch in `grammar.js`.
+    $._image_open_check,
 
     // A signaling token that's used to signal that a fallback token should be scanned,
     // and should never be output.

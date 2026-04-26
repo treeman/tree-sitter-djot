@@ -4563,6 +4563,668 @@ Image: fallback
   (paragraph))
 
 ===============================================================================
+Nested precedence: image with link, bait in destination
+===============================================================================
+![[a](bc)](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with link, multiple bait pairs in destination
+===============================================================================
+![[a](bc)](a_b_c_d_e)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with full reference link, bait in destination
+===============================================================================
+![[a][r]](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (full_reference_link
+          (link_text)
+          (link_label)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with collapsed reference link, bait in destination
+===============================================================================
+![[a][]](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (collapsed_reference_link
+          (link_text)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with surrounding whitespace, bait in destination
+===============================================================================
+![ [a](b) ](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with text around link, bait in destination
+===============================================================================
+![a [b](c) d](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with two links, bait in destination
+===============================================================================
+![[a](b) [c](d)](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (inline_link
+          (link_text)
+          (inline_link_destination))
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: link wrapping image, bait in destination
+===============================================================================
+[![a](b)](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text
+        (inline_image
+          (image_description)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: link wrapping full reference image, bait in destination
+===============================================================================
+[![a][r]](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text
+        (full_reference_image
+          (image_description)
+          (link_label)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: link wrapping link, bait in destination
+===============================================================================
+[[a](b)](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: link wrapping span, bait in destination
+===============================================================================
+[[a]{.c}](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_link
+      (link_text
+        (span
+          (content)
+          (inline_attribute
+            (args
+              (class)))))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: emphasis wrapping nested links
+===============================================================================
+_[[a](b)](xyz)_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_link
+              (link_text)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence: strong wrapping link wrapping image
+===============================================================================
+*[![a](b)](c)*
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (strong_end))))
+
+===============================================================================
+Nested precedence: image with empty inner brackets, bait in destination
+===============================================================================
+![[a]](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description)
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: image with span inside, bait in destination
+===============================================================================
+![[a]{.c}](a_b_c)
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (inline_image
+      (image_description
+        (span
+          (content)
+          (inline_attribute
+            (args
+              (class)))))
+      (inline_link_destination))))
+
+===============================================================================
+Nested precedence: span wrapping link
+===============================================================================
+[[a](b)]{.c}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (span
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (inline_attribute
+        (args
+          (class))))))
+
+===============================================================================
+Nested precedence: bracketed delete wrapping link wrapping image
+===============================================================================
+{-[![a](b)](c)-}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+      (delete_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (delete_end))))
+
+===============================================================================
+Nested precedence: bracketed insert wrapping link wrapping image
+===============================================================================
+{+[![a](b)](c)+}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (insert
+      (insert_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (insert_end))))
+
+===============================================================================
+Nested precedence: bracketed highlighted wrapping link wrapping image
+===============================================================================
+{=[![a](b)](c)=}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (highlighted
+      (highlighted_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (highlighted_end))))
+
+===============================================================================
+Nested precedence: bracketed superscript wrapping link wrapping image
+===============================================================================
+{^[![a](b)](c)^}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+      (superscript_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (superscript_end))))
+
+===============================================================================
+Nested precedence: bracketed subscript wrapping link wrapping image
+===============================================================================
+{~[![a](b)](c)~}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (subscript
+      (subscript_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (subscript_end))))
+
+===============================================================================
+Nested precedence: bracketed emphasis wrapping link wrapping image
+===============================================================================
+{_[![a](b)](c)_}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence: bracketed strong wrapping link wrapping image
+===============================================================================
+{*[![a](b)](c)*}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content
+        (inline_link
+          (link_text
+            (inline_image
+              (image_description)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (strong_end))))
+
+===============================================================================
+Nested precedence: bracketed delete wrapping image with link, bait in destination
+===============================================================================
+{-![[a](bc)](u_v_w)-}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+      (delete_begin)
+      (content
+        (inline_image
+          (image_description
+            (inline_link
+              (link_text)
+              (inline_link_destination)))
+          (inline_link_destination)))
+      (delete_end))))
+
+===============================================================================
+Nested precedence (passing): footnote reference followed by bait
+===============================================================================
+[^id]_a_b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (footnote_reference
+      (footnote_marker_begin)
+      (reference_label)
+      (footnote_marker_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence (passing): autolink followed by bait
+===============================================================================
+<x>_a_b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (autolink)
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence (passing): verbatim followed by bait
+===============================================================================
+`code`_a_b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (verbatim
+      (verbatim_marker_begin)
+      (content)
+      (verbatim_marker_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence (passing): inline math between bait
+===============================================================================
+_a_$`y`$_b_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))
+    (math
+      (math_marker)
+      (math_marker_begin)
+      (content)
+      (math_marker_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed delete with single link, bait in destination
+===============================================================================
+{-[a](u_v_w)-}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+      (delete_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (delete_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed insert with single link, bait in destination
+===============================================================================
+{+[a](u_v_w)+}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (insert
+      (insert_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (insert_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed highlighted with single link, bait in destination
+===============================================================================
+{=[a](u_v_w)=}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (highlighted
+      (highlighted_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (highlighted_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed superscript with single link, bait in destination
+===============================================================================
+{^[a](u_v_w)^}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (superscript
+      (superscript_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (superscript_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed subscript with single link, bait in destination
+===============================================================================
+{~[a](u_v_w)~}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (subscript
+      (subscript_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (subscript_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed emphasis with single link, bait in destination
+===============================================================================
+{_[a](u_v_w)_}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (emphasis
+      (emphasis_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (emphasis_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed strong with single link, bait in destination
+===============================================================================
+{*[a](u_v_w)*}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (strong
+      (strong_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (strong_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed delete with span inside
+===============================================================================
+{-[a]{.c}-}
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+      (delete_begin)
+      (content
+        (span
+          (content)
+          (inline_attribute
+            (args
+              (class)))))
+      (delete_end))))
+
+===============================================================================
+Nested precedence (passing): bracketed delete with link, trailing bait
+===============================================================================
+{-[a](b)-}_x_y_
+
+-------------------------------------------------------------------------------
+
+(document
+  (paragraph
+    (delete
+      (delete_begin)
+      (content
+        (inline_link
+          (link_text)
+          (inline_link_destination)))
+      (delete_end))
+    (emphasis
+      (emphasis_begin)
+      (content)
+      (emphasis_end))))
+
+===============================================================================
 Emphasis
 ===============================================================================
 With _em_
