@@ -3778,18 +3778,19 @@ unsigned tree_sitter_djot_external_scanner_serialize(void *payload,
   buffer[size++] = (char)s->state;
   buffer[size++] = (char)s->pending_inline_open_before_bracket;
 
+  // Block and Inline are POD with fixed layout; bulk-copy instead of a
+  // per-element field-by-field loop. The block count is stored explicitly;
+  // the inline count is derived from the remaining bytes on deserialize.
   buffer[size++] = (char)s->open_blocks.size;
-  for (size_t i = 0; i < s->open_blocks.size; ++i) {
-    Block *b = array_get(&s->open_blocks, i);
-    buffer[size++] = (char)b->type;
-    buffer[size++] = (char)b->data;
+  if (s->open_blocks.size > 0) {
+    size_t bytes = s->open_blocks.size * sizeof(Block);
+    memcpy(&buffer[size], s->open_blocks.contents, bytes);
+    size += bytes;
   }
-
-  for (size_t i = 0; i < s->open_inline.size; ++i) {
-    Inline *x = array_get(&s->open_inline, i);
-    buffer[size++] = (char)x->type;
-    buffer[size++] = (char)x->data;
-    buffer[size++] = (char)x->bracketed;
+  if (s->open_inline.size > 0) {
+    size_t bytes = s->open_inline.size * sizeof(Inline);
+    memcpy(&buffer[size], s->open_inline.contents, bytes);
+    size += bytes;
   }
 
   return size;
@@ -3807,17 +3808,25 @@ void tree_sitter_djot_external_scanner_deserialize(void *payload, char *buffer,
     s->state = (uint8_t)buffer[size++];
     s->pending_inline_open_before_bracket = (uint8_t)buffer[size++];
 
-    uint8_t open_blocks = (uint8_t)buffer[size++];
-    while (open_blocks-- > 0) {
-      BlockType type = (BlockType)buffer[size++];
-      uint8_t level = (uint8_t)buffer[size++];
-      push_block(s, type, level);
+    uint8_t open_blocks_count = (uint8_t)buffer[size++];
+    if (open_blocks_count > 0) {
+      size_t bytes = open_blocks_count * sizeof(Block);
+      array_extend(&s->open_blocks, open_blocks_count,
+                   (const Block *)&buffer[size]);
+      size += bytes;
+      // `array_extend` is a raw memcpy; rebuild `list_open_count` (normally
+      // maintained by `push_block`).
+      for (size_t i = 0; i < s->open_blocks.size; ++i) {
+        if (is_list(s->open_blocks.contents[i].type)) {
+          ++s->list_open_count;
+        }
+      }
     }
-    while (size < length) {
-      InlineType type = (InlineType)buffer[size++];
-      uint8_t data = (uint8_t)buffer[size++];
-      uint8_t bracketed = (uint8_t)buffer[size++];
-      push_inline(s, type, data, bracketed);
+    size_t inline_bytes = (size_t)length - size;
+    if (inline_bytes > 0) {
+      uint32_t inline_count = (uint32_t)(inline_bytes / sizeof(Inline));
+      array_extend(&s->open_inline, inline_count,
+                   (const Inline *)&buffer[size]);
     }
   }
 }
