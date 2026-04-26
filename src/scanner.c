@@ -231,6 +231,12 @@ typedef struct {
   // Parser state flags.
   uint8_t state;
 
+  // Number of list blocks currently in `open_blocks`. Maintained in
+  // `push_block`/`remove_block`/`reset` so callers can answer "is any list
+  // open?" in O(1) without iterating the block stack. Reconstructed from
+  // scratch on deserialize because `push_block` updates this incrementally.
+  uint8_t list_open_count;
+
   // Set to the marker character (`*`, `_`, `^`, or `~`) when
   // `mark_span_begin` emits a single-char inline opener whose next
   // character is `[`. Read by `parse_bracketed_text_open_check` to
@@ -437,6 +443,9 @@ static uint8_t consume_whitespace(Scanner *s, TSLexer *lexer) {
 static void push_block(Scanner *s, BlockType type, uint8_t data) {
   Block b = {type, data};
   array_push(&s->open_blocks, b);
+  if (is_list(type)) {
+    ++s->list_open_count;
+  }
 }
 
 static void push_inline(Scanner *s, InlineType type, uint8_t data,
@@ -447,6 +456,10 @@ static void push_inline(Scanner *s, InlineType type, uint8_t data,
 
 static void remove_block(Scanner *s) {
   if (s->open_blocks.size > 0) {
+    Block *top = array_back(&s->open_blocks);
+    if (is_list(top->type)) {
+      --s->list_open_count;
+    }
     --s->open_blocks.size;
     if (s->blocks_to_close > 0) {
       --s->blocks_to_close;
@@ -3201,7 +3214,7 @@ static bool mark_span_begin(Scanner *s, TSLexer *lexer,
   // and the parser errors. The opener-pruning purpose is unaffected because
   // GLR still explores both forks.
   if ((inline_type == EMPHASIS || inline_type == STRONG) &&
-      !valid_symbols[IN_FALLBACK] && find_list(s) != NULL) {
+      !valid_symbols[IN_FALLBACK] && s->list_open_count > 0) {
     if (!scan_for_same_line_close(s, lexer, inline_marker(inline_type))) {
       return false;
     }
@@ -3675,7 +3688,7 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   TokenType ordered_list_marker = IGNORED;
   bool ordered_scan_useful =
       any_ordered_list_marker_valid(valid_symbols) ||
-      (valid_symbols[BLOCK_CLOSE] && find_list(s) != NULL);
+      (valid_symbols[BLOCK_CLOSE] && s->list_open_count > 0);
   if (ordered_scan_useful) {
     ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
     if (ordered_list_marker != IGNORED &&
@@ -3713,6 +3726,7 @@ static void reset(Scanner *s) {
   s->indent = 0;
   s->state = 0;
   s->pending_inline_open_before_bracket = 0;
+  s->list_open_count = 0;
 }
 
 void *tree_sitter_djot_external_scanner_create() {
