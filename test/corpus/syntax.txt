@@ -6937,18 +6937,27 @@ Inline: broken things
 
 ===============================================================================
 Verbatim: in a row should not consume preceding whitespace
+:cst
 ===============================================================================
-After
-`ab`
+- List
+
+  After
+  `ab`
 
 -------------------------------------------------------------------------------
 
-(document
-  (paragraph
-    (verbatim
-      (verbatim_marker_begin)
-      (content)
-      (verbatim_marker_end))))
+0:0 - 4:0   document
+0:0 - 4:0     list
+0:0 - 4:0       list_item
+0:0 - 0:2         marker: list_marker_dash `- `
+0:2 - 4:0         content: list_item_content
+0:2 - 1:0           paragraph
+0:2 - 0:7             `List\n`
+2:2 - 4:0           paragraph
+3:2 - 3:6             verbatim
+3:2 - 3:3               begin_marker: verbatim_marker_begin `\``
+3:3 - 3:5               content: content `ab`
+3:5 - 3:6               end_marker: verbatim_marker_end `\``
 
 ===============================================================================
 List: emphasis-bracketed item content does not cross lines

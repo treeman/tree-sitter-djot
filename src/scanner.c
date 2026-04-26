@@ -263,6 +263,15 @@ static const uint8_t STATE_TABLE_SEPARATOR_NEXT = 1 << 2;
 // gate. Cleared at the start of every dispatch (so a single emission lifetime).
 static const uint8_t STATE_AFTER_NON_WHITESPACE_CHECK = 1 << 3;
 
+// Set within a single scan invocation when `consume_whitespace` at the line
+// start advanced past at least one whitespace char. Functions that emit
+// non-whitespace tokens (e.g. `parse_backtick`) check this and refuse so the
+// internal lexer can emit `_whitespace1` for the leading indent first — the
+// alternative is the emitted token spanning from the scan-start column (col 0)
+// through the indent, swallowing it (e.g. `verbatim_marker_begin` covering
+// `  \``). Cleared at the start of every dispatch — single-invocation lifetime.
+static const uint8_t STATE_CONSUMED_INDENT_AT_SCAN_START = 1 << 4;
+
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
 
@@ -801,6 +810,22 @@ static bool parse_backtick(Scanner *s, TSLexer *lexer,
   if (!valid_symbols[CODE_BLOCK_BEGIN] && !valid_symbols[CODE_BLOCK_END] &&
       !valid_symbols[BLOCK_CLOSE] && !valid_symbols[VERBATIM_BEGIN] &&
       !valid_symbols[VERBATIM_END]) {
+    return false;
+  }
+
+  // Inline verbatim opens on a paragraph-continuation line: refuse so the
+  // internal lexer can match the leading indent as `_whitespace1` first. If
+  // we emitted VERBATIM_BEGIN here the token would span from col 0 (the
+  // scan-start position before consume_whitespace) through the indent and
+  // the backtick, e.g. `  \`` for a 2-space indent — the "should not consume
+  // preceding whitespace" bug. Block-level fence tokens (CODE_BLOCK_*) are
+  // unaffected because those legitimately start at line start; only refuse
+  // when the only valid backtick symbol is the inline verbatim begin/end.
+  bool only_inline_verbatim_valid =
+      !valid_symbols[CODE_BLOCK_BEGIN] && !valid_symbols[CODE_BLOCK_END] &&
+      !valid_symbols[BLOCK_CLOSE];
+  if (only_inline_verbatim_valid &&
+      (s->state & STATE_CONSUMED_INDENT_AT_SCAN_START)) {
     return false;
   }
 
@@ -3402,12 +3427,16 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   // we mark it again to make it consume.
   // I found it easier to opt-in to consume tokens.
   lexer->mark_end(lexer);
+  s->state &= ~STATE_CONSUMED_INDENT_AT_SCAN_START;
   // Important to remember to skip all carriage returns.
   if (lexer->lookahead == '\r') {
     advance(s, lexer);
   }
   if (lexer->get_column(lexer) == 0) {
     s->indent = consume_whitespace(s, lexer);
+    if (lexer->get_column(lexer) > 0) {
+      s->state |= STATE_CONSUMED_INDENT_AT_SCAN_START;
+    }
   }
   bool is_newline = lexer->lookahead == '\n';
 
