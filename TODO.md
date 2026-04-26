@@ -10,6 +10,7 @@ Baseline (2026-04-26, branch `inline-scanner-rework`): m.dj parses ~150-170 ms (
 - [x] **#2** Lookahead early-out in `parse_span` — restricted to the end-only path (begin tokens fire after the opener is already consumed, so lookahead is arbitrary on begin). Test suite 1728→1943 bytes/ms (+12%); m.dj wall time unchanged (~140 ms — m.dj is begin-token heavy).
 - [x] **#3** Replaced `inline_*` switches with `static const` lookup tables. Within run-to-run noise (~1900 bytes/ms test suite); the compiler had already optimized the switches. Cleaner code; no regression.
 - [x] **#4** Folded `parse_comment_end` (`%`/`}`) and `parse_square_bracket_span_text_close` (`]`) into the lookahead switch. `parse_block_quote`/`parse_heading` couldn't move — both do work for arbitrary lookahead (block-close paths). Within noise (~1950 bytes/ms test suite, m.dj ~2240 bytes/ms); cleaner, no regression.
+- [x] **#5** Replaced second `get_column` call with `s->indent > 0` — `consume_whitespace` already returns the indent count, so the post-check is redundant. Within noise; one fewer indirect call per scan.
 
 ## Remaining
 

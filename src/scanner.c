@@ -3442,7 +3442,10 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
   if (lexer->get_column(lexer) == 0) {
     s->indent = consume_whitespace(s, lexer);
-    if (lexer->get_column(lexer) > 0) {
+    // `consume_whitespace` returns the indent count (space + 4*tab); a
+    // non-zero value means we advanced past column 0 by real indent. This
+    // replaces a second `get_column` call.
+    if (s->indent > 0) {
       s->state |= STATE_CONSUMED_INDENT_AT_SCAN_START;
     }
   }
