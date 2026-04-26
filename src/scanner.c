@@ -589,37 +589,11 @@ static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
   }
 }
 
-// Identifier chars (alnum + `_`/`-`) as a 256-byte table.
-// Used in `scan_identifier`'s tight loop and `parse_open_curly_bracket`'s
-// fast-path bail. Replaces `isalnum() || c == '_' || c == '-'` (libc +
-// 2 compares with a locale-check inside `isalnum`) with a single indexed
-// load.
-static const bool is_identifier_char_table[256] = {
-    ['0'] = true, ['1'] = true, ['2'] = true, ['3'] = true, ['4'] = true,
-    ['5'] = true, ['6'] = true, ['7'] = true, ['8'] = true, ['9'] = true,
-    ['A'] = true, ['B'] = true, ['C'] = true, ['D'] = true, ['E'] = true,
-    ['F'] = true, ['G'] = true, ['H'] = true, ['I'] = true, ['J'] = true,
-    ['K'] = true, ['L'] = true, ['M'] = true, ['N'] = true, ['O'] = true,
-    ['P'] = true, ['Q'] = true, ['R'] = true, ['S'] = true, ['T'] = true,
-    ['U'] = true, ['V'] = true, ['W'] = true, ['X'] = true, ['Y'] = true,
-    ['Z'] = true,
-    ['a'] = true, ['b'] = true, ['c'] = true, ['d'] = true, ['e'] = true,
-    ['f'] = true, ['g'] = true, ['h'] = true, ['i'] = true, ['j'] = true,
-    ['k'] = true, ['l'] = true, ['m'] = true, ['n'] = true, ['o'] = true,
-    ['p'] = true, ['q'] = true, ['r'] = true, ['s'] = true, ['t'] = true,
-    ['u'] = true, ['v'] = true, ['w'] = true, ['x'] = true, ['y'] = true,
-    ['z'] = true,
-    ['_'] = true, ['-'] = true,
-};
-
-static inline bool is_identifier_char(int32_t c) {
-  return c >= 0 && c < 256 && is_identifier_char_table[(uint8_t)c];
-}
-
 static bool scan_identifier(Scanner *s, TSLexer *lexer) {
   bool any_scanned = false;
   while (!lexer->eof(lexer)) {
-    if (is_identifier_char(lexer->lookahead)) {
+    if (isalnum(lexer->lookahead) || lexer->lookahead == '-' ||
+        lexer->lookahead == '_') {
       any_scanned = true;
       advance(s, lexer);
     } else {
@@ -2364,7 +2338,8 @@ static bool parse_open_curly_bracket(Scanner *s, TSLexer *lexer,
   case '\r':
     break;
   default:
-    if (!is_identifier_char(lexer->lookahead)) {
+    if (!isalnum(lexer->lookahead) && lexer->lookahead != '_' &&
+        lexer->lookahead != '-') {
       return false;
     }
     break;
