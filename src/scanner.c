@@ -2674,28 +2674,6 @@ static bool parse_comment_end(Scanner *s, TSLexer *lexer,
   return false;
 }
 
-// Bytes that could possibly start an inline-element end-marker (or,
-// for EMPHASIS/STRONG, the whitespace before a bracketed end like ` _}`).
-// Used as a top-level gate before the parse_span chain — most text bytes
-// are not in this set and can skip all 10 parse_span calls when no begin
-// token is also valid (begin tokens fire after the grammar consumed the
-// opener, so lookahead at begin time is arbitrary).
-static const bool inline_active_byte_table[256] = {
-    ['_'] = true,  ['*'] = true,  ['^'] = true,  ['~'] = true,
-    ['='] = true,  ['+'] = true,  ['-'] = true,
-    [')'] = true,  ['}'] = true,  [']'] = true,
-    [' '] = true,  ['\t'] = true, ['\r'] = true,
-};
-
-static inline bool any_inline_begin_valid(const bool *vs) {
-  return vs[EMPHASIS_MARK_BEGIN] || vs[STRONG_MARK_BEGIN] ||
-         vs[SUPERSCRIPT_MARK_BEGIN] || vs[SUBSCRIPT_MARK_BEGIN] ||
-         vs[HIGHLIGHTED_MARK_BEGIN] || vs[INSERT_MARK_BEGIN] ||
-         vs[DELETE_MARK_BEGIN] || vs[PARENS_SPAN_MARK_BEGIN] ||
-         vs[CURLY_BRACKET_SPAN_MARK_BEGIN] ||
-         vs[SQUARE_BRACKET_SPAN_MARK_BEGIN];
-}
-
 // Per-InlineType lookup tables. Indexed by the InlineType enum so the
 // compiler can fold a load instead of generating a switch dispatch — these
 // are called from hot paths (`parse_span`, `scan_until`, etc.).
@@ -3697,47 +3675,35 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   // Span scanning for inline elements, implemented
   // in the same way to have consistent precedence handling.
-  //
-  // Top-level gate: every parse_span call already short-circuits when its
-  // own begin/end isn't relevant (see `parse_span`), but the 10 calls
-  // still each go through function-call + valid_symbols + lookahead
-  // checks. If lookahead isn't an inline-relevant byte AND no begin
-  // token is valid (begin tokens fire at arbitrary lookahead so they
-  // can't be filtered by the byte table), skip the entire chain.
-  int32_t la_for_inline = lexer->lookahead;
-  bool inline_byte_active = la_for_inline >= 0 && la_for_inline < 256 &&
-                            inline_active_byte_table[(uint8_t)la_for_inline];
-  if (inline_byte_active || any_inline_begin_valid(valid_symbols)) {
-    if (parse_span(s, lexer, valid_symbols, EMPHASIS)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, STRONG)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, SUPERSCRIPT)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, SUBSCRIPT)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, HIGHLIGHTED)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, INSERT)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, DELETE)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, PARENS_SPAN)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, CURLY_BRACKET_SPAN)) {
-      return true;
-    }
-    if (parse_span(s, lexer, valid_symbols, SQUARE_BRACKET_SPAN)) {
-      return true;
-    }
+  if (parse_span(s, lexer, valid_symbols, EMPHASIS)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, STRONG)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SUPERSCRIPT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SUBSCRIPT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, HIGHLIGHTED)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, INSERT)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, DELETE)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, PARENS_SPAN)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, CURLY_BRACKET_SPAN)) {
+    return true;
+  }
+  if (parse_span(s, lexer, valid_symbols, SQUARE_BRACKET_SPAN)) {
+    return true;
   }
 
   // Table cell / caption / hard-line-break checks must run before the
