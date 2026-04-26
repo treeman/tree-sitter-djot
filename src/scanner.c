@@ -377,6 +377,7 @@ static bool is_alpha_list(BlockType type) {
 }
 
 static void advance(Scanner *s, TSLexer *lexer) {
+  (void)s;
   lexer->advance(lexer, false);
   // Carriage returns should simply be ignored.
   if (lexer->lookahead == '\r') {
@@ -1092,16 +1093,6 @@ static bool matches_ordered_list(OrderedListType type, char c) {
   }
 }
 
-static bool single_letter_list_marker(OrderedListType type) {
-  switch (type) {
-  case LOWER_ALPHA:
-  case UPPER_ALPHA:
-    return true;
-  default:
-    return false;
-  }
-}
-
 static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
                                    OrderedListType *res) {
   bool can_be_decimal = true;
@@ -1115,7 +1106,6 @@ static bool scan_ordered_list_type(Scanner *s, TSLexer *lexer,
   bool can_be_upper_alpha = true;
   uint8_t scanned_upper_alpha = 0;
 
-  uint8_t scanned = 0;
   while (!lexer->eof(lexer)) {
     char c = lexer->lookahead;
 

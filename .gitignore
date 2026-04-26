@@ -10,3 +10,6 @@ build
 log.html
 *.dj
 *.so
+*.o
+*.pc
+*.a
