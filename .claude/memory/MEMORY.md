@@ -1,0 +1,3 @@
+- [Nested-bracket inline precedence bug](project_nested_bracket_bug.md) — Steps 1+2+3+4+5 done on branch `inline-scanner-rework` (373/375 passing); 1 red left (374 unrelated list/blockquote, plus user WIP test 32)
+- [Single-parser distribution preferred](feedback_single_parser.md) — don't propose splitting into djot + djot-inline; do scanner-side fixes that keep one package
+- [Scanner+grammar perf analysis (2026-04-26)](project_perf_analysis_2026_04.md) — 10 ranked opt opportunities; baseline 1.5KB/ms on m.dj. Tackle in order: gate ordered-list scan, lookahead early-out in parse_span, lookup tables.
