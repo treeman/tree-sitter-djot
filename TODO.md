@@ -61,44 +61,31 @@ crossed out are dropped because they don't apply to djot.
 
 ### Worth doing
 
-#### A. STATE_MATCHING two-mode block scan
+#### ~~A. STATE_MATCHING two-mode block scan~~ — closed without implementing
 
-**Difficulty:** medium-high. **Payoff:** medium-high (this is the
-biggest remaining one given #1 is off the table).
+**Investigation result:** the optimization is real but the per-scan
+op savings are bounded (~10-20 ops per scan), and on m.dj's ~50K
+scanner invocations that's well within run-to-run noise on the
+~150 ms wall time.
 
-Markdown's block scanner has two distinct modes:
-- **Matching mode**: re-consume continuation markers for already-open
-  blocks (e.g., `> ` for an open block_quote, indent for an open list
-  item). One block per call until matched count == open_blocks size.
-- **Scanning mode**: dispatch on lookahead to open new blocks.
+What I found when actually digging in:
+- The valid_symbols-gated calls (`parse_indented_content_spacer`,
+  `parse_list_item_continuation`, etc.) are already individually
+  cheap when their tokens aren't valid — each is a single load + a
+  branch. The "many sequential calls" view overstated the cost.
+- `parse_block_quote` and `parse_heading` already early-out internally
+  when none of their relevant valid_symbols are set, so the
+  function-call cost on text bytes is dominated by the early bail.
+- The bigger restructuring (`parse_block_quote` → `match_block_quote` +
+  `open_block_quote`) would touch ordering dependencies the file
+  itself flags as fragile (`scanner.c:3568`), with high regression risk
+  and no measurable upside on the metric we care about.
 
-Djot blends these. `parse_block_quote` handles both opening a new
-block quote and continuing one; `close_list_nested_block_if_needed`
-runs unconditionally early; the lookahead switch comes after several
-valid-symbol-gated calls that are only meaningful in one mode.
-
-Splitting the modes would:
-- Let the lookahead switch be the **primary** dispatcher (markdown
-  does this; we still have ~10 pre-switch calls).
-- Eliminate per-call lookahead checks inside continuation handlers
-  (they'd run only in matching mode).
-- Make the soft-line-break-vs-block-close decision local to one mode.
-
-Spec backing: "Blocks can be parsed line by line with no backtracking"
-gives us the license — block decisions don't need GLR exploration, so
-the two-mode split won't fight tree-sitter.
-
-**Implementation sketch:**
-1. Add `STATE_MATCHING` flag and `s->matched` counter.
-2. Refactor `parse_block_quote` / `parse_list_item_continuation` /
-   `parse_indented_content_spacer` into `match_X` functions called
-   only from matching mode.
-3. Move all block-open handlers under the lookahead switch.
-4. Reset `matched` and re-enter matching mode on `LINE_ENDING`.
-
-**Risk:** moderate. Block-level ordering dependencies are real
-(close_list_nested_block, list_item_end, block_quote interactions).
-Needs careful tests.
+**If we revisit:** the right entry point is item L (non-backtracking
+investigation). If the spec's claim holds for djot, the work would
+be cleaner because we could drop GLR-driven speculative paths
+entirely, not just reorganize them. That's a separate, larger
+project.
 
 #### B. Block-stack memcpy serialize
 
@@ -224,19 +211,31 @@ be interrupted by other block-level elements." The whole machinery
 is unnecessary. (Not even an item to apply or skip — simply doesn't
 exist in djot.)
 
-## Recommended order
+## Outcomes (what shipped this round)
 
-1. **B (memcpy serialize)** — trivial, free win. Do first.
-2. **E (cache get_column)** — trivial, small win.
-3. **C (is_punctuation table)** + **D (inline-marker bitset)** —
-   small but compounding; same shape, do together.
-4. **A (STATE_MATCHING)** — the actual project. Do last because the
-   smaller wins above don't depend on it and the test surface for A
-   is large.
+- **B**: shipped (commit). Bulk memcpy for `open_blocks` /
+  `open_inline` (de)serialize. Within noise on synchronous parse
+  metrics; helps GLR fork-restore which isn't isolated by the
+  benchmark.
+- **C**: shipped. 256-byte `is_identifier_char` table replacing
+  libc `isalnum() || c=='_' || c=='-'` in `scan_identifier` and the
+  `parse_open_curly_bracket` fast-path. Within noise.
+- **D**: shipped. Top-level `inline_active_byte_table` gate around
+  the `parse_span` × 10 chain — skips the whole chain on plain text
+  bytes when no begin token is valid. Within noise on m.dj
+  specifically (begin tokens are usually valid in inline-heavy
+  content), but the gate has the right shape.
+- **E**: closed without changes — only 2 needed `get_column` calls
+  remain after last round's #5.
+- **A**: closed without changes — see entry above. Real STATE_MATCHING
+  work is below noise without going further (item L).
 
-Items B/C/D/E are within-noise individually but together should
-give a measurable bump. A is where the next real-percentage win is
-likely to come from given #1 is off the table.
+## Next entry point
+
+**L (non-backtracking investigation)** is the next move, not another
+round of micro-optimizations. The smaller wins are exhausted; the
+remaining headroom needs an architectural answer to "do block
+decisions need GLR at all?"
 
 ## Speculative — investigate before committing
 
