@@ -544,6 +544,19 @@ static bool handle_blocks_to_close(Scanner *s, TSLexer *lexer) {
   }
 }
 
+static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
+  if (lexer->eof(lexer)) {
+    return true;
+    // We've already parsed any leading whitespace in the beginning of the
+    // scan function.
+  } else if (lexer->lookahead == '\n') {
+    advance(s, lexer);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static bool scan_identifier(Scanner *s, TSLexer *lexer) {
   bool any_scanned = false;
   while (!lexer->eof(lexer)) {
@@ -956,6 +969,17 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return true;
   }
 
+  // Maybe...? Maybe we need to check the next so it's not empty?
+  // if (has_marker && ending_newline && !any_open_inline) {
+  //   return false;
+  //   consume_whitespace(s, lexer);
+  //
+  //   if (scan_eof_or_blankline(s, lexer)) {
+  //     printf("MARKER: `%c`\n", lexer->lookahead);
+  //     return false;
+  //   }
+  // }
+
   // Finally, start a new block quote if there's any marker.
   if (valid_symbols[BLOCK_QUOTE_BEGIN] && has_marker) {
     push_block(s, BLOCK_QUOTE, marker_count);
@@ -1281,19 +1305,6 @@ static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer) {
 static bool scan_list_marker(Scanner *s, TSLexer *lexer) {
   TokenType marker = scan_list_marker_token(s, lexer);
   return marker != IGNORED;
-}
-
-static bool scan_eof_or_blankline(Scanner *s, TSLexer *lexer) {
-  if (lexer->eof(lexer)) {
-    return true;
-    // We've already parsed any leading whitespace in the beginning of the
-    // scan function.
-  } else if (lexer->lookahead == '\n') {
-    advance(s, lexer);
-    return true;
-  } else {
-    return false;
-  }
 }
 
 // Can we scan a block closing marker?
@@ -3616,6 +3627,8 @@ static char *token_type_s(TokenType t) {
     return "NEWLINE_INLINE";
   case NON_WHITESPACE_CHECK:
     return "NON_WHITESPACE_CHECK";
+  case HARD_LINE_BREAK:
+    return "HARD_LINE_BREAK";
 
   case FRONTMATTER_MARKER:
     return "FRONTMATTER_MARKER";
