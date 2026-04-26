@@ -7059,6 +7059,23 @@ List: multi-line emphasis inside list falls back to text without erroring
         (paragraph)))))
 
 ===============================================================================
+Inline: lone star at start does not open strong; later complete pair wins
+:cst
+===============================================================================
+*not strong *strong*
+
+-------------------------------------------------------------------------------
+
+0:0  - 1:0    document
+0:0  - 1:0      paragraph
+0:0  - 0:1        "*"
+0:12 - 0:20       strong
+0:12 - 0:13         begin_marker: strong_begin
+0:12 - 0:13           "*"
+0:13 - 0:19         content: content `strong`
+0:19 - 0:20         end_marker: strong_end `*`
+
+===============================================================================
 Table: cell with parenthesized content
 ===============================================================================
 | 1 | (right) |
