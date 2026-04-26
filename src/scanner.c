@@ -3161,10 +3161,51 @@ static void update_square_bracket_lookahead_states(Scanner *s, TSLexer *lexer,
   }
 }
 
+// Scan ahead to find the close marker `c` on the same line. Returns true if
+// found before any newline / EOF. Advances the lexer during the scan; callers
+// only invoke this when they're about to emit a zero-width gate token (no
+// `mark_end` after the scan), so the advances don't extend the emitted token.
+static bool scan_for_same_line_close(Scanner *s, TSLexer *lexer, char c) {
+  while (!lexer->eof(lexer)) {
+    char ch = lexer->lookahead;
+    if (ch == '\n' || ch == '\r') {
+      return false;
+    }
+    if (ch == c) {
+      return true;
+    }
+    if (ch == '\\') {
+      advance(s, lexer);
+      if (lexer->eof(lexer)) {
+        return false;
+      }
+    }
+    advance(s, lexer);
+  }
+  return false;
+}
+
 static bool mark_span_begin(Scanner *s, TSLexer *lexer,
                             const bool *valid_symbols, InlineType inline_type,
                             TokenType token) {
   Inline *top = peek_inline(s);
+  // Inside a list, require EMPHASIS/STRONG to find their close marker on the
+  // same line before opening. Without this gate, GLR explored a "shifted"
+  // interpretation where the *first* `*` of each `- *N*:` line is plain text
+  // and the *second* `*` opens a strong that closes against the next line's
+  // first `*`, swallowing the intervening newline + list marker. That branch
+  // wins for >=8 items even though every per-line `*N*` already pairs cleanly,
+  // and the resulting cross-line strongs collapse all items into one.
+  //
+  // Refusing to open at the second `*` (no later `*` on its line) prunes the
+  // shifted branch — the first `*` can still open and close per-item.
+  // Multi-line emphasis remains valid in plain paragraphs (no enclosing list).
+  if ((inline_type == EMPHASIS || inline_type == STRONG) &&
+      find_list(s) != NULL) {
+    if (!scan_for_same_line_close(s, lexer, inline_marker(inline_type))) {
+      return false;
+    }
+  }
   // Detect the single-char-opener-immediately-followed-by-`[` pattern
   // (`*[`/`_[`/`^[`/`~[`). The previous emission was `_non_whitespace_check`
   // (which is only used in the single-char form of emphasis/strong's
@@ -3569,15 +3610,11 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  // Scan ordered list markers outside because the parsing may conflict with
-  // closing of lists (both may try to parse the same characters).
-  TokenType ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
-  if (ordered_list_marker != IGNORED &&
-      handle_ordered_list_marker(s, lexer, valid_symbols,
-                                 ordered_list_marker)) {
-    return true;
-  }
-
+  // Table cell / caption / hard-line-break checks must run before the
+  // speculative `scan_ordered_list_marker_token` below: that scan advances
+  // the lexer over content like `ight)` (parsed as a roman-numeral marker)
+  // even when the marker can't be used, and a later TABLE_CELL_END at `|`
+  // would otherwise span the consumed bytes.
   if (valid_symbols[TABLE_CAPTION_END] && parse_table_caption_end(s, lexer)) {
     return true;
   }
@@ -3591,6 +3628,15 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   }
 
   if (valid_symbols[HARD_LINE_BREAK] && parse_hard_line_break(s, lexer)) {
+    return true;
+  }
+
+  // Scan ordered list markers outside because the parsing may conflict with
+  // closing of lists (both may try to parse the same characters).
+  TokenType ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
+  if (ordered_list_marker != IGNORED &&
+      handle_ordered_list_marker(s, lexer, valid_symbols,
+                                 ordered_list_marker)) {
     return true;
   }
 
