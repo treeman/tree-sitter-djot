@@ -275,6 +275,28 @@ static const uint8_t STATE_CONSUMED_INDENT_AT_SCAN_START = 1 << 4;
 static TokenType scan_list_marker_token(Scanner *s, TSLexer *lexer);
 static TokenType scan_unordered_list_marker_token(Scanner *s, TSLexer *lexer);
 
+// True when any of the 15 ordered-list-marker tokens is in `valid_symbols`.
+// Used as a gate before the speculative `scan_ordered_list_marker_token` call
+// at the end of the dispatcher — that scan walks alphanumeric runs and is
+// pure waste in inline contexts where no ordered marker can be emitted.
+static bool any_ordered_list_marker_valid(const bool *vs) {
+  return vs[LIST_MARKER_DECIMAL_PERIOD] ||
+         vs[LIST_MARKER_LOWER_ALPHA_PERIOD] ||
+         vs[LIST_MARKER_UPPER_ALPHA_PERIOD] ||
+         vs[LIST_MARKER_LOWER_ROMAN_PERIOD] ||
+         vs[LIST_MARKER_UPPER_ROMAN_PERIOD] ||
+         vs[LIST_MARKER_DECIMAL_PAREN] ||
+         vs[LIST_MARKER_LOWER_ALPHA_PAREN] ||
+         vs[LIST_MARKER_UPPER_ALPHA_PAREN] ||
+         vs[LIST_MARKER_LOWER_ROMAN_PAREN] ||
+         vs[LIST_MARKER_UPPER_ROMAN_PAREN] ||
+         vs[LIST_MARKER_DECIMAL_PARENS] ||
+         vs[LIST_MARKER_LOWER_ALPHA_PARENS] ||
+         vs[LIST_MARKER_UPPER_ALPHA_PARENS] ||
+         vs[LIST_MARKER_LOWER_ROMAN_PARENS] ||
+         vs[LIST_MARKER_UPPER_ROMAN_PARENS];
+}
+
 #ifdef DEBUG
 static char *block_type_s(BlockType t);
 static char *token_type_s(TokenType t);
@@ -3646,11 +3668,22 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
 
   // Scan ordered list markers outside because the parsing may conflict with
   // closing of lists (both may try to parse the same characters).
-  TokenType ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
-  if (ordered_list_marker != IGNORED &&
-      handle_ordered_list_marker(s, lexer, valid_symbols,
-                                 ordered_list_marker)) {
-    return true;
+  //
+  // Gate the scan: it walks alphanumeric runs and only matters when we'd
+  // either emit a marker token (one of the 15 ordered marker tokens valid)
+  // or close a different-typed list (BLOCK_CLOSE valid AND a list is open).
+  // In inline contexts neither holds, so the scan is pure waste otherwise.
+  TokenType ordered_list_marker = IGNORED;
+  bool ordered_scan_useful =
+      any_ordered_list_marker_valid(valid_symbols) ||
+      (valid_symbols[BLOCK_CLOSE] && find_list(s) != NULL);
+  if (ordered_scan_useful) {
+    ordered_list_marker = scan_ordered_list_marker_token(s, lexer);
+    if (ordered_list_marker != IGNORED &&
+        handle_ordered_list_marker(s, lexer, valid_symbols,
+                                   ordered_list_marker)) {
+      return true;
+    }
   }
 
   // May scan a complete list marker, which we can't do before checking if
