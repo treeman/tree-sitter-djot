@@ -970,16 +970,41 @@ static bool parse_block_quote(Scanner *s, TSLexer *lexer,
     return true;
   }
 
-  // Maybe...? Maybe we need to check the next so it's not empty?
-  // if (has_marker && ending_newline && !any_open_inline) {
-  //   return false;
-  //   consume_whitespace(s, lexer);
+  // Don't open a new block quote when the marker line has no content AND
+  // the next line is also blank/EOF — the block quote would have nothing
+  // to contain, so treat the `>` as plain text. Test "Block quote: don't
+  // continue with only a space and newline" pins this:
   //
-  //   if (scan_eof_or_blankline(s, lexer)) {
-  //     printf("MARKER: `%c`\n", lexer->lookahead);
-  //     return false;
-  //   }
-  // }
+  //     > \n\na\n
+  //
+  // should parse as two paragraphs, not as an empty/erroring block quote.
+  if (has_marker && valid_symbols[BLOCK_QUOTE_BEGIN] && !any_open_inline) {
+    bool marker_line_empty;
+    if (ending_newline) {
+      // scan_block_quote_marker already consumed the marker's trailing
+      // newline (the `>\n` form).
+      marker_line_empty = true;
+    } else {
+      // The `> ` form: lookahead is at the first char after the trailing
+      // space. Skip any further horizontal whitespace and check whether
+      // we're at end of line.
+      consume_whitespace(s, lexer);
+      if (lexer->lookahead == '\n') {
+        advance(s, lexer);
+        marker_line_empty = true;
+      } else {
+        marker_line_empty = lexer->eof(lexer);
+      }
+    }
+    if (marker_line_empty) {
+      // Now at the start of the line after the marker. If that line is
+      // also blank (or EOF), the block quote has no body — bail.
+      consume_whitespace(s, lexer);
+      if (lexer->lookahead == '\n' || lexer->eof(lexer)) {
+        return false;
+      }
+    }
+  }
 
   // Finally, start a new block quote if there's any marker.
   if (valid_symbols[BLOCK_QUOTE_BEGIN] && has_marker) {
