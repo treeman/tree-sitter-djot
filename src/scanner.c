@@ -311,33 +311,43 @@ static void dump_all_valid_symbols(const bool *valid_symbols);
 static void dump_some_valid_symbols(const bool *valid_symbols);
 #endif
 
-static bool is_list(BlockType type) {
-  switch (type) {
-  case LIST_DASH:
-  case LIST_STAR:
-  case LIST_PLUS:
-  case LIST_TASK:
-  case LIST_DEFINITION:
-  case LIST_DECIMAL_PERIOD:
-  case LIST_LOWER_ALPHA_PERIOD:
-  case LIST_UPPER_ALPHA_PERIOD:
-  case LIST_LOWER_ROMAN_PERIOD:
-  case LIST_UPPER_ROMAN_PERIOD:
-  case LIST_DECIMAL_PAREN:
-  case LIST_LOWER_ALPHA_PAREN:
-  case LIST_UPPER_ALPHA_PAREN:
-  case LIST_LOWER_ROMAN_PAREN:
-  case LIST_UPPER_ROMAN_PAREN:
-  case LIST_DECIMAL_PARENS:
-  case LIST_LOWER_ALPHA_PARENS:
-  case LIST_UPPER_ALPHA_PARENS:
-  case LIST_LOWER_ROMAN_PARENS:
-  case LIST_UPPER_ROMAN_PARENS:
-    return true;
-  default:
-    return false;
-  }
-}
+// Per-BlockType "is a list" / "is an alpha list" predicates as static
+// lookup tables — designated initializers default unset entries to 0/false.
+// `is_list` is on the hot path via `find_list`, `count_blocks`, and the
+// `list_open_count` maintenance in push/pop.
+static const bool is_list_table[] = {
+    [LIST_DASH] = true,
+    [LIST_STAR] = true,
+    [LIST_PLUS] = true,
+    [LIST_TASK] = true,
+    [LIST_DEFINITION] = true,
+    [LIST_DECIMAL_PERIOD] = true,
+    [LIST_LOWER_ALPHA_PERIOD] = true,
+    [LIST_UPPER_ALPHA_PERIOD] = true,
+    [LIST_LOWER_ROMAN_PERIOD] = true,
+    [LIST_UPPER_ROMAN_PERIOD] = true,
+    [LIST_DECIMAL_PAREN] = true,
+    [LIST_LOWER_ALPHA_PAREN] = true,
+    [LIST_UPPER_ALPHA_PAREN] = true,
+    [LIST_LOWER_ROMAN_PAREN] = true,
+    [LIST_UPPER_ROMAN_PAREN] = true,
+    [LIST_DECIMAL_PARENS] = true,
+    [LIST_LOWER_ALPHA_PARENS] = true,
+    [LIST_UPPER_ALPHA_PARENS] = true,
+    [LIST_LOWER_ROMAN_PARENS] = true,
+    [LIST_UPPER_ROMAN_PARENS] = true,
+};
+
+static const bool is_alpha_list_table[] = {
+    [LIST_LOWER_ALPHA_PERIOD] = true,
+    [LIST_LOWER_ALPHA_PAREN] = true,
+    [LIST_LOWER_ALPHA_PARENS] = true,
+    [LIST_UPPER_ALPHA_PERIOD] = true,
+    [LIST_UPPER_ALPHA_PAREN] = true,
+    [LIST_UPPER_ALPHA_PARENS] = true,
+};
+
+static inline bool is_list(BlockType type) { return is_list_table[type]; }
 
 static BlockType list_marker_to_block(TokenType type) {
   switch (type) {
@@ -389,19 +399,8 @@ static BlockType list_marker_to_block(TokenType type) {
   }
 }
 
-static bool is_alpha_list(BlockType type) {
-
-  switch (type) {
-  case LIST_LOWER_ALPHA_PERIOD:
-  case LIST_LOWER_ALPHA_PAREN:
-  case LIST_LOWER_ALPHA_PARENS:
-  case LIST_UPPER_ALPHA_PERIOD:
-  case LIST_UPPER_ALPHA_PAREN:
-  case LIST_UPPER_ALPHA_PARENS:
-    return true;
-  default:
-    return false;
-  }
+static inline bool is_alpha_list(BlockType type) {
+  return is_alpha_list_table[type];
 }
 
 static void advance(Scanner *s, TSLexer *lexer) {
