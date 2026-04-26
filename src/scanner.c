@@ -3543,9 +3543,6 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
   if (parse_heading(s, lexer, valid_symbols)) {
     return true;
   }
-  if (parse_comment_end(s, lexer, valid_symbols)) {
-    return true;
-  }
 
   if (valid_symbols[IMAGE_OPEN_CHECK] &&
       parse_image_open_check(s, lexer, valid_symbols)) {
@@ -3557,14 +3554,18 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[SQUARE_BRACKET_SPAN_TEXT_CLOSE] &&
-      parse_square_bracket_span_text_close(s, lexer)) {
-    return true;
-  }
-
+  // Lookahead-gated dispatch. Each handler only fires for its own char(s),
+  // so the switch lets non-matching text bytes fall through to `default`
+  // without paying a per-handler call/branch.
   switch (lexer->lookahead) {
   case '[':
     if (parse_open_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case ']':
+    if (valid_symbols[SQUARE_BRACKET_SPAN_TEXT_CLOSE] &&
+        parse_square_bracket_span_text_close(s, lexer)) {
       return true;
     }
     break;
@@ -3590,6 +3591,12 @@ bool tree_sitter_djot_external_scanner_scan(void *payload, TSLexer *lexer,
     break;
   case '{':
     if (parse_open_curly_bracket(s, lexer, valid_symbols)) {
+      return true;
+    }
+    break;
+  case '%':
+  case '}':
+    if (parse_comment_end(s, lexer, valid_symbols)) {
       return true;
     }
     break;
