@@ -48,34 +48,81 @@ static precedence broke the empty-link `[](y)` case.
   djot is still ~1.7× slower per byte. Architectural change needed
   to close this further.
 
-## Next entry point: L (non-backtracking block parser investigation)
+## L investigation — outcome: don't bother
 
-**Spec backing:** "Blocks can be parsed line by line with no
-backtracking."
+The conjecture: if blocks really are line-by-line with no
+backtracking, removing GLR-driven block paths is the next big win.
 
-If the spec's claim holds for djot's grammar as it stands, the next
-real-percentage win comes from removing GLR-driven speculative
-*block* paths outright — not from rearranging which functions check
-which valid_symbols when.
+What I actually found:
 
-This is investigation, not a code change yet. Tasks:
+### Grammar audit (grep `prec.dynamic` + `conflicts`)
 
-1. Inventory every `prec.dynamic` and every `conflicts` entry in
-   `grammar.js`. Categorize each as block-related or inline-related.
-2. Inventory speculative scanner work that exists because the parser
-   explores multiple block alternatives (e.g.,
-   `scan_ordered_list_marker_token` walks alphanumeric runs even
-   though the spec says block decisions are deterministic).
-3. Read the djot reference implementation (`jgm/djot.lua`) to see
-   how its block parser handles ambiguity. If it uses backtracking
-   anywhere, the spec's claim has caveats we need to know.
-4. Identify the concrete cases where the current grammar/scanner
-   *needs* GLR for blocks. If the list is short, a follow-up branch
-   could reshape those specific cases and drop the rest.
+- **12 `prec.dynamic` uses, ALL inline.** Lines 456–465 cover the 10
+  inline elements (emphasis, strong, highlighted, sup/sub, insert,
+  delete, footnote_reference, _image, _link). Line 483 is
+  inline_attribute. Line 655 is span end-marker. Zero block rules
+  use `prec.dynamic`.
+- **13 `conflicts` entries, all inline-side.** Even `block_math` and
+  `inline_math` conflict only with `_symbol_fallback`, which is the
+  inline-level "this looks like a marker but is plain text"
+  collector. The GLR fork is for the *inline* interpretation, not
+  the block.
 
-This is bounded research — a grep-and-read pass plus a look at
-djot.lua. No commits expected from L itself; output is a written
-finding that informs whatever the next code change is.
+So the block side of the djot grammar is **already** GLR-free.
+There's nothing to remove that would give a free win.
+
+### Reference impl audit (djot.lua)
+
+The spec's "blocks can be parsed line by line with no backtracking"
+is **aspirational, not strict**. The reference `djot.lua` block
+parser explicitly backtracks in at least two places:
+
+- **Tables**: opens a table container, tries to parse the first row,
+  removes the container if `parse_table_row` fails.
+- **Block attributes**: speculatively feeds `{...}` content to an
+  attribute parser, abandons the attempt if parsing fails.
+
+So even the reference implementation's block side does what we'd
+have to do anyway for djot's actual syntax.
+
+### Scanner-side speculation that remains
+
+The block-level speculative work that's still in our scanner is the
+same shape as the reference impl's:
+
+- `scan_ordered_list_marker_token` walks alphanumeric runs to
+  distinguish roman numerals (`iii)`) from decimal (`3)`) from
+  alpha (`c)`). This is inherent to djot's syntax — there's no
+  shorter lookahead that decides. We already gate the call on
+  `valid_symbols` (commit `9549fb5`) so it only fires when relevant.
+- `parse_open_curly_bracket` walks `{...}` content to validate the
+  attribute body. Same story — inherent to the syntax.
+
+These can't be removed because they reflect genuine syntactic
+requirements of djot, mirrored exactly in the reference impl.
+
+### What this means for further work
+
+The block-side optimization angle is closed. The next-percentage
+gain on m.dj wall time would have to come from one of:
+
+1. **Inline-side GLR reduction.** The 12 `prec.dynamic` uses + 13
+   conflicts are all inline. A grammar restructure that lets us drop
+   even some of these would reduce GLR fork-restore cost. Last
+   round's #10 attempt failed empirically (`[](y)`); a more careful
+   approach would need the markdown-style `_inline_element_no_X`
+   rule generation pattern, which has its own cost.
+
+2. **Inline-scanner-main per-scan overhead.** The inline scanner is
+   invoked between every parser-internal token. Every saved
+   per-scan op compounds, but our previous round of per-scan
+   optimizations (B/C/D/E/A) all measured within noise. The signal
+   is below the floor without a fundamental restructuring.
+
+3. **Architectural split (#1).** Off the table per user direction.
+
+None of these are quick wins. The branch is in a good spot to
+land as-is.
 
 ## Notes
 
