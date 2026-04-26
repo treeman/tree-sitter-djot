@@ -13,6 +13,7 @@ Baseline (2026-04-26, branch `inline-scanner-rework`): m.dj parses ~150-170 ms (
 - [x] **#5** Replaced second `get_column` call with `s->indent > 0` — `consume_whitespace` already returns the indent count, so the post-check is redundant. Within noise; one fewer indirect call per scan.
 - [x] **#6** Cached `list_open_count` on the Scanner, maintained in `push_block`/`remove_block`/`reset`. Replaces two `find_list(s) != NULL` calls (in `mark_span_begin` and the ordered-list-marker gate) with O(1) state lookups. Within noise; the gate-iteration was already small. The deeper memoization of `scan_for_same_line_close` was deferred — it would need per-position invalidation that doesn't pay off for scans that mostly run once per opener.
 - [x] **#7** Replaced `is_list` and `is_alpha_list` switches with static const tables. `list_marker_to_block` left as a switch — its `LIST_MARKER_*` values are contiguous, so the compiler already emits a perfect jump table. Within noise (~1977 bytes/ms test suite, ~2254 bytes/ms m.dj); cleaner.
+- [x] **#8** Collapsed 18 marker-styled list rules into one `_list`/`_list_item` rule with a marker `choice(...)`. Definition lists keep their own rule (different shape). The "items in a list share a marker type" invariant is enforced by the scanner (it emits `_block_close` when transitioning between list types), so the grammar relaxation is safe. parser.c: **97k → 80k LOC (-17%)**, 3.5MB → 2.7MB. Parse speed within noise (the LR table savings translate to smaller binary/memory rather than per-parse work).
 
 ## Remaining
 

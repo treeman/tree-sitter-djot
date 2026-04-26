@@ -92,68 +92,49 @@ module.exports = grammar({
         $._eof_or_newline,
       ),
 
-    // Djot has a crazy number of different list types
-    // that we need to keep separate from each other.
+    // List blocks. The scanner emits a single marker-token type at any
+    // given time (matching the currently-open list block) and emits
+    // `_block_close` when transitioning between different list types, so
+    // collapsing the 18 marker-styled list rules into one shared rule does
+    // not relax the "items within a list share a marker type" invariant —
+    // that's enforced upstream. Definition lists keep their own rule
+    // because their item shape (term + definition) differs.
     list: ($) =>
-      prec.left(
-        choice(
-          $._list_dash,
-          $._list_plus,
-          $._list_star,
-          $._list_task,
-          $._list_definition,
-          $._list_decimal_period,
-          $._list_decimal_paren,
-          $._list_decimal_parens,
-          $._list_lower_alpha_period,
-          $._list_lower_alpha_paren,
-          $._list_lower_alpha_parens,
-          $._list_upper_alpha_period,
-          $._list_upper_alpha_paren,
-          $._list_upper_alpha_parens,
-          $._list_lower_roman_period,
-          $._list_lower_roman_paren,
-          $._list_lower_roman_parens,
-          $._list_upper_roman_period,
-          $._list_upper_roman_paren,
-          $._list_upper_roman_parens,
+      prec.left(choice($._list, $._list_definition)),
+
+    _list: ($) =>
+      seq(repeat1(alias($._list_item, $.list_item)), $._block_close),
+
+    _list_item: ($) =>
+      seq(
+        optional($._block_quote_prefix),
+        field(
+          "marker",
+          choice(
+            $.list_marker_dash,
+            $.list_marker_plus,
+            $.list_marker_star,
+            $.list_marker_task,
+            $.list_marker_decimal_period,
+            $.list_marker_decimal_paren,
+            $.list_marker_decimal_parens,
+            $.list_marker_lower_alpha_period,
+            $.list_marker_lower_alpha_paren,
+            $.list_marker_lower_alpha_parens,
+            $.list_marker_upper_alpha_period,
+            $.list_marker_upper_alpha_paren,
+            $.list_marker_upper_alpha_parens,
+            $.list_marker_lower_roman_period,
+            $.list_marker_lower_roman_paren,
+            $.list_marker_lower_roman_parens,
+            $.list_marker_upper_roman_period,
+            $.list_marker_upper_roman_paren,
+            $.list_marker_upper_roman_parens,
+          ),
         ),
-      ),
-    _list_dash: ($) =>
-      seq(repeat1(alias($._list_item_dash, $.list_item)), $._block_close),
-    _list_item_dash: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_dash),
         field("content", $.list_item_content),
       ),
 
-    _list_plus: ($) =>
-      seq(repeat1(alias($._list_item_plus, $.list_item)), $._block_close),
-    _list_item_plus: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_plus),
-        field("content", $.list_item_content),
-      ),
-
-    _list_star: ($) =>
-      seq(repeat1(alias($._list_item_star, $.list_item)), $._block_close),
-    _list_item_star: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_star),
-        field("content", $.list_item_content),
-      ),
-
-    _list_task: ($) =>
-      seq(repeat1(alias($._list_item_task, $.list_item)), $._block_close),
-    _list_item_task: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_task),
-        field("content", $.list_item_content),
-      ),
     list_marker_task: ($) =>
       seq(
         $._list_marker_task_begin,
@@ -186,176 +167,6 @@ module.exports = grammar({
           ),
         ),
         $._list_item_end,
-      ),
-
-    _list_decimal_period: ($) =>
-      seq(
-        repeat1(alias($._list_item_decimal_period, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_decimal_period: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_decimal_period),
-        field("content", $.list_item_content),
-      ),
-    _list_decimal_paren: ($) =>
-      seq(
-        repeat1(alias($._list_item_decimal_paren, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_decimal_paren: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_decimal_paren),
-        field("content", $.list_item_content),
-      ),
-    _list_decimal_parens: ($) =>
-      seq(
-        repeat1(alias($._list_item_decimal_parens, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_decimal_parens: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_decimal_parens),
-        field("content", $.list_item_content),
-      ),
-
-    _list_lower_alpha_period: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_alpha_period, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_alpha_period: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_alpha_period),
-        field("content", $.list_item_content),
-      ),
-    _list_lower_alpha_paren: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_alpha_paren, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_alpha_paren: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_alpha_paren),
-        field("content", $.list_item_content),
-      ),
-    _list_lower_alpha_parens: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_alpha_parens, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_alpha_parens: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_alpha_parens),
-        field("content", $.list_item_content),
-      ),
-
-    _list_upper_alpha_period: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_alpha_period, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_alpha_period: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_alpha_period),
-        field("content", $.list_item_content),
-      ),
-    _list_upper_alpha_paren: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_alpha_paren, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_alpha_paren: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_alpha_paren),
-        field("content", $.list_item_content),
-      ),
-    _list_upper_alpha_parens: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_alpha_parens, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_alpha_parens: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_alpha_parens),
-        field("content", $.list_item_content),
-      ),
-
-    _list_lower_roman_period: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_roman_period, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_roman_period: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_roman_period),
-        field("content", $.list_item_content),
-      ),
-    _list_lower_roman_paren: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_roman_paren, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_roman_paren: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_roman_paren),
-        field("content", $.list_item_content),
-      ),
-    _list_lower_roman_parens: ($) =>
-      seq(
-        repeat1(alias($._list_item_lower_roman_parens, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_lower_roman_parens: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_lower_roman_parens),
-        field("content", $.list_item_content),
-      ),
-
-    _list_upper_roman_period: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_roman_period, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_roman_period: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_roman_period),
-        field("content", $.list_item_content),
-      ),
-    _list_upper_roman_paren: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_roman_paren, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_roman_paren: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_roman_paren),
-        field("content", $.list_item_content),
-      ),
-    _list_upper_roman_parens: ($) =>
-      seq(
-        repeat1(alias($._list_item_upper_roman_parens, $.list_item)),
-        $._block_close,
-      ),
-    _list_item_upper_roman_parens: ($) =>
-      seq(
-        optional($._block_quote_prefix),
-        field("marker", $.list_marker_upper_roman_parens),
-        field("content", $.list_item_content),
       ),
 
     list_item_content: ($) =>
