@@ -10,6 +10,7 @@ build
 /target/
 log.html
 *.dj
+/m.md
 *.so
 *.o
 *.pc
