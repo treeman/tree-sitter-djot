@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **This repository has moved to <https://codeberg.org/treeman/tree-sitter-djot>.**
+>
+> This GitHub copy is a frozen archive. New commits, issues, and pull requests should go to Codeberg.
+
 # tree-sitter-djot
 
 This is an experimental [Tree-sitter][] grammar for [Djot][].
